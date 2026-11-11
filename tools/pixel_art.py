@@ -253,21 +253,14 @@ def actor(frame, canvas):
     return image
 
 
-def draw_title_garden(image, canvas):
+def draw_title_garden(image, canvas, cast, floor):
     """Use the exact gameplay sprites at integer 2x scale, with aligned feet."""
-    floor = 85
-    for frame, center_x in [(0, 56), (1, 103), (14, 180)]:
+    for frame, center_x in cast:
         source = actor(frame, canvas)
         bottom = source.getbbox()[3]
         enlarged = source.resize((64, 64), Image.Resampling.NEAREST)
         x, y = center_x - 32, floor - (bottom * 2 - 1)
         image.paste(enlarged, (x, y), enlarged.point([0] + [255] * 255, 'L'))
-    pea = canvas(8, 8)
-    pea_draw = ImageDraw.Draw(pea)
-    ellipse(pea_draw, (1, 1, 6, 6), 6, 2)
-    pea_draw.point((2, 2), fill=8)
-    enlarged = pea.resize((16, 16), Image.Resampling.NEAREST)
-    image.paste(enlarged, (130, 56), enlarged.point([0] + [255] * 255, 'L'))
 
 
 def shovel_icon(canvas):

@@ -9,7 +9,7 @@ enum class AudioChannel { master, music, effects };
 
 struct AudioSettings
 {
-    std::array<int, 3> levels{10, 5, 10};
+    std::array<int, 3> levels{10, 10, 10};
 
     bool adjust(AudioChannel channel, int delta)
     {

@@ -1,146 +1,118 @@
-# Garden Guard — GBA MVP
+# Sprouts vs. Stiffs
 
-A playable Plants vs. Zombies-inspired lawn defense game built in C++ with
-[Butano](https://github.com/GValiente/butano). Uses original, generated pixel art
-and synthesized sound effects plus an original looping music track. Open **garden_guard.gba** in mGBA or copy it to a
-GBA-compatible flash cartridge.
+A playable GBA lawn defense game inspired by Plants vs. Zombies, built with
+[Butano](https://github.com/GValiente/butano). The game uses original pixel art,
+synthesized sound effects, and an original looping music track.
 
-![Gameplay captured from the ROM in mGBA](docs/gameplay.png)
+Open **[sprouts_vs_stiffs.gba](sprouts_vs_stiffs.gba)** in mGBA or use a compatible
+GBA flash cartridge. This is the current ROM filename; the old Garden Guard files
+have been removed.
 
-The garden has textured mowing squares, grass clumps, stone paths, a wooden
-porch, and a flower border. Original plant and zombie art uses shaded 32×32
-sprite frames, with plant artwork fitted to its planting cell. Sunflowers
-and peashooters sway with flexing leaves, wall-nuts gently bob in every damage
-state, and cherry pairs rock while armed. Peashooters have a smaller head and a
-separate firing pose. Zombies have separate
-walking and chewing poses. Wall-nuts show two levels of damage. Seed packets
-use dedicated 15-pixel portraits centered by their visible artwork, on dark
-inset panels. Both peashooter leaves are visible. The title uses the exact
-gameplay sunflower, peashooter, and regular zombie sprites at integer 2× scale,
-preserving their proportions, colors, and pixel shapes. The entire title screen
-uses a lighter green background to keep the sprites' dark outlines visible.
-Zombie cones have a blunt, tilted tip and a broad
-oval base wrapped around the crown, with shaded sides and a reflective band.
+![Current gameplay captured in mGBA](docs/gameplay.png)
 
-[Before/after graphics comparison](docs/graphics_comparison.png)
+## Playing
 
-[Plant idle animation and cone preview](docs/plant_idle.gif)
+Defend a five-lane, nine-column lawn through five waves. You start with 175 sun
+and approximately 15 seconds to prepare. Build sunflowers, collect sun, and cover
+the lanes with peashooters. Each lane has a single-use mower as a last defense.
+A zombie reaching the house after that defense is spent ends the run.
 
-[Seed packet portraits](docs/seed_packets.png) · [Cone close-up](docs/cone.png)
-
-## Play
-
-| GBA button | Action |
+| Button | During play |
 | --- | --- |
-| START | Begin, pause/resume, or restart after winning/losing |
-| D-pad | Move the lawn cursor; hold to repeat |
-| L / R | Cycle the four seed packets |
-| A | Plant the selected seed at the cursor |
-| B (tap or hold) | Collect all sun; hold to keep collecting new tokens |
-| Hold SELECT + A | Remove the plant under the cursor; no refund |
+| D-pad | Move the planting cursor; hold to repeat |
+| A | Plant the selected seed |
+| L / R | Select the previous / next seed packet |
+| B | Collect all available sun; hold to collect new tokens as they appear |
+| Hold SELECT + A | Shovel the plant under the cursor; no refund |
+| START | Pause |
 
-On the title/results screens, A also starts a run. On results, B returns to
-the title. In the pause menu, Up/Down selects Resume, Restart, Title, Master,
-Music, or Effects. A confirms actions; Left/Right adjusts the selected volume
-in 10% steps (hold to repeat). START or B immediately resumes. Master scales
-both music and effects; setting a slider to zero mutes that channel. Settings
-persist across restarts and title visits for the current session.
+On the title screen, **A or START** begins a run. On results, **A or START**
+starts a new run and **B** returns to the title.
 
-The original **Garden at Dusk** track loops through four musical phrases using
-three synthesized instruments. Music continues through menus so volume changes
-can be heard immediately. Regenerate the tracker module along with the artwork
-using `python3 tools/generate_assets.py`; the composer is `tools/generate_music.py`.
+| Plant | Cost | Seed recharge | Role |
+| --- | --- | --- | --- |
+| Sunflower | 50 | ~4 seconds | Produces 25 sun approximately every eight seconds |
+| Peashooter | 100 | ~3 seconds | Shoots zombies ahead in its lane |
+| Wall-nut | 50 | ~10 seconds | Blocks zombies and absorbs bites |
+| Cherry bomb | 150 | ~20 seconds | Explodes after a short fuse, damaging nearby zombies across three lanes |
 
-Survive five waves. A zombie reaching the house loses the game. Each lane has
-one lawn mower that automatically activates as a last defense. The next wave
-starts after the current wave is defeated and a short breather passes.
+Timing is measured in simulation updates; seconds above assume approximately
+60 updates per second. Normal zombies have six health; cone zombies have twelve.
+Waves contain 5, 7, 9, 11, and 13 zombies, with a breather between cleared waves.
 
-| Plant | Sun cost | Purpose |
-| --- | --- | --- |
-| Sunflower | 50 | Produces a collectible 25-sun token every eight seconds |
-| Peashooter | 100 | Fires at zombies ahead in its lane |
-| Wall-nut | 50 | Holds zombies in place while they chew |
-| Cherry bomb | 150 | Explodes after a short fuse, hitting nearby zombies in three lanes |
+## Pause menu and audio
 
-You start with 175 sun and 15 seconds before the first zombie appears. Plant
-sunflowers early, collect sun with B, and cover every lane with peashooters.
-Each seed has a recharge bar: yellow fills while recharging, green means ready,
-and red means you need more sun. The cursor is cream for a valid placement,
-red when blocked, and gold while holding SELECT to shovel. The footer shows
-an illustrated soil border; gameplay feedback uses icons and animation.
-Cone zombies take twice as many hits as ordinary zombies.
+**Up/Down** selects Resume, Restart, Title, Master, Music, or Effects. **A** confirms
+a menu action. **Left/Right** adjusts the selected volume in 10% steps; holding a
+direction repeats. **B or START** immediately resumes.
 
-The wave bar has a dedicated 24-pixel header with padding around the flags and
-a gap above the seed packets. Its continuous track has five flag markers and a
-moving zombie head. The track extends left to x=56 while keeping its right edge
-at x=224. The generated `include/wave_track.h` shares exact integer boundaries
-between the artwork and renderer. Unscaled segments, flag poles, fill frontier,
-and the head's horizontal center meet at the same pixel at every wave checkpoint.
-The head sits on the track, with no triangle pointer.
-Red flags mark upcoming waves, gold marks progress through a wave,
-and green marks a cleared wave. Compact pennants have shorter poles and clean
-cloth shading. The slightly larger final pennant has a six-pixel skull with
-a rounded cranium, recessed eye sockets, nose, and a narrower, toothed jaw.
-Its 12-by-10-pixel cloth leaves a visible margin around the skull.
-Its cloth stays red until cleared
-to preserve contrast. Defeating zombies
-advances the track; queued enemies still count toward each wave's total.
-A circular clock shows preparation time, and a waving flag signals an incoming
-wave. Wave changes also have sound cues.
+Master scales both music and effects. Either channel can be muted independently,
+and master at zero silences both. All three sliders default to **100%**. Settings
+survive restarts and title visits within the current session; they are not saved
+when the emulator or console closes.
 
-Placement feedback stays at the action: a red cross and cursor shake for an
-occupied tile, a green check for a successful plant, and an hourglass badge over
-the recharging packet's illustration. Its larger glass bulbs, narrow waist,
-brass caps, and borderless dark backing stay distinct from the plant art while
-leaving the price readable. Three sand levels track recharge progress.
-The selection outline follows the packet's rounded corners and exact bounds.
-An unaffordable packet's border pulses red while the sun bank
-stays still. Holding SELECT
-shows a shovel with a D-shaped grip, wooden shaft, and shaded steel spade at the
-cursor. Every collected sun flies from its own position
-to the sun icon over 24 updates, easing into the bank. The counter updates
-immediately and bounces. Flights pause with the game, survive token expiry,
-and cannot be collected or credited twice. Holding B also collects new tokens
-while earlier ones are still flying. There are no gameplay status messages or
-text banners.
+The generated audio uses a shared **1.5× output gain** from
+[`tools/audio_config.py`](tools/audio_config.py). The sliders attenuate this louder
+baseline. The original **Garden at Dusk** track uses three synthesized instruments
+and four looping phrases. It continues through menus so music adjustments are
+immediately audible. Navigation, planting, collection, shooting, hits, chewing,
+explosions, mowers, wave changes, and results have sound effects. Chewing sounds
+follow actual plant damage, with a separate playback cooldown.
 
-Peashooters recoil when firing. Hits, mowers, and chewing have distinct sounds.
-Chewing triggers when a bite actually damages a plant and uses its own sound
-cooldown, so shooting cannot suppress it. Sound playback is rate-limited during
-busy waves.
-The bite effect uses two short, quiet, rounded notes with smooth envelopes.
-It plays at 72% volume; its waveform contains no noise crunch.
+![Current pause menu and default volume settings](docs/paused.png)
 
-![Flag markers and wave progress](docs/waves.png)
+## Graphics and feedback
 
-Title, pause, and result screens have dedicated artwork on a separate Butano
-background layer. The lawn background is used only during play; menus contain
-no copied seed bar or empty lawn. Results include your wave, defeats, and time.
-Menus use a quiet frame and clear primary actions: Play on the title, Resume /
-Restart / Title while paused, and Retry or Play Again on results. The pause menu
-uses one caret and three volume sliders; results show two compact stat rows.
+The title has a centered wooden logo, a rounded Play tombstone with a carved
+sprout, and the gameplay sunflower and peashooter sprites enlarged at integer
+2× scale. Menus share graveyard scenery with a crescent moon, distant silhouettes,
+grass, and moss. Pause actions are unboxed; audio controls share aligned labels
+and stone slider handles. The pause tombstone extends below the controls to keep
+the instruction text clear. Results show wave progress, defeats, and elapsed time.
 
-[Menu overview](docs/menus.png)
+![Title, pause, and results captured from the current ROM](docs/menus.png)
 
-![Independent title screen](docs/title.png)
-![Pause menu](docs/paused.png)
+During play, feedback uses icons and animation rather than status-text banners:
 
-## Build
+- Seed recharge bars fill yellow, turn green when ready, and show red when sun
+  is insufficient. The selected packet pulses red for an unaffordable placement.
+- The cursor is cream for a valid placement, red when blocked, and gold while
+  holding SELECT. A check marks a successful planting; a cross marks an occupied
+  cell. The shovel appears at the selected cell.
+- A borderless hourglass appears over a recharging seed portrait, with three sand
+  levels indicating recharge progress.
+- Collected suns fly independently to the sun bank over 24 updates. The bank
+  credits them immediately; flights pause with the game and cannot credit twice.
+- The wave track has five flags, a skull on the final flag, and a zombie head
+  drawn from the same face artwork as the enemies. Upcoming flags are red,
+  active flags turn gold, and cleared flags turn green; the final skull flag
+  stays red until cleared. The head and fill meet each flag pole at its checkpoint.
+- Plants have idle poses; peashooters recoil while firing. Wall-nuts show two
+  damage stages. Zombies shuffle while walking and hold a steady stance with a
+  small jaw movement while eating. Both hands remain visible.
 
-Install devkitPro's GBA toolchain (devkitARM, grit, mmutil, gbafix), Python 3,
-and clone Butano. The default looks for the existing local Butano checkout at
-`~/gba_development/butano`. Override it for another installation:
+[Seed packets](docs/seed_packets.png) · [Wave indicator](docs/wave_indicator.png) ·
+[Plant animation](docs/plant_idle.gif) · [Zombie animation](docs/zombie_eating.gif)
+
+See the **[screenshot and asset gallery](docs/README.md)** for all current previews.
+Screenshots come from the ROM; sprite sheets and animation studies are identified
+separately in the gallery.
+
+## Build and regenerate assets
+
+Install devkitPro's GBA tools (devkitARM, grit, mmutil, gbafix), Python 3, and
+Butano. Butano is an external dependency, not vendored here. The Makefile defaults
+to `~/gba_development/butano`; override that path as needed:
 
 ```sh
 export DEVKITARM=/opt/devkitpro/devkitARM
 export PATH="$DEVKITARM/bin:/opt/devkitpro/tools/bin:$PATH"
 make -j8 BUTANO_ROOT=/absolute/path/to/butano
-mgba garden_guard.gba
+mgba sprouts_vs_stiffs.gba
 ```
 
-The Butano checkout is an external build dependency; it is not vendored into
-this project. Assets are already generated, so Pillow is not needed to build.
-To regenerate the original art and sound after editing the generator:
+Generated BMP, WAV, and MOD assets are included, so Pillow is only needed when
+regenerating artwork, audio, or documentation previews:
 
 ```sh
 python3 -m pip install Pillow
@@ -148,77 +120,75 @@ python3 tools/generate_assets.py
 make -j8
 ```
 
-## Verify
+The music composer, pixel art, menu scenery, and audio gain configuration feed
+the asset generator. Run it after editing any of those sources, then rebuild.
 
-Run the portable simulation tests with a host C++17 compiler:
+## Verification and screenshots
+
+Portable C++17 simulation tests run with AddressSanitizer and
+UndefinedBehaviorSanitizer:
 
 ```sh
 sh tools/test.sh
 ```
 
-These run with AddressSanitizer and UndefinedBehaviorSanitizer. They cover
-sun spending/production/collection, simultaneous collection flights and arrival,
-single credit per token, flight pause/expiry/restart behavior, seed cooldowns, invalid placement,
-pause, shoveling, restart, cherry bomb damage, zombie biting, wall blocking,
-chewing event cadence, pause/target removal silencing new bite cues, one-use
-mowers, losing without defenses, and a complete five-wave victory
-using ordinary player actions.
+Coverage includes economy, cooldowns, sun flights and single-credit collection,
+pause/restart, shovel, explosions, walls, bite timing and eating state, mowers,
+loss, a complete five-wave victory, wave geometry, and audio settings.
 
-An optional headless integration check uses libmgba to run the actual ROM,
-send button presses, check pause/restart screen behavior, and capture title,
-gameplay, pause, defeat, restart, shovel, and explosion screenshots. It checks
-every pause action, title entry, pause stability, restart behavior, visible
-wave-bar progress and head/flag alignment at a completed wave, sun collection
-while holding B, a stationary sun bank after
-an unaffordable placement, a cooldown badge on the packet with a clear lawn
-cell, and a status-text-free bottom
-border. It also captures audio from a chewing-only encounter and checks that
-the ROM produces a non-silent sound signal.
-With Homebrew mGBA installed:
+The optional headless mGBA check runs the actual ROM, exercises menus and controls,
+verifies visual feedback and wave alignment, and captures screenshots. It also
+measures emulator audio to check independent music/effects muting, master muting
+and restoration, setting retention through restart/title visits, and an isolated
+chewing encounter. With libmgba development headers installed:
 
 ```sh
+mkdir -p build
 cc -Wall -Wextra -Werror tools/rom_smoke.c \
   -I/usr/local/include -L/usr/local/lib -lmgba -o build/rom_smoke
 build/rom_smoke
+python3 tools/generate_previews.py
 ```
 
-Adjust include/library paths for your installation. Screenshots are written
-as PPM files inside `build/`.
+Adjust the compiler's include/library paths for your libmgba installation. The
+smoke check loads `sprouts_vs_stiffs.gba` by default, or accepts a ROM path as its
+first argument. It writes raw PPM captures to `build/`; the preview script updates
+all documentation images, including close-ups and animated sprite studies, in
+`docs/`. Refresh captures after rebuilding before running the preview script.
+
+Build, simulation, and headless emulator checks have been run locally. These
+checks do not establish compatibility, performance, or perceived volume on
+physical GBA hardware.
 
 ## Code layout
 
-- `include/game.h`, `src/game.cpp`: deterministic simulation, shared tuning
-  data, bounded entity pools, collision, economy, and wave progression. No
-  Butano dependency, heap allocation, or rendering logic.
-- `src/main.cpp`: GBA button mapping, key repeat, UI feedback, event-based sound, and the
-  application loop.
-- `include/presentation.h`, `src/presentation.cpp`: Butano backgrounds,
-  shared sprite atlas, idle/firing/walking/chewing poses, cursor, and cached HUD text.
-- `tools/generate_assets.py`: reproducible original art and audio.
-- `tools/pixel_art.py`: shaded character artwork and garden scenery. Run the
-  asset generator after editing either art source.
-- `tests/game_test.cpp`: public-API simulation tests and an automated defense
-  strategy that verifies the full game can be won.
+| Source | Responsibility |
+| --- | --- |
+| `include/game.h`, `src/game.cpp` | Deterministic simulation, tuning, economy, waves, collisions, bounded entity pools |
+| `include/audio_settings.h` | Volume levels, adjustment limits, and master/channel gains |
+| `src/main.cpp` | Input, key repeat, application state, audio playback and mixer settings |
+| `include/presentation.h`, `src/presentation.cpp` | Butano rendering, sprite poses, cached text, menu selection, sliders, visual feedback |
+| `include/wave_track.h` | Generated geometry shared by wave artwork and rendering |
+| `tools/generate_assets.py` | Asset assembly, backgrounds, HUD, and synthesized effects |
+| `tools/pixel_art.py` | Characters, seed portraits, lawn, shovel, shared zombie face |
+| `tools/menu_art.py` | Graveyard scenery, tombstones, wooden signs |
+| `tools/generate_music.py`, `tools/audio_config.py` | Original tracker composition and shared output gain |
+| `tools/generate_previews.py` | Documentation captures, close-ups, and animation previews |
+| `tests/game_test.cpp`, `tools/test.sh` | Host simulation and audio-setting checks |
+| `tools/rom_smoke.c` | Emulator input, visual/audio assertions, and captures |
 
-The renderer uses fixed pools of 45 plants, 16 zombies, 18 peas, 10 suns, and
-five mowers. With four seed bars, five wave segments, cursor sprites, three
-visual indicator sprites, and at most 20 text sprites reserved for menus and
-the sun counter, the maximum is 128 sprites. A compile-time check enforces the
-GBA's sprite budget. The character atlas uses twenty-five 32×32 frames with a shared
-16-color sprite palette; compact sun/projectile/mower art is padded into those
-frames. The lawn uses a separate background palette. Collection flights reuse the ten sun slots and sprites,
-so simultaneous collection does not increase the sprite budget. Matching actors share atlas
-tiles and a single sprite palette. Simulation positions use integer subpixels
-and advance once per update, targeting the GBA's native refresh rate.
+The simulation has no Butano dependency or heap allocation. Fixed pools hold
+45 plants, 16 zombies, 18 shots, 10 suns, and five mowers. Collection flights reuse
+the sun pool. A compile-time check bounds the gameplay sprite allocation within
+the GBA's 128-sprite limit. Menu sliders exist only on the pause screen, after
+entity sprites have been cleared. Characters share a 25-frame, 32×32 sprite atlas
+and a 16-color palette; backgrounds use separate palettes. Positions use integer
+subpixels and advance once per update at the GBA's native refresh rate.
 
-## MVP scope
+## Scope and remaining ideas
 
-One daytime lawn, four plants, two enemy types, five deterministic waves,
-win/loss statistics, pause/restart/title navigation, damaged wall-nut artwork,
-animated cherry-bomb blasts, a flag-based wave bar, visual feedback, and
-combat sound effects. No
-campaign map, save system, music, touch controls, or original PvZ assets.
-Timing and balance are in `include/game.h` and `src/game.cpp`.
-
-The build and headless mGBA checks were run locally; physical GBA hardware
-has not been tested.
+The MVP has one lawn, four plants, two enemy types, five deterministic waves,
+win/loss results, graveyard menus, volume controls, original music, sound effects,
+and visual feedback. It has no campaign, persistent save system, touch controls,
+or original Plants vs. Zombies assets. Additional plants, zombies, and levels
+remain ideas rather than implemented features. See [notes.txt](notes.txt).

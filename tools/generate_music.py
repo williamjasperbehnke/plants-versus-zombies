@@ -1,6 +1,7 @@
 """Compose an original four-channel ProTracker loop; no external music assets."""
 import math
 import struct
+from audio_config import OUTPUT_GAIN
 
 
 def generate_music(path):
@@ -15,7 +16,7 @@ def generate_music(path):
             tone = math.sin(phase) + .22 * math.sin(phase * 2)
             envelope = min(1, i / 35) * math.exp(-decay * t) * (1 - i / length)
             data.append(int(tone * envelope * 90) & 255)
-        samples.append((name, volume, data))
+        samples.append((name, min(64, round(volume * OUTPUT_GAIN)), data))
     module = bytearray(b'Garden at Dusk'.ljust(20, b'\0'))
     for i in range(31):
         name, volume, data = samples[i] if i < len(samples) else ('', 0, b'')

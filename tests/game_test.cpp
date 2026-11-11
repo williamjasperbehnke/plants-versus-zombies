@@ -292,10 +292,10 @@ void chewing_tracks_damage()
 int main()
 {
     AudioSettings audio;
-    assert(audio.gain(AudioChannel::music) == 50);
+    assert(audio.gain(AudioChannel::music) == 100);
     assert(! audio.adjust(AudioChannel::effects, 1));
     assert(audio.adjust(AudioChannel::master, -5));
-    assert(audio.gain(AudioChannel::music) == 25);
+    assert(audio.gain(AudioChannel::music) == 50);
     assert(audio.gain(AudioChannel::effects) == 50);
     assert(audio.adjust(AudioChannel::music, -20));
     assert(audio.gain(AudioChannel::music) == 0);

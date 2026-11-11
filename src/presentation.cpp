@@ -301,7 +301,7 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
     {
         _text.set_left_alignment();
         constexpr const char* choices[] = {"Resume", "Restart", "Title", "Master", "Music", "Effects"};
-        constexpr int positions[] = {50, 64, 78, 98, 114, 130};
+        constexpr int positions[] = {54, 68, 82, 102, 116, 130};
         for(int i = 0; i < static_cast<int>(PauseChoice::count); ++i)
         {
             _text.generate(-60, positions[i] - 80, choices[i], _hud);
@@ -311,7 +311,7 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
         {
             if(! _volume_sliders[i])
             {
-                _volume_sliders[i] = bn::sprite_items::volume_slider.create_sprite(52, positions[i + 3] - 80);
+                _volume_sliders[i] = bn::sprite_items::volume_slider.create_sprite(48, positions[i + 3] - 80);
                 _volume_sliders[i]->set_bg_priority(0);
             }
             _volume_sliders[i]->set_tiles(bn::sprite_items::volume_slider.tiles_item(), view.audio.levels[i]);

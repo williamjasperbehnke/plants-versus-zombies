@@ -10,6 +10,8 @@ import wave
 from PIL import Image, ImageDraw
 from pixel_art import actor, draw_garden, draw_title_garden, seed_icon, shovel_icon, zombie_head
 from generate_music import generate_music
+from audio_config import OUTPUT_GAIN
+from menu_art import graveyard, tombstone, wooden_sign
 
 ROOT = Path(__file__).resolve().parents[1]
 WAVE_BOUNDARIES = [56 + i * 168 // 5 for i in range(6)]
@@ -242,45 +244,53 @@ constexpr int fill(int wave, int progress)
         path.write_text(content)
 
 
-def menu_base(background=1, outline=3):
-    """Quiet menu frame; the main action carries the visual emphasis."""
-    image = canvas(256, 256, background)
+def menu_base(bottom=151):
+    """Shared graveyard scenery with an inset headstone for readable controls."""
+    image = canvas(256, 256, 1)
+    graveyard(image)
+    tombstone(image, (27, 8, 212, bottom))
     d = ImageDraw.Draw(image)
-    d.rounded_rectangle((8, 8, 231, 151), radius=4, outline=outline)
+    d.rounded_rectangle((36, 43, 203, 137), radius=3, fill=1)
     return image
 
 
-def menu_heading(image, heading, divider=3):
+def menu_heading(image, heading):
+    ImageDraw.Draw(image).rounded_rectangle((40, 18, 199, 37), radius=3, fill=1)
     text(image, 120, 24, heading, color=7, scale=2, centered=True)
-    if divider is not None:
-        ImageDraw.Draw(image).line((25, 43, 214, 43), fill=divider)
 
 
 def menu_button(image, top, label):
-    d = ImageDraw.Draw(image)
-    d.rounded_rectangle((48, top, 191, top + 19), radius=3, fill=2, outline=4)
+    wooden_sign(image, (48, top, 191, top + 19))
     text(image, 120, top + 5, label, color=7, scale=2, centered=True)
 
 
 def title_screen():
-    image = menu_base(background=3, outline=4)
-    menu_heading(image, 'GARDEN GUARD', divider=None)
-    draw_title_garden(image, canvas)
-    menu_button(image, 92, 'PLAY')
-    text(image, 120, 116, 'A / START', color=6, centered=True)
-    text(image, 120, 132, 'D-PAD MOVE   A PLANT   B SUN', centered=True)
-    text(image, 120, 141, 'L/R SEED   SELECT + A SHOVEL', centered=True)
+    image = canvas(256, 256, 3)
+    graveyard(image, moon_origin=(12, 46))
+    wooden_sign(image, (12, 9, 227, 39))
+    text(image, 120, 19, 'SPROUTS VS. STIFFS', color=7, scale=2, centered=True)
+    tombstone(image, (130, 48, 222, 122), crown_radius=32)
+    d = ImageDraw.Draw(image)
+    # A carved sprout ties the Play stone to the garden.
+    d.line((176, 61, 176, 72), fill=2, width=2)
+    d.polygon([(175, 67), (169, 61), (169, 65), (175, 70)], fill=2)
+    d.polygon([(177, 65), (182, 59), (183, 63), (177, 69)], fill=2)
+    text(image, 176, 83, 'PLAY', color=1, scale=2, centered=True)
+    text(image, 176, 108, 'A / START', color=1, centered=True)
+    draw_title_garden(image, canvas, cast=((0, 35), (1, 88)), floor=118)
+    wooden_sign(image, (8, 132, 232, 155))
+    text(image, 120, 136, 'D-PAD MOVE   A PLANT   B SUN', centered=True)
+    text(image, 120, 146, 'L/R SEED   SELECT + A SHOVEL', centered=True)
     return image
 
 
 def pause_screen():
-    image = menu_base()
+    image = menu_base(bottom=156)
     menu_heading(image, 'PAUSED')
     d = ImageDraw.Draw(image)
-    for center in (50, 64, 78):
-        d.rounded_rectangle((48, center - 6, 203, center + 6), radius=2, fill=2)
-    text(image, 120, 140, 'UP/DOWN SELECT  LEFT/RIGHT VOLUME', color=6, centered=True)
-    text(image, 120, 146, 'A SELECT   B/START RESUME', centered=True)
+    d.line((52, 92, 187, 92), fill=2)
+    text(image, 120, 140, 'UP/DOWN SELECT  LEFT/RIGHT VOLUME', color=1, centered=True)
+    text(image, 120, 147, 'A SELECT   B/START RESUME', color=1, centered=True)
     return image
 
 
@@ -290,7 +300,7 @@ def result_screen(won):
     # Two short stat rows above a single primary action.
     menu_button(image, 104, 'PLAY AGAIN' if won else 'RETRY')
     text(image, 120, 129, 'A / START', color=6, centered=True)
-    text(image, 120, 141, 'B TITLE', centered=True)
+    text(image, 120, 141, 'B TITLE', color=1, centered=True)
     return image
 
 
@@ -302,7 +312,7 @@ def sound(name, notes):
         for i in range(length):
             envelope = min(1, i / 70) * (1 - i / length) ** 2
             sample = math.sin(2 * math.pi * frequency * i / rate)
-            data.append(struct.pack('<h', int(sample * envelope * 10000)))
+            data.append(struct.pack('<h', int(sample * envelope * 14000 * OUTPUT_GAIN)))
     with wave.open(str(ROOT / 'audio' / f'{name}.wav'), 'wb') as output:
         output.setnchannels(1)
         output.setsampwidth(2)
@@ -325,7 +335,7 @@ def chewing_sound():
             sample = (.8 * math.sin(phase) + .2 * math.sin(phase * 2.3)) * envelope
         else:
             sample = 0
-        data.append(struct.pack('<h', int(sample * 5500)))
+        data.append(struct.pack('<h', int(sample * 7700 * OUTPUT_GAIN)))
     with wave.open(str(ROOT / 'audio' / 'chew.wav'), 'wb') as output:
         output.setnchannels(1)
         output.setsampwidth(2)
@@ -342,11 +352,11 @@ def main():
     d = ImageDraw.Draw(sliders)
     for level in range(11):
         y = level * 32
-        d.rounded_rectangle((2, y + 13, 61, y + 18), radius=2, fill=1, outline=3)
+        d.rounded_rectangle((2, y + 13, 61, y + 18), radius=2, fill=1, outline=12)
         if level:
             d.rectangle((4, y + 15, 4 + level * 5, y + 16), fill=5)
         thumb = 4 + level * 5
-        d.rounded_rectangle((thumb, y + 11, thumb + 5, y + 20), radius=1, fill=7, outline=9)
+        d.rounded_rectangle((thumb, y + 11, thumb + 5, y + 20), radius=1, fill=13, outline=12)
         d.line((thumb + 2, y + 13, thumb + 2, y + 17), fill=8)
     save(sliders, 'volume_slider', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     atlas = canvas(32, 32 * 25)

@@ -1,4 +1,4 @@
-TARGET := garden_guard
+TARGET := sprouts_vs_stiffs
 BUILD := build
 # Override with: make BUTANO_ROOT=/path/to/butano
 BUTANO_ROOT ?= $(HOME)/gba_development/butano
@@ -12,7 +12,7 @@ AUDIO := audio
 AUDIOBACKEND := maxmod
 DMGAUDIO :=
 DMGAUDIOBACKEND := null
-ROMTITLE := GARDEN GUARD
+ROMTITLE := SPROUTSTIFFS
 ROMCODE := GRDN
 USERFLAGS :=
 USERCXXFLAGS := -Wall -Wextra -iquote $(BUTANO_ROOT)/common/include

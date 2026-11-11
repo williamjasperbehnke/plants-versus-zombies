@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 {
     struct mLogger logger = { .log = log_message, .filter = NULL };
     mLogSetDefaultLogger(&logger);
-    const char* rom = argc > 1 ? argv[1] : "garden_guard.gba";
+    const char* rom = argc > 1 ? argv[1] : "sprouts_vs_stiffs.gba";
     struct mCore* core = mCoreFind(rom);
     if(! core || ! core->init(core)) { fputs("mGBA init failed\n", stderr); return 1; }
     mCoreInitConfig(core, NULL);
