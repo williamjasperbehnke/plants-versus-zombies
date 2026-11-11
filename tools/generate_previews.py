@@ -56,7 +56,11 @@ def main():
         save_capture(name)
     strip([enlarged(capture(name), 2) for name in ('title', 'paused', 'defeat')],
           ['Title', 'Pause / audio', 'Results']).save(DOCS / 'menus.png')
+    title_frames = [enlarged(capture(f'title_animation_{frame:02d}'), 3) for frame in range(12)]
+    title_frames[0].save(DOCS / 'title.gif', save_all=True, append_images=title_frames[1:],
+                         duration=200, loop=0)
     enlarged(capture('playing').crop((52, 22, 224, 54)), 4).save(DOCS / 'seed_packets.png')
+    enlarged(capture('playing').crop((0, 57, 45, 154)), 5).save(DOCS / 'lawn_edge.png')
     enlarged(capture('wave_checkpoint').crop((50, 0, 240, 25)), 4).save(DOCS / 'wave_indicator.png')
     enlarged(capture('wave_progress').crop((207, 0, 228, 24)), 8).save(DOCS / 'final_flag.png')
 
@@ -67,6 +71,7 @@ def main():
         return atlas.crop((0, frame * 32, 32, frame * 32 + 32))
 
     sprite_on_grass(actor(7).crop((8, 8, 24, 24)), 8).save(DOCS / 'sun.png')
+    sprite_on_grass(actor(8).crop((8, 8, 24, 24)), 8).save(DOCS / 'mower.png')
     sprite_on_grass(actor(5).crop((7, 2, 25, 20)), 8).save(DOCS / 'cone.png')
     sprite_on_grass(icons.crop((0, 32, 16, 48)), 8).save(DOCS / 'shovel_icon.png')
     zombie_frames = (4, 14, 16, 18, 5, 15, 17, 19)

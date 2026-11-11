@@ -70,7 +70,7 @@ struct Sun
     int origin_x = 0;
     int origin_y = 0;
 };
-struct Mower { bool available = true; bool moving = false; int x = 20 * scale; };
+struct Mower { bool available = true; bool moving = false; int x = 21 * scale; };
 
 // Transient cues from one simulation update; the audio/UI decide how to use them.
 struct Events

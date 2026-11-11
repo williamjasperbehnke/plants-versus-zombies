@@ -63,9 +63,16 @@ follow actual plant damage, with a separate playback cooldown.
 
 ## Graphics and feedback
 
+The house-side lawn border has broad wooden porch boards, a raised timber lip,
+one patio slab per lane beneath the mowers, and small grass overhangs along the path. Details stay
+near the cell edges so plants and mowers remain readable. Mowers sit toward the
+left of their patio slabs and have no drop shadows.
+
 The title has a centered wooden logo, a rounded Play tombstone with a carved
-sprout, and the gameplay sunflower and peashooter sprites enlarged at integer
-2× scale. Menus share graveyard scenery with a crescent moon, distant silhouettes,
+sprout, and animated sunflower and peashooter sprites enlarged at integer
+2× scale. Their staggered idle poses play independently of the scenery, while
+the A / START prompt gently pulses. [Watch the title animation](docs/title.gif).
+Menus share graveyard scenery with a crescent moon, distant silhouettes,
 grass, and moss. Pause actions are unboxed; audio controls share aligned labels
 and stone slider handles. The pause tombstone extends below the controls to keep
 the instruction text clear. Results show wave progress, defeats, and elapsed time.
@@ -89,7 +96,8 @@ During play, feedback uses icons and animation rather than status-text banners:
   stays red until cleared. The head and fill meet each flag pole at its checkpoint.
 - Plants have idle poses; peashooters recoil while firing. Wall-nuts show two
   damage stages. Zombies shuffle while walking and hold a steady stance with a
-  small jaw movement while eating. Both hands remain visible.
+  small jaw movement while eating. Shaded shirt folds, jacket panels, and clean
+  trouser outlines separate their clothing shapes. Both hands remain visible.
 
 [Seed packets](docs/seed_packets.png) · [Wave indicator](docs/wave_indicator.png) ·
 [Plant animation](docs/plant_idle.gif) · [Zombie animation](docs/zombie_eating.gif)

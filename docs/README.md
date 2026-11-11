@@ -20,8 +20,9 @@ shows only the current game.
 
 | View | Capture |
 | --- | --- |
-| Title | [Title screen](title.png) |
+| Title | [Title screen](title.png), [animated capture](title.gif) |
 | Gameplay | [Lawn and HUD](gameplay.png) |
+| House-side lawn border | [Porch, pavers, and grass edge](lawn_edge.png) |
 | Pause | [Menu and default volumes](paused.png) |
 | Results | [Game over and statistics](defeat.png) |
 | Wave progress | [Track and flags](waves.png), [completed checkpoint](wave_checkpoint.png), [indicator close-up](wave_indicator.png), [final flag](final_flag.png) |
@@ -46,4 +47,5 @@ sprite poses; gameplay also applies positioning and timing in the renderer.
 | Zombie walking and eating poses | [Pose strip](zombies.png), [eating GIF](zombie_eating.gif) |
 | Cone and face | [Close-up](cone.png) |
 | Sun token | [Sun texture](sun.png) |
+| Lawn mower | [Handle, engine, deck, and wheels](mower.png) |
 | Shovel | [Icon](shovel_icon.png) |

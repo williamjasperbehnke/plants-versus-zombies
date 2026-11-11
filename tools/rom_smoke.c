@@ -106,6 +106,22 @@ int main(int argc, char** argv)
     frames(core, 0, 120);
     screenshot("build/title.ppm");
     uint32_t title_hash = image_hash();
+    uint32_t title_logo_hash = region_hash(12, 9, 216, 31);
+    uint32_t title_plants_hash = region_hash(10, 64, 110, 57);
+    uint32_t title_prompt_hash = region_hash(158, 108, 36, 5);
+    for(int frame = 0; frame < 12; ++frame)
+    {
+        char path[64];
+        snprintf(path, sizeof(path), "build/title_animation_%02d.ppm", frame);
+        screenshot(path);
+        if(frame == 2)
+        {
+            assert(region_hash(10, 64, 110, 57) != title_plants_hash);
+            assert(region_hash(158, 108, 36, 5) != title_prompt_hash);
+        }
+        assert(region_hash(12, 9, 216, 31) == title_logo_hash);
+        frames(core, 0, 12);
+    }
     press(core, 1 << 3); // START
     uint32_t initial_hash = image_hash();
     uint32_t packet_illustration_hash = region_hash(56, 28, 16, 16);
@@ -166,7 +182,7 @@ int main(int argc, char** argv)
     press(core, 1 << 7); // DOWN: restart
     press(core, 1 << 7); // DOWN: title
     press(core, 1 << 0);
-    assert(image_hash() == title_hash);
+    assert(region_hash(12, 9, 216, 31) == title_logo_hash);
     press(core, 1 << 0); // A also starts from title.
     assert(image_hash() == initial_hash);
     press(core, 1 << 3);

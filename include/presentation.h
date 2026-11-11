@@ -46,6 +46,7 @@ private:
     void draw_entities(const Game& game);
     void draw_hud(const Game& game, const ViewState& view);
     void draw_menu(const Game& game, const ViewState& view);
+    void draw_title();
     void draw_wave_bar(const Game& game);
     void draw_feedback(const Game& game, const ViewState& view);
     void clear_entities();
@@ -65,6 +66,9 @@ private:
     bn::optional<bn::sprite_ptr> _phase_icon;
     bn::optional<bn::sprite_ptr> _feedback_icon;
     std::array<bn::optional<bn::sprite_ptr>, 3> _volume_sliders;
+    std::array<bn::optional<bn::sprite_ptr>, 2> _title_plants;
+    bn::optional<bn::sprite_ptr> _title_prompt;
+    int _title_frame = 0;
     std::array<bn::optional<bn::sprite_ptr>, rows * columns> _plants;
     std::array<bn::optional<bn::sprite_ptr>, zombie_capacity> _zombies;
     std::array<bn::optional<bn::sprite_ptr>, shot_capacity> _shots;

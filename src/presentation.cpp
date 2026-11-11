@@ -10,6 +10,8 @@
 #include "bn_sprite_items_hud_icons.h"
 #include "bn_sprite_items_phase_clock.h"
 #include "bn_sprite_items_volume_slider.h"
+#include "bn_sprite_items_title_plants.h"
+#include "bn_sprite_items_title_prompt.h"
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_lawn.h"
 #include "bn_regular_bg_items_paused.h"
@@ -49,6 +51,9 @@ void Presentation::change_screen(Phase phase)
     _last_sun = -1;
     _last_pause_choice = -1;
     for(auto& slider : _volume_sliders) { slider.reset(); }
+    for(auto& plant : _title_plants) { plant.reset(); }
+    _title_prompt.reset();
+    _title_frame = 0;
     _menu.reset();
     // The gameplay background remains its own resource. Menus use another layer
     // and independent artwork, with no copied lawn, seed bar, or gameplay HUD.
@@ -281,9 +286,32 @@ void Presentation::draw_hud(const Game& game, const ViewState& view)
     for(auto& sprite : _hud) { sprite.set_y(-35 - bounce); }
 }
 
+void Presentation::draw_title()
+{
+    constexpr int centers[] = {35, 88};
+    for(int i = 0; i < 2; ++i)
+    {
+        if(! _title_plants[i])
+        {
+            _title_plants[i] = bn::sprite_items::title_plants.create_sprite(centers[i] - 120, 17);
+            _title_plants[i]->set_bg_priority(0);
+        }
+        int pose = (_title_frame / 24 + i) % 2;
+        _title_plants[i]->set_tiles(bn::sprite_items::title_plants.tiles_item(), i * 2 + pose);
+    }
+    if(! _title_prompt)
+    {
+        _title_prompt = bn::sprite_items::title_prompt.create_sprite(56, 30);
+        _title_prompt->set_bg_priority(0);
+    }
+    constexpr int pulse[] = {0, 0, 1, 2, 2, 1};
+    _title_prompt->set_tiles(bn::sprite_items::title_prompt.tiles_item(), pulse[_title_frame / 12 % 6]);
+    _title_frame = (_title_frame + 1) % 144;
+}
+
 void Presentation::draw_menu(const Game& game, const ViewState& view)
 {
-    if(game.phase() == Phase::title) { return; }
+    if(game.phase() == Phase::title) { draw_title(); return; }
     int choice = static_cast<int>(view.pause_choice);
     if(_last_sun != -1 && choice == _last_pause_choice && _last_audio == view.audio.key()) { return; }
     _last_audio = view.audio.key();

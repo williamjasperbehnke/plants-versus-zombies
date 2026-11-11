@@ -159,17 +159,16 @@ def seed_icon(kind, canvas):
 
 
 def traffic_cone(draw):
-    # The broad oval foot wraps around the crown, centered over the head.
-    ellipse(draw, (9, 8, 23, 10), 10)
-    draw.line((11, 10, 21, 10), fill=9)
-    # A rounded, slightly leaning tip and shaded side avoid a flat triangle.
-    draw.polygon([(14, 4), (16, 4), (18, 6), (21, 9),
-                  (11, 9), (12, 7)], fill=14, outline=9)
-    draw.polygon([(16, 5), (20, 9), (18, 9)], fill=10)
-    draw.line((14, 5, 12, 8), fill=7)
-    draw.polygon([(13, 7), (18, 7), (20, 8), (12, 8)], fill=8)
-    draw.line((14, 8, 19, 8), fill=13)
-    draw.line((12, 9, 21, 9), fill=14)
+    # A blunt tip, shaded side, and clear reflective band define the frustum.
+    draw.polygon([(14, 2), (16, 2), (17, 3), (21, 8),
+                  (11, 8), (12, 6)], fill=14, outline=9)
+    draw.polygon([(16, 3), (20, 8), (18, 8)], fill=10)
+    draw.line((14, 3, 12, 7), fill=7)
+    draw.polygon([(13, 5), (17, 5), (19, 6), (12, 6)], fill=8)
+    draw.point((18, 6), fill=13)
+    # Warm, rounded edges seat the cone without a black bar across the forehead.
+    ellipse(draw, (10, 7, 22, 9), 10, 9)
+    draw.line((12, 8, 20, 8), fill=14)
 
 
 def zombie(draw, cone, pose, chewing):
@@ -180,17 +179,22 @@ def zombie(draw, cone, pose, chewing):
     # Opposing feet/arms form a two-frame shuffle, rather than just vertical bobbing.
     left = 11 - pose * 2
     right = 20 + pose
-    draw.line((15, 22, left + 2, 26), fill=1, width=5)
-    draw.line((20, 22, right, 26), fill=1, width=5)
-    draw.line((15, 22, left + 2, 26), fill=15, width=3)
-    draw.line((20, 22, right, 26), fill=15, width=3)
-    draw.rounded_rectangle((left - 1, 25, left + 3, 27), radius=1, fill=1)
-    draw.rounded_rectangle((right - 2, 25, right + 2, 27), radius=1, fill=1)
+    # Closed silhouettes retain a single-pixel border along each trouser leg.
+    draw.polygon([(13, 22), (17, 22), (left + 3, 26), (left, 26)], fill=15, outline=1)
+    draw.polygon([(18, 22), (22, 22), (right + 1, 26), (right - 2, 26)], fill=15, outline=1)
+    draw.rounded_rectangle((left - 1, 26, left + 3, 27), radius=1, fill=1)
+    draw.rounded_rectangle((right - 2, 26, right + 2, 27), radius=1, fill=1)
     draw.polygon([(14, 16), (20, 16), (22, 18), (23, 22),
                   (21, 24), (14, 24), (12, 22), (11, 19)], fill=9, outline=1)
-    draw.line((21, 18, 22, 21), fill=10)
+    draw.polygon([(19, 18), (21, 18), (22, 21), (21, 23), (19, 23)], fill=10)
+    draw.line((14, 18, 13, 20), fill=10)
+    draw.point((20, 22), fill=9)
+    # A shaded shirt and narrow tie leave room for small vertical fabric folds.
+    draw.polygon([(14, 17), (18, 17), (18, 22), (16, 23), (14, 22)], fill=13)
+    draw.line((14, 20, 14, 21), fill=12)
+    draw.line((18, 20, 18, 21), fill=8)
     draw.polygon([(14, 17), (16, 20), (18, 17)], fill=8)
-    draw.line((16, 19, 15, 22), fill=11, width=2)
+    draw.polygon([(16, 19), (17, 20), (16, 23), (15, 22)], fill=11)
     # Sleeves stay outside the shirt instead of cutting dark stripes across it.
     draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=1, width=3)
     draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=9)
@@ -253,16 +257,6 @@ def actor(frame, canvas):
     return image
 
 
-def draw_title_garden(image, canvas, cast, floor):
-    """Use the exact gameplay sprites at integer 2x scale, with aligned feet."""
-    for frame, center_x in cast:
-        source = actor(frame, canvas)
-        bottom = source.getbbox()[3]
-        enlarged = source.resize((64, 64), Image.Resampling.NEAREST)
-        x, y = center_x - 32, floor - (bottom * 2 - 1)
-        image.paste(enlarged, (x, y), enlarged.point([0] + [255] * 255, 'L'))
-
-
 def shovel_icon(canvas):
     image = canvas(16, 16)
     draw = ImageDraw.Draw(image)
@@ -282,20 +276,29 @@ def shovel_icon(canvas):
 
 def draw_garden(image):
     draw = ImageDraw.Draw(image)
-    # Wood porch: highlighted boards, seams, grain, and small nail heads.
+    # Broader porch boards and a raised timber lip against the stone path.
     draw.rectangle((0, 57, 13, 153), fill=9)
-    for y in range(58, 154, 9):
-        draw.line((0, y, 13, y), fill=10)
-        draw.line((0, y + 7, 13, y + 7), fill=1)
-        draw.line((3, y + 3, 8, y + 3), fill=10)
-        draw.point((11, y + 2), fill=13)
+    for y in range(58, 154, 16):
+        draw.line((0, y, 10, y), fill=10)
+        draw.line((0, min(y + 14, 153), 10, min(y + 14, 153)), fill=1)
+        draw.line((2, y + 4, 6, y + 4), fill=10)
+        if y + 10 <= 153:
+            draw.line((5, y + 10, 9, y + 9), fill=10)
+        draw.point((1, y + 2), fill=12)
+    draw.rectangle((11, 57, 13, 153), fill=9)
+    draw.line((11, 57, 11, 153), fill=10)
     draw.line((14, 57, 14, 153), fill=1)
-    # Stone mower path and the narrow path at the far side of the lawn.
-    draw.rectangle((15, 57, 32, 153), fill=12)
+    # One uninterrupted slab per lane keeps joints clear of parked mower wheels.
+    draw.rectangle((15, 57, 32, 153), fill=2)
+    for y in range(58, 153, 19):
+        bottom = y + 17
+        draw.rounded_rectangle((15, y, 31, bottom), radius=2, fill=12, outline=2)
+        draw.rounded_rectangle((16, y + 1, 30, bottom - 2), radius=1, fill=13)
+        draw.line((18, y + 1, 28, y + 1), fill=8)
+        draw.line((17, bottom - 1, 29, bottom - 1), fill=12)
+    # Preserve the narrow opposite-side path.
     draw.rectangle((234, 57, 239, 153), fill=12)
     for y in range(58, 154, 19):
-        draw.rounded_rectangle((16, y, 31, min(y + 17, 153)), radius=2, fill=13, outline=2)
-        draw.line((18, y + 1, 28, y + 1), fill=8)
         draw.line((235, y + 8, 239, y + 8), fill=2)
     # Keep cell centers quiet for units; grass clusters sit mostly at tile edges.
     for row in range(5):
@@ -314,6 +317,10 @@ def draw_garden(image):
                 draw.point((x + dx, y + dy - 1), fill=4)
             draw.line((x + 4, y + 18, x + 10, y + 18), fill=alternate)
     draw.line((33, 57, 33, 153), fill=2)
+    # Small turf overhangs soften the stone-to-lawn seam, clear of plant centers.
+    for y in range(61, 151, 7):
+        draw.polygon([(33, y - 2), (31, y), (32, y + 2), (34, y + 1)], fill=3)
+        draw.line((32, y, 33, y - 2), fill=5)
     draw.line((233, 57, 233, 153), fill=2)
     for x in range(35, 233, 11):
         draw.line((x, 58, x + 3, 57), fill=5)

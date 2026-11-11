@@ -8,7 +8,7 @@ import math
 import struct
 import wave
 from PIL import Image, ImageDraw
-from pixel_art import actor, draw_garden, draw_title_garden, seed_icon, shovel_icon, zombie_head
+from pixel_art import actor, draw_garden, seed_icon, shovel_icon, zombie_head
 from generate_music import generate_music
 from audio_config import OUTPUT_GAIN
 from menu_art import graveyard, tombstone, wooden_sign
@@ -93,13 +93,25 @@ def small_sprite(frame):
         d.line((5, 5, 7, 5), fill=8)
         d.point((5, 6), fill=8)
     elif frame == 8:
-        d.line((3, 8, 2, 1, 0, 1), fill=13, width=2)
-        d.rectangle((3, 7, 13, 12), fill=11)
-        d.rectangle((6, 5, 11, 8), fill=12)
-        d.ellipse((2, 10, 6, 14), fill=1)
-        d.ellipse((10, 10, 14, 14), fill=1)
-        d.point((4, 12), fill=13)
-        d.point((12, 12), fill=13)
+        # Side profile: swept steel handle, beveled red deck, and raised engine.
+        # A single dark pixel either side of the shaft keeps the handle slender.
+        d.line((0, 1, 3, 1), fill=1)
+        d.line((2, 2, 4, 2), fill=1)
+        for x, y in ((3, 3), (3, 4), (4, 5), (4, 6), (5, 7), (5, 8)):
+            d.line((x - 1, y, x + 1, y), fill=1)
+            d.point((x, y), fill=12)
+        d.polygon([(4, 8), (11, 8), (15, 10), (14, 12), (2, 12), (1, 10)],
+                  fill=9, outline=1)
+        d.polygon([(4, 9), (11, 9), (13, 10), (13, 11), (3, 11)], fill=11)
+        d.line((4, 9, 10, 9), fill=14)
+        d.rounded_rectangle((7, 5, 12, 9), radius=1, fill=12, outline=1)
+        d.line((8, 6, 10, 6), fill=13)
+        d.line((9, 8, 11, 8), fill=1)
+        d.point((11, 4), fill=1)
+        for x in (2, 10):
+            d.ellipse((x, 10, x + 4, 14), fill=1)
+            d.arc((x, 10, x + 4, 14), 180, 270, fill=12)
+            d.point((x + 2, 12), fill=13)
     elif frame == 9:
         d.polygon([(8, 0), (10, 4), (15, 2), (12, 7), (15, 11),
                    (10, 11), (8, 15), (5, 11), (0, 13), (3, 8), (0, 3), (5, 4)], fill=14)
@@ -276,8 +288,7 @@ def title_screen():
     d.polygon([(175, 67), (169, 61), (169, 65), (175, 70)], fill=2)
     d.polygon([(177, 65), (182, 59), (183, 63), (177, 69)], fill=2)
     text(image, 176, 83, 'PLAY', color=1, scale=2, centered=True)
-    text(image, 176, 108, 'A / START', color=1, centered=True)
-    draw_title_garden(image, canvas, cast=((0, 35), (1, 88)), floor=118)
+    # Plants and the start prompt are independent animated sprites at runtime.
     wooden_sign(image, (8, 132, 232, 155))
     text(image, 120, 136, 'D-PAD MOVE   A PLANT   B SUN', centered=True)
     text(image, 120, 146, 'L/R SEED   SELECT + A SHOVEL', centered=True)
@@ -348,6 +359,14 @@ def main():
     (ROOT / 'audio').mkdir(exist_ok=True)
     wave_layout_header()
     generate_music(ROOT / 'audio' / 'garden_theme.mod')
+    title_plants = canvas(64, 64 * 4)
+    for index, frame in enumerate((0, 12, 1, 20)):
+        title_plants.paste(actor(frame, canvas).resize((64, 64), Image.Resampling.NEAREST), (0, index * 64))
+    save(title_plants, 'title_plants', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
+    title_prompt = canvas(64, 32 * 3)
+    for index, color in enumerate((1, 2, 3)):
+        text(title_prompt, 32, index * 32 + 14, 'A / START', color=color, centered=True)
+    save(title_prompt, 'title_prompt', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     sliders = canvas(64, 32 * 11)
     d = ImageDraw.Draw(sliders)
     for level in range(11):
