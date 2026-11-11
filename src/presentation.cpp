@@ -103,14 +103,20 @@ void Presentation::draw_entities(const Game& game)
     for(int i = 0; i < rows * columns; ++i)
     {
         const auto& plant = game.plants()[i];
+        int idle_pose = (game.elapsed() / 24 + i) % 2;
         int frame = static_cast<int>(plant.type);
+        if(plant.type == PlantType::sunflower && idle_pose) { frame = 12; }
+        if(plant.type == PlantType::peashooter && idle_pose) { frame = 20; }
+        if(plant.type == PlantType::peashooter && plant.timer > spec(plant.type).action_delay - 6) { frame = 13; }
+        if(plant.type == PlantType::cherry && idle_pose) { frame = 24; }
         if(plant.type == PlantType::cherry && plant.health == 0) { frame = 9; }
         if(plant.type == PlantType::walnut && plant.health <= spec(plant.type).health / 3) { frame = 11; }
         else if(plant.type == PlantType::walnut && plant.health <= spec(plant.type).health * 2 / 3) { frame = 10; }
-        int bob = plant.type == PlantType::walnut ? 0 : ((game.elapsed() / 24 + i) % 2);
+        if(plant.type == PlantType::walnut && idle_pose)
+        { frame = frame == 2 ? 21 : frame + 12; }
         int recoil = plant.type == PlantType::peashooter && plant.timer > spec(plant.type).action_delay - 6 ? 1 : 0;
         actor(_plants[i], plant.active && (plant.flash % 4 < 2),
-              cell_x(i % columns) - recoil, cell_y(i / columns) + bob, frame, 2);
+              cell_x(i % columns) - recoil, cell_y(i / columns) - 1, frame, 2);
         if(frame == 9 && _plants[i])
         {
             _plants[i]->set_tiles(bn::sprite_items::explosion.tiles_item(), (18 - plant.timer) / 6);
@@ -121,9 +127,13 @@ void Presentation::draw_entities(const Game& game)
     {
         const auto& zombie = game.zombies()[i];
         int bob = (game.elapsed() / 14 + i) % 2;
+        int pose = (game.elapsed() / 12 + i) % 2;
+        bool chewing = zombie.bite_timer < 40;
+        bool cone = zombie.armored && zombie.health > 6;
+        int frame = chewing ? 16 + pose * 2 : (pose ? 14 : 4);
+        if(cone) { ++frame; }
         actor(_zombies[i], zombie.active && zombie.flash % 4 < 2,
-              zombie.x / scale, cell_y(zombie.row) + bob,
-              zombie.armored && zombie.health > 6 ? 5 : 4, 1);
+              zombie.x / scale, cell_y(zombie.row) + bob - 2, frame, 1);
     }
     for(int i = 0; i < shot_capacity; ++i)
     {
@@ -279,21 +289,23 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
     stats += "/5  -  ";
     stats += bn::to_string<4>(game.kills());
     stats += " defeated";
-    _text.generate(0, -29, stats, _hud);
     if(game.phase() == Phase::paused)
     {
-        constexpr const char* choices[] = {"Resume garden", "Restart run", "Title screen"};
+        bn::string<16> wave_text = "Wave ";
+        wave_text += bn::to_string<4>(game.wave());
+        wave_text += "/5";
+        _text.generate(0, -29, wave_text, _hud);
+        _text.set_left_alignment();
+        constexpr const char* choices[] = {"Resume", "Restart", "Title"};
         for(int i = 0; i < static_cast<int>(PauseChoice::count); ++i)
         {
-            bn::string<32> label;
-            label += i == choice ? "> " : "  ";
-            label += choices[i];
-            label += i == choice ? " <" : "  ";
-            _text.generate(0, -6 + i * 16, label, _hud);
+            _text.generate(-32, -8 + i * 20, choices[i], _hud);
         }
+        _text.generate(-56, -8 + choice * 20, ">", _hud);
     }
     else
     {
+        _text.generate(0, -20, stats, _hud);
         bn::string<32> time;
         int seconds = game.elapsed() / 60;
         time += "Time  ";
@@ -301,8 +313,7 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
         time += ":";
         if(seconds % 60 < 10) { time += "0"; }
         time += bn::to_string<4>(seconds % 60);
-        _text.generate(0, -11, time, _hud);
-        _text.generate(0, 7, game.phase() == Phase::won ? "All five waves cleared" : "A fresh start awaits", _hud);
+        _text.generate(0, 0, time, _hud);
     }
     _text.set_left_alignment();
 }

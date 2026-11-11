@@ -8,6 +8,7 @@ import math
 import struct
 import wave
 from PIL import Image, ImageDraw
+from pixel_art import actor, draw_garden, draw_title_garden, seed_icon, shovel_icon
 
 ROOT = Path(__file__).resolve().parents[1]
 WAVE_BOUNDARIES = [56 + i * 168 // 5 for i in range(6)]
@@ -66,63 +67,11 @@ def text(image, x, y, value, color=8, scale=1, centered=False):
         x += 4 * scale
 
 
-def sprite(frame):
+def small_sprite(frame):
+    """Compact projectiles, sun, mower, and blast art; also used for HUD icons."""
     image = canvas(16, 16)
     d = ImageDraw.Draw(image)
-    # Shared palette and silhouette language keep the game readable at native resolution.
-    if frame in (0, 1):
-        d.line((7, 9, 7, 14), fill=5, width=2)
-        d.ellipse((1, 11, 7, 14), fill=4)
-        d.ellipse((8, 11, 13, 14), fill=5)
-    if frame == 0:
-        for x, y in [(3, 1), (7, 0), (10, 2), (11, 6), (8, 9), (3, 8), (0, 4)]:
-            d.ellipse((x, y, x + 4, y + 4), fill=7)
-        d.ellipse((3, 3, 11, 10), fill=9)
-        d.ellipse((4, 3, 10, 8), fill=10)
-        d.point((5, 5), fill=0)
-        d.point((9, 5), fill=0)
-        d.line((6, 8, 8, 8), fill=8)
-    elif frame == 1:
-        d.ellipse((2, 2, 12, 10), fill=2)
-        d.ellipse((3, 1, 12, 9), fill=5)
-        d.rectangle((9, 4, 14, 8), fill=5)
-        d.ellipse((12, 3, 15, 9), fill=3)
-        d.rectangle((14, 5, 15, 7), fill=0)
-        d.rectangle((6, 3, 7, 4), fill=0)
-        d.point((4, 3), fill=6)
-    elif frame == 2:
-        d.ellipse((2, 1, 13, 15), fill=9)
-        d.ellipse((3, 1, 12, 13), fill=10)
-        d.line((5, 3, 4, 10), fill=7)
-        d.line((10, 3, 11, 11), fill=9)
-        d.rectangle((5, 5, 5, 7), fill=0)
-        d.rectangle((9, 5, 9, 7), fill=0)
-        d.line((6, 10, 8, 10), fill=9)
-    elif frame == 3:
-        d.line((4, 7, 9, 1, 12, 7), fill=5, width=2)
-        d.ellipse((1, 6, 8, 14), fill=11)
-        d.ellipse((8, 6, 15, 14), fill=11)
-        d.point((3, 8), fill=8)
-        d.point((10, 8), fill=8)
-        d.point((5, 10), fill=0)
-        d.point((12, 10), fill=0)
-    elif frame in (4, 5):
-        d.rectangle((5, 8, 11, 12), fill=9)
-        d.line((6, 12, 5, 14, 2, 14), fill=15, width=2)
-        d.line((10, 12, 11, 15, 8, 15), fill=15, width=2)
-        d.rectangle((3, 2, 11, 7), fill=12)
-        d.rectangle((4, 1, 10, 5), fill=13)
-        d.rectangle((2, 5, 6, 8), fill=12)
-        d.rectangle((3, 3, 5, 4), fill=8)
-        d.point((3, 4), fill=0)
-        d.line((3, 7, 6, 7), fill=0)
-        d.line((5, 9, 1, 10), fill=12, width=2)
-        d.line((9, 8, 6, 10), fill=8)
-        d.point((7, 10), fill=11)
-        if frame == 5:
-            d.polygon([(5, 0), (3, 4), (12, 4), (9, 0)], fill=14)
-            d.line((4, 3, 11, 3), fill=8)
-    elif frame == 6:
+    if frame == 6:
         d.ellipse((5, 5, 10, 10), fill=2)
         d.ellipse((5, 4, 9, 8), fill=6)
         d.point((6, 5), fill=8)
@@ -138,8 +87,8 @@ def sprite(frame):
         d.line((3, 8, 2, 1, 0, 1), fill=13, width=2)
         d.rectangle((3, 7, 13, 12), fill=11)
         d.rectangle((6, 5, 11, 8), fill=12)
-        d.ellipse((2, 10, 6, 14), fill=0)
-        d.ellipse((10, 10, 14, 14), fill=0)
+        d.ellipse((2, 10, 6, 14), fill=1)
+        d.ellipse((10, 10, 14, 14), fill=1)
         d.point((4, 12), fill=13)
         d.point((12, 12), fill=13)
     elif frame == 9:
@@ -147,14 +96,14 @@ def sprite(frame):
                    (10, 11), (8, 15), (5, 11), (0, 13), (3, 8), (0, 3), (5, 4)], fill=14)
         d.ellipse((3, 3, 12, 12), fill=7)
         d.ellipse((5, 5, 10, 10), fill=8)
-    elif frame in (10, 11):
-        image = sprite(2)
-        d = ImageDraw.Draw(image)
-        d.line((9, 1, 7, 4, 9, 7, 7, 10, 8, 14), fill=9)
-        if frame == 11:
-            d.line((3, 8, 6, 9, 4, 12), fill=0)
-            d.line((8, 5, 12, 3), fill=0)
-            d.rectangle((6, 10, 8, 11), fill=0)
+    return image
+
+
+def sprite(frame):
+    if frame < 6 or frame >= 10:
+        return actor(frame, canvas)
+    image = canvas(32, 32)
+    image.paste(small_sprite(frame), (8, 8))
     return image
 
 
@@ -165,6 +114,9 @@ def save(image, name, metadata):
 
 def lawn():
     image = canvas(256, 256, 1)
+    lawn_colors = COLORS.copy()
+    lawn_colors[2:6] = [(42, 80, 42), (64, 112, 53), (80, 130, 60), (123, 166, 65)]
+    image.putpalette([v for color in lawn_colors for v in color] + [0] * (768 - len(lawn_colors) * 3))
     d = ImageDraw.Draw(image)
     d.rectangle((0, 0, 239, 55), fill=0)
     d.rectangle((WAVE_BOUNDARIES[0], 14, WAVE_BOUNDARIES[-1], 17), fill=1)
@@ -172,38 +124,32 @@ def lawn():
     d.line((WAVE_BOUNDARIES[0], 17, WAVE_BOUNDARIES[-1], 17), fill=9)
     d.line((8, 21, 231, 21), fill=2)
     d.line((0, 55, 239, 55), fill=9, width=2)
-    d.rectangle((0, 57, 14, 153), fill=9)
-    for y in range(58, 153, 10):
-        d.line((0, y, 14, y), fill=10)
-    for row in range(5):
-        for column in range(9):
-            x, y = 34 + column * 22, 58 + row * 19
-            d.rectangle((x, y, x + 21, y + 18), fill=3 if (row + column) % 2 else 4)
-            d.line((x + 3, y + 17, x + 4, y + 15), fill=2)
-            d.point((x + 16, y + 5), fill=5)
-    d.rectangle((15, 57, 32, 153), fill=2)
-    d.rectangle((234, 57, 239, 153), fill=9)
-    # Decorative soil border replaces the old text/status footer.
-    d.rectangle((0, 154, 239, 159), fill=9)
-    d.line((0, 154, 239, 154), fill=5)
-    for x in range(6, 239, 13):
-        d.line((x, 157, x + 2, 155), fill=4)
-        d.point((x + 5, 159), fill=10)
+    draw_garden(image)
     stamp(image, 7, 3, 24)
     text(image, 21, 26, 'SUN', color=7)
     for index, (name, cost) in enumerate([('SUN', '50'), ('PEA', '100'), ('NUT', '50'), ('BOMB', '150')]):
         x = 54 + index * 42
         d.rounded_rectangle((x, 24, x + 39, 52), radius=2, fill=2, outline=9)
-        stamp(image, index, x + 2, 28)
+        d.rounded_rectangle((x + 1, 27, x + 19, 45), radius=2, fill=1, outline=3)
+        icon = seed_icon(index, canvas)
+        image.paste(icon, (x + 2, 28), icon.point([0] + [255] * 255, 'L'))
         text(image, x + 20, 29, name, color=6)
         text(image, x + 20, 40, cost, color=7)
     return image
 
 
 def stamp(image, frame, x, y, scale=1):
-    icon = sprite(frame).resize((16 * scale, 16 * scale), Image.Resampling.NEAREST)
+    if frame < 6 or frame >= 10:
+        source = sprite(frame)
+        source = source.crop(source.getbbox())
+    else:
+        source = small_sprite(frame)
+    size = 16 * scale
+    fit = min(size / source.width, size / source.height)
+    icon = source.resize((round(source.width * fit), round(source.height * fit)), Image.Resampling.NEAREST)
     # Transparency follows palette index zero, not its nonzero RGB luminance.
-    image.paste(icon, (x, y), icon.point([0] + [255] * 255, 'L'))
+    image.paste(icon, (x + (size - icon.width) // 2, y + size - icon.height),
+                icon.point([0] + [255] * 255, 'L'))
 
 
 def skull_flag(draw, pole, top, color):
@@ -289,65 +235,54 @@ constexpr int fill(int wave, int progress)
         path.write_text(content)
 
 
-def menu_base():
-    """Independent menu artwork: never derived from the lawn or gameplay HUD."""
-    image = canvas(256, 256, 1)
+def menu_base(background=1, outline=3):
+    """Quiet menu frame; the main action carries the visual emphasis."""
+    image = canvas(256, 256, background)
     d = ImageDraw.Draw(image)
-    for x in range(4, 240, 14):
-        for y in range(5, 160, 14):
-            d.point((x, y), fill=2)
-    d.rectangle((5, 5, 234, 154), outline=3)
-    for x, y, sx, sy in [(9, 9, 1, 1), (230, 9, -1, 1), (9, 150, 1, -1), (230, 150, -1, -1)]:
-        d.line((x, y + sy * 9, x, y, x + sx * 9, y), fill=6)
+    d.rounded_rectangle((8, 8, 231, 151), radius=4, outline=outline)
     return image
 
 
-def menu_heading(image, eyebrow, heading):
-    text(image, 120, 16, eyebrow, color=6, centered=True)
-    text(image, 120, 30, heading, color=7, scale=2, centered=True)
+def menu_heading(image, heading, divider=3):
+    text(image, 120, 24, heading, color=7, scale=2, centered=True)
+    ImageDraw.Draw(image).line((25, 43, 214, 43), fill=divider)
+
+
+def menu_button(image, top, label):
+    d = ImageDraw.Draw(image)
+    d.rounded_rectangle((48, top, 191, top + 19), radius=3, fill=2, outline=4)
+    text(image, 120, top + 5, label, color=7, scale=2, centered=True)
 
 
 def title_screen():
-    image = menu_base()
-    d = ImageDraw.Draw(image)
-    menu_heading(image, 'A POCKET LAWN DEFENSE', 'GARDEN GUARD')
-    # A small illustrated garden, rather than a duplicate of the game board.
-    d.rectangle((25, 78, 214, 89), fill=3)
-    d.line((25, 89, 214, 89), fill=9, width=2)
-    stamp(image, 0, 40, 53, 2)
-    stamp(image, 1, 77, 53, 2)
-    stamp(image, 6, 117, 61)
-    stamp(image, 5, 165, 53, 2)
-    text(image, 120, 99, 'D-PAD MOVE   A PLANT   B COLLECT SUN', centered=True)
-    text(image, 120, 110, 'L/R SEED   SELECT + A SHOVEL', centered=True)
-    text(image, 120, 123, 'FIVE WAVES. ONE GARDEN. NO BRAINS LOST.', color=6, centered=True)
-    d.rounded_rectangle((55, 136, 184, 148), radius=3, fill=3)
-    text(image, 120, 140, 'START OR A TO PLAY', color=7, centered=True)
+    image = menu_base(background=3, outline=4)
+    menu_heading(image, 'GARDEN GUARD', divider=2)
+    draw_title_garden(image, canvas)
+    menu_button(image, 92, 'PLAY')
+    text(image, 120, 116, 'A / START', color=6, centered=True)
+    text(image, 120, 132, 'D-PAD MOVE   A PLANT   B SUN', centered=True)
+    text(image, 120, 141, 'L/R SEED   SELECT + A SHOVEL', centered=True)
     return image
 
 
 def pause_screen():
     image = menu_base()
-    menu_heading(image, 'TAKE YOUR TIME', 'GARDEN PAUSED')
-    # Live run statistics and selection text are rendered by Butano, on top.
+    menu_heading(image, 'PAUSED')
     d = ImageDraw.Draw(image)
-    d.rounded_rectangle((25, 61, 214, 121), radius=4, fill=0, outline=3)
-    text(image, 120, 130, 'UP/DOWN CHOOSE   A CONFIRM', color=6, centered=True)
-    text(image, 120, 141, 'START OR B TO RESUME', centered=True)
+    for top in (63, 83, 103):
+        d.rounded_rectangle((48, top, 191, top + 18), radius=3, fill=2, outline=3)
+    # The three labels and a single caret are drawn by the renderer.
+    text(image, 120, 138, 'A SELECT   B RESUME', color=6, centered=True)
     return image
 
 
 def result_screen(won):
     image = menu_base()
-    menu_heading(image, 'THE DAY IS YOURS' if won else 'THE GARDEN NEEDS YOU',
-                 'LAWN SAVED!' if won else 'THEY GOT IN!')
-    stamp(image, 0 if won else 4, 22, 54, 2)
-    stamp(image, 1 if won else 5, 186, 54, 2)
-    text(image, 120, 101, 'EVERY LANE. EVERY WAVE. WELL PLAYED.' if won else
-         'MORE SUNFLOWERS. COVER EVERY LANE.', color=6, centered=True)
-    text(image, 120, 114, 'YOUR NEXT GARDEN IS A BUTTON AWAY.', centered=True)
-    text(image, 120, 135, 'START OR A: PLAY AGAIN', color=7, centered=True)
-    text(image, 120, 145, 'B: TITLE SCREEN', centered=True)
+    menu_heading(image, 'LAWN SAVED!' if won else 'GAME OVER')
+    # Two short stat rows above a single primary action.
+    menu_button(image, 104, 'PLAY AGAIN' if won else 'RETRY')
+    text(image, 120, 129, 'A / START', color=6, centered=True)
+    text(image, 120, 141, 'B TITLE', centered=True)
     return image
 
 
@@ -394,10 +329,10 @@ def main():
     (ROOT / 'graphics').mkdir(exist_ok=True)
     (ROOT / 'audio').mkdir(exist_ok=True)
     wave_layout_header()
-    atlas = canvas(16, 192)
-    for index in range(12):
-        atlas.paste(sprite(index), (0, index * 16))
-    save(atlas, 'actors', {'type': 'sprite', 'height': 16, 'bpp_mode': 'bpp_4'})
+    atlas = canvas(32, 32 * 25)
+    for index in range(25):
+        atlas.paste(sprite(index), (0, index * 32))
+    save(atlas, 'actors', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     for name, color in [('cursor', 8), ('selection', 7)]:
         image = canvas(32 if name == 'cursor' else 64, 128 if name == 'cursor' else 96)
         d = ImageDraw.Draw(image)
@@ -452,15 +387,13 @@ def main():
         elif frame == 1:
             d.line((3, 8, 6, 11, 13, 4), fill=6, width=3)
         elif frame == 2:
-            d.line((11, 2, 5, 9), fill=10, width=2)
-            d.polygon([(4, 7), (8, 10), (5, 14), (1, 14), (1, 11)], fill=13)
-            d.line((9, 2, 12, 4), fill=8, width=2)
+            icon = shovel_icon(canvas)
         elif frame == 3:
             icon = hourglass_icon(0)
         elif frame in (10, 11):
             icon = hourglass_icon(frame - 9)
         elif frame == 4:
-            icon = sprite(7)
+            icon = small_sprite(7)
         elif frame == 5:
             d.rectangle((4, 2, 12, 10), fill=12)
             d.rectangle((5, 1, 11, 5), fill=13)
@@ -493,7 +426,7 @@ def main():
     save(clocks, 'phase_clock', {'type': 'sprite', 'height': 16, 'bpp_mode': 'bpp_4'})
     explosion = canvas(64, 64 * 3)
     for frame in range(3):
-        effect = sprite(9).resize((64 - frame * 12, 64 - frame * 12), Image.Resampling.NEAREST)
+        effect = small_sprite(9).resize((64 - frame * 12, 64 - frame * 12), Image.Resampling.NEAREST)
         explosion.paste(effect, (frame * 6, frame * 64 + frame * 6))
     save(explosion, 'explosion', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
     base = lawn()

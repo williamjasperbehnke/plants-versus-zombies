@@ -7,6 +7,27 @@ GBA-compatible flash cartridge.
 
 ![Gameplay captured from the ROM in mGBA](docs/gameplay.png)
 
+The garden has textured mowing squares, grass clumps, stone paths, a wooden
+porch, and a flower border. Original plant and zombie art uses shaded 32×32
+sprite frames, with plant artwork fitted to its planting cell. Sunflowers
+and peashooters sway with flexing leaves, wall-nuts gently bob in every damage
+state, and cherry pairs rock while armed. Peashooters have a smaller head and a
+separate firing pose. Zombies have separate
+walking and chewing poses. Wall-nuts show two levels of damage. Seed packets
+use dedicated 16-pixel portraits centered by their visible artwork, on dark
+inset panels. Both peashooter leaves are visible. The title uses the exact
+gameplay sunflower, peashooter, and regular zombie sprites at integer 2× scale,
+preserving their proportions, colors, and pixel shapes. The entire title screen
+uses a lighter green background to keep the sprites' dark outlines visible.
+Zombie cones have a blunt, tilted tip and a broad
+oval base wrapped around the crown, with shaded sides and a reflective band.
+
+[Before/after graphics comparison](docs/graphics_comparison.png)
+
+[Plant idle animation and cone preview](docs/plant_idle.gif)
+
+[Seed packet portraits](docs/seed_packets.png) · [Cone close-up](docs/cone.png)
+
 ## Play
 
 | GBA button | Action |
@@ -66,7 +87,8 @@ leaving the price readable. Three sand levels track recharge progress.
 The selection outline follows the packet's rounded corners and exact bounds.
 An unaffordable packet's border pulses red while the sun bank
 stays still. Holding SELECT
-shows a shovel at the cursor. Every collected sun flies from its own position
+shows a shovel with a D-shaped grip, wooden shaft, and shaded steel spade at the
+cursor. Every collected sun flies from its own position
 to the sun icon over 24 updates, easing into the bank. The counter updates
 immediately and bounces. Flights pause with the game, survive token expiry,
 and cannot be collected or credited twice. Holding B also collects new tokens
@@ -85,6 +107,11 @@ It plays at 72% volume; its waveform contains no noise crunch.
 Title, pause, and result screens have dedicated artwork on a separate Butano
 background layer. The lawn background is used only during play; menus contain
 no copied seed bar or empty lawn. Results include your wave, defeats, and time.
+Menus use a quiet frame and clear primary actions: Play on the title, Resume /
+Restart / Title while paused, and Retry or Play Again on results. The pause menu
+uses one caret; results show two compact stat rows.
+
+[Menu overview](docs/menus.png)
 
 ![Independent title screen](docs/title.png)
 ![Pause menu](docs/paused.png)
@@ -157,8 +184,10 @@ as PPM files inside `build/`.
 - `src/main.cpp`: GBA button mapping, key repeat, UI feedback, event-based sound, and the
   application loop.
 - `include/presentation.h`, `src/presentation.cpp`: Butano backgrounds,
-  shared sprite atlas, small animation offsets, cursor, and cached HUD text.
+  shared sprite atlas, idle/firing/walking/chewing poses, cursor, and cached HUD text.
 - `tools/generate_assets.py`: reproducible original art and audio.
+- `tools/pixel_art.py`: shaded character artwork and garden scenery. Run the
+  asset generator after editing either art source.
 - `tests/game_test.cpp`: public-API simulation tests and an automated defense
   strategy that verifies the full game can be won.
 
@@ -166,7 +195,9 @@ The renderer uses fixed pools of 45 plants, 16 zombies, 18 peas, 10 suns, and
 five mowers. With four seed bars, five wave segments, cursor sprites, three
 visual indicator sprites, and at most 20 text sprites reserved for menus and
 the sun counter, the maximum is 128 sprites. A compile-time check enforces the
-GBA's sprite budget. Collection flights reuse the ten sun slots and sprites,
+GBA's sprite budget. The character atlas uses twenty-five 32×32 frames with a shared
+16-color sprite palette; compact sun/projectile/mower art is padded into those
+frames. The lawn uses a separate background palette. Collection flights reuse the ten sun slots and sprites,
 so simultaneous collection does not increase the sprite budget. Matching actors share atlas
 tiles and a single sprite palette. Simulation positions use integer subpixels
 and advance once per update, targeting the GBA's native refresh rate.
