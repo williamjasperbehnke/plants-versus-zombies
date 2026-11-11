@@ -2,6 +2,7 @@
 #define GARDEN_PRESENTATION_H
 
 #include "game.h"
+#include "audio_settings.h"
 #include "bn_optional.h"
 #include "bn_regular_bg_ptr.h"
 #include "bn_sprite_ptr.h"
@@ -18,11 +19,12 @@ struct Cursor
     PlantType seed = PlantType::sunflower;
 };
 
-enum class PauseChoice { resume, restart, title, count };
+enum class PauseChoice { resume, restart, title, master, music, effects, count };
 enum class Feedback { none, planted, removed, occupied, insufficient_sun, cooling_down, collected };
 
 struct ViewState
 {
+    AudioSettings audio;
     Cursor cursor;
     Feedback feedback = Feedback::none;
     int feedback_frames = 0;
@@ -62,6 +64,7 @@ private:
     bn::optional<bn::sprite_ptr> _wave_head;
     bn::optional<bn::sprite_ptr> _phase_icon;
     bn::optional<bn::sprite_ptr> _feedback_icon;
+    std::array<bn::optional<bn::sprite_ptr>, 3> _volume_sliders;
     std::array<bn::optional<bn::sprite_ptr>, rows * columns> _plants;
     std::array<bn::optional<bn::sprite_ptr>, zombie_capacity> _zombies;
     std::array<bn::optional<bn::sprite_ptr>, shot_capacity> _shots;
@@ -69,6 +72,7 @@ private:
     std::array<bn::optional<bn::sprite_ptr>, rows> _mowers;
     int _last_sun = -1;
     int _last_pause_choice = -1;
+    int _last_audio = -1;
 };
 }
 #endif

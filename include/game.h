@@ -55,6 +55,7 @@ struct Zombie
     int health = 0;
     int bite_timer = 0;
     int flash = 0;
+    bool eating = false;
 };
 struct Shot { bool active = false; int row = 0; int x = 0; };
 struct Sun

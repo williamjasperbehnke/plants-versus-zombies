@@ -8,7 +8,8 @@ import math
 import struct
 import wave
 from PIL import Image, ImageDraw
-from pixel_art import actor, draw_garden, draw_title_garden, seed_icon, shovel_icon
+from pixel_art import actor, draw_garden, draw_title_garden, seed_icon, shovel_icon, zombie_head
+from generate_music import generate_music
 
 ROOT = Path(__file__).resolve().parents[1]
 WAVE_BOUNDARIES = [56 + i * 168 // 5 for i in range(6)]
@@ -76,13 +77,19 @@ def small_sprite(frame):
         d.ellipse((5, 4, 9, 8), fill=6)
         d.point((6, 5), fill=8)
     elif frame == 7:
-        d.line((0, 7, 15, 7), fill=7)
-        d.line((7, 0, 7, 15), fill=7)
-        d.line((2, 2, 13, 13), fill=7)
-        d.line((2, 13, 13, 2), fill=7)
+        # Mirrored rays keep the silhouette balanced around the round disc.
+        for ray in ((7, 0, 8, 2), (7, 13, 8, 15),
+                    (0, 7, 2, 8), (13, 7, 15, 8)):
+            d.rectangle(ray, fill=7)
+        for flip_x in (False, True):
+            for flip_y in (False, True):
+                ray = [(2, 2), (4, 3), (3, 4)]
+                d.polygon([(15 - x if flip_x else x, 15 - y if flip_y else y)
+                           for x, y in ray], fill=7)
         d.ellipse((3, 3, 12, 12), fill=14)
-        d.ellipse((4, 3, 11, 10), fill=7)
-        d.point((6, 5), fill=8)
+        d.ellipse((4, 4, 11, 11), fill=7)
+        d.line((5, 5, 7, 5), fill=8)
+        d.point((5, 6), fill=8)
     elif frame == 8:
         d.line((3, 8, 2, 1, 0, 1), fill=13, width=2)
         d.rectangle((3, 7, 13, 12), fill=11)
@@ -130,7 +137,7 @@ def lawn():
     for index, (name, cost) in enumerate([('SUN', '50'), ('PEA', '100'), ('NUT', '50'), ('BOMB', '150')]):
         x = 54 + index * 42
         d.rounded_rectangle((x, 24, x + 39, 52), radius=2, fill=2, outline=9)
-        d.rounded_rectangle((x + 1, 27, x + 19, 45), radius=2, fill=1, outline=3)
+        d.rounded_rectangle((x + 1, 27, x + 18, 44), radius=2, fill=1, outline=3)
         icon = seed_icon(index, canvas)
         image.paste(icon, (x + 2, 28), icon.point([0] + [255] * 255, 'L'))
         text(image, x + 20, 29, name, color=6)
@@ -174,7 +181,7 @@ def skull_flag(draw, pole, top, color):
 def hourglass_icon(stage):
     image = canvas(16, 16)
     d = ImageDraw.Draw(image)
-    d.rounded_rectangle((0, 0, 15, 15), radius=3, fill=1, outline=3)
+    d.rounded_rectangle((0, 0, 15, 15), radius=3, fill=1)
     # Two distinct glass bulbs and a narrow waist inside a brass frame.
     glass = [(4, 3), (11, 3), (11, 5), (8, 8), (11, 10),
              (11, 12), (4, 12), (4, 10), (7, 8), (4, 5)]
@@ -209,7 +216,7 @@ inline constexpr std::array<int, 6> frame_offsets{{@OFFSETS@}};
 inline constexpr int sprite_width = 64;
 inline constexpr int sprite_height = 32;
 inline constexpr int bar_y = 14;
-inline constexpr int head_y = 10;
+inline constexpr int head_y = 18;
 
 constexpr int position(int progress)
 {
@@ -245,7 +252,8 @@ def menu_base(background=1, outline=3):
 
 def menu_heading(image, heading, divider=3):
     text(image, 120, 24, heading, color=7, scale=2, centered=True)
-    ImageDraw.Draw(image).line((25, 43, 214, 43), fill=divider)
+    if divider is not None:
+        ImageDraw.Draw(image).line((25, 43, 214, 43), fill=divider)
 
 
 def menu_button(image, top, label):
@@ -256,7 +264,7 @@ def menu_button(image, top, label):
 
 def title_screen():
     image = menu_base(background=3, outline=4)
-    menu_heading(image, 'GARDEN GUARD', divider=2)
+    menu_heading(image, 'GARDEN GUARD', divider=None)
     draw_title_garden(image, canvas)
     menu_button(image, 92, 'PLAY')
     text(image, 120, 116, 'A / START', color=6, centered=True)
@@ -269,10 +277,10 @@ def pause_screen():
     image = menu_base()
     menu_heading(image, 'PAUSED')
     d = ImageDraw.Draw(image)
-    for top in (63, 83, 103):
-        d.rounded_rectangle((48, top, 191, top + 18), radius=3, fill=2, outline=3)
-    # The three labels and a single caret are drawn by the renderer.
-    text(image, 120, 138, 'A SELECT   B RESUME', color=6, centered=True)
+    for center in (50, 64, 78):
+        d.rounded_rectangle((48, center - 6, 203, center + 6), radius=2, fill=2)
+    text(image, 120, 140, 'UP/DOWN SELECT  LEFT/RIGHT VOLUME', color=6, centered=True)
+    text(image, 120, 146, 'A SELECT   B/START RESUME', centered=True)
     return image
 
 
@@ -329,6 +337,18 @@ def main():
     (ROOT / 'graphics').mkdir(exist_ok=True)
     (ROOT / 'audio').mkdir(exist_ok=True)
     wave_layout_header()
+    generate_music(ROOT / 'audio' / 'garden_theme.mod')
+    sliders = canvas(64, 32 * 11)
+    d = ImageDraw.Draw(sliders)
+    for level in range(11):
+        y = level * 32
+        d.rounded_rectangle((2, y + 13, 61, y + 18), radius=2, fill=1, outline=3)
+        if level:
+            d.rectangle((4, y + 15, 4 + level * 5, y + 16), fill=5)
+        thumb = 4 + level * 5
+        d.rounded_rectangle((thumb, y + 11, thumb + 5, y + 20), radius=1, fill=7, outline=9)
+        d.line((thumb + 2, y + 13, thumb + 2, y + 17), fill=8)
+    save(sliders, 'volume_slider', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     atlas = canvas(32, 32 * 25)
     for index in range(25):
         atlas.paste(sprite(index), (0, index * 32))
@@ -395,13 +415,9 @@ def main():
         elif frame == 4:
             icon = small_sprite(7)
         elif frame == 5:
-            d.rectangle((4, 2, 12, 10), fill=12)
-            d.rectangle((5, 1, 11, 5), fill=13)
-            d.rectangle((4, 5, 6, 6), fill=8)
-            d.point((4, 6), fill=1)
-            d.line((4, 9, 8, 9), fill=1)
-            d.point((6, 9), fill=8)
-            d.polygon([(6, 11), (10, 11), (8, 13)], fill=7)
+            head = canvas(32, 32)
+            zombie_head(ImageDraw.Draw(head))
+            icon.paste(head.crop((9, 7, 23, 19)), (1, 0))
         else:
             d.line((5, 0, 5, 12), fill=13, width=2)
             color = 6 if frame == 7 else 11

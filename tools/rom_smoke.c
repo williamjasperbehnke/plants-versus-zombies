@@ -68,6 +68,15 @@ static void press(struct mCore* core, unsigned keys)
     frames(core, 0, 3);
 }
 
+static uint64_t measure_audio(struct mCore* core, int count)
+{
+    audio_energy = 0;
+    capture_audio = true;
+    frames(core, 0, count);
+    capture_audio = false;
+    return audio_energy;
+}
+
 static void screenshot(const char* path)
 {
     FILE* file = fopen(path, "wb");
@@ -154,7 +163,8 @@ int main(int argc, char** argv)
     press(core, 1 << 0);
     assert(image_hash() == initial_hash);
     press(core, 1 << 3);
-    press(core, 1 << 6); // UP wraps Resume -> Title.
+    press(core, 1 << 7); // DOWN: restart
+    press(core, 1 << 7); // DOWN: title
     press(core, 1 << 0);
     assert(image_hash() == title_hash);
     press(core, 1 << 0); // A also starts from title.
@@ -193,19 +203,64 @@ int main(int argc, char** argv)
     screenshot("build/hold_collect.ppm");
     assert(region_hash(0, 41, 45, 10) != sun_before_collect);
     frames(core, 0, 400);
-    // At the first completed wave, the green flag and head pointer share x=89.
+    // At the first completed wave, the green flag and lowered head share x=89.
     int checkpoint_wait = 0;
     while(! first_flag_cleared() && checkpoint_wait++ < 600)
     { frames(core, 0, 1); }
     assert(first_flag_cleared());
-    uint32_t head_pointer = pixels[15 * 240 + 89];
-    assert((head_pointer & 255) > 230 && ((head_pointer >> 8) & 255) > 160);
+    uint32_t head_chin = pixels[20 * 240 + 89];
+    assert((head_chin & 255) > 90 && (head_chin & 255) < 150);
+    assert(((head_chin >> 8) & 255) > 110 && ((head_chin >> 16) & 255) > 90);
     screenshot("build/wave_checkpoint.ppm");
-    // Only a wall-nut is planted, so the audio after the wave-start jingle must
-    // come from chewing. No pea shots, mower, collection, or input sounds occur.
+    // Check the mixer while paused, with no gameplay sounds.
     press(core, 1 << 3);
-    press(core, 1 << 7);
+    assert(measure_audio(core, 120) > 1000);
+    for(int row = 0; row < 4; ++row) { press(core, 1 << 7); } // Music
+    frames(core, 1 << 5, 80); // LEFT: mute music
+    frames(core, 0, 20);
+    assert(measure_audio(core, 60) == 0);
+    screenshot("build/audio_music_muted.ppm");
+    audio_energy = 0;
+    capture_audio = true;
+    press(core, 1 << 7); // Effects: navigation sound with music muted
+    frames(core, 0, 20);
+    capture_audio = false;
+    assert(audio_energy > 1000);
+    frames(core, 1 << 5, 80); // Mute effects
+    frames(core, 0, 20);
+    audio_energy = 0;
+    capture_audio = true;
+    press(core, 1 << 6); // Music: navigation must now be silent
+    frames(core, 0, 20);
+    capture_audio = false;
+    assert(audio_energy == 0);
+    for(int step = 0; step < 5; ++step) { press(core, 1 << 4); } // Music 50%
+    press(core, 1 << 6); // Master
+    frames(core, 1 << 5, 80);
+    frames(core, 0, 20);
+    assert(measure_audio(core, 60) == 0);
+    screenshot("build/audio_master_muted.ppm");
+    frames(core, 1 << 4, 80); // Restore master
+    frames(core, 0, 20);
+    assert(measure_audio(core, 120) > 1000);
+    press(core, 1 << 7); // Music: mute for isolated chewing check below
+    frames(core, 1 << 5, 80);
+    frames(core, 0, 20);
+    press(core, 1 << 7); // Effects: restore
+    frames(core, 1 << 4, 80);
+    frames(core, 0, 20);
+    for(int row = 0; row < 4; ++row) { press(core, 1 << 6); } // Restart
     press(core, 1 << 0);
+    press(core, 1 << 3);
+    frames(core, 0, 20);
+    assert(measure_audio(core, 60) == 0); // Music mute survives restart.
+    press(core, 1 << 7);
+    press(core, 1 << 7); // Title
+    press(core, 1 << 0);
+    frames(core, 0, 20);
+    assert(measure_audio(core, 60) == 0); // And title visits.
+    press(core, 1 << 0);
+    // Only a wall-nut is planted and music stays muted after restarting.
     press(core, 1 << 8);
     press(core, 1 << 8);
     press(core, 1 << 6);

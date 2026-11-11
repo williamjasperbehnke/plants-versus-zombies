@@ -9,6 +9,7 @@
 #include "bn_sprite_items_wave_bar.h"
 #include "bn_sprite_items_hud_icons.h"
 #include "bn_sprite_items_phase_clock.h"
+#include "bn_sprite_items_volume_slider.h"
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_lawn.h"
 #include "bn_regular_bg_items_paused.h"
@@ -47,6 +48,7 @@ void Presentation::change_screen(Phase phase)
     _hud.clear();
     _last_sun = -1;
     _last_pause_choice = -1;
+    for(auto& slider : _volume_sliders) { slider.reset(); }
     _menu.reset();
     // The gameplay background remains its own resource. Menus use another layer
     // and independent artwork, with no copied lawn, seed bar, or gameplay HUD.
@@ -128,7 +130,12 @@ void Presentation::draw_entities(const Game& game)
         const auto& zombie = game.zombies()[i];
         int bob = (game.elapsed() / 14 + i) % 2;
         int pose = (game.elapsed() / 12 + i) % 2;
-        bool chewing = zombie.bite_timer < 40;
+        bool chewing = zombie.eating;
+        if(chewing)
+        {
+            bob = 0;
+            pose = zombie.bite_timer < 12 ? 1 : 0;
+        }
         bool cone = zombie.armored && zombie.health > 6;
         int frame = chewing ? 16 + pose * 2 : (pose ? 14 : 4);
         if(cone) { ++frame; }
@@ -278,7 +285,8 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
 {
     if(game.phase() == Phase::title) { return; }
     int choice = static_cast<int>(view.pause_choice);
-    if(_last_sun != -1 && choice == _last_pause_choice) { return; }
+    if(_last_sun != -1 && choice == _last_pause_choice && _last_audio == view.audio.key()) { return; }
+    _last_audio = view.audio.key();
     _last_sun = game.sun();
     _last_pause_choice = choice;
     _hud.clear();
@@ -291,17 +299,23 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
     stats += " defeated";
     if(game.phase() == Phase::paused)
     {
-        bn::string<16> wave_text = "Wave ";
-        wave_text += bn::to_string<4>(game.wave());
-        wave_text += "/5";
-        _text.generate(0, -29, wave_text, _hud);
         _text.set_left_alignment();
-        constexpr const char* choices[] = {"Resume", "Restart", "Title"};
+        constexpr const char* choices[] = {"Resume", "Restart", "Title", "Master", "Music", "Effects"};
+        constexpr int positions[] = {50, 64, 78, 98, 114, 130};
         for(int i = 0; i < static_cast<int>(PauseChoice::count); ++i)
         {
-            _text.generate(-32, -8 + i * 20, choices[i], _hud);
+            _text.generate(-60, positions[i] - 80, choices[i], _hud);
         }
-        _text.generate(-56, -8 + choice * 20, ">", _hud);
+        _text.generate(-78, positions[choice] - 80, ">", _hud);
+        for(int i = 0; i < 3; ++i)
+        {
+            if(! _volume_sliders[i])
+            {
+                _volume_sliders[i] = bn::sprite_items::volume_slider.create_sprite(52, positions[i + 3] - 80);
+                _volume_sliders[i]->set_bg_priority(0);
+            }
+            _volume_sliders[i]->set_tiles(bn::sprite_items::volume_slider.tiles_item(), view.audio.levels[i]);
+        }
     }
     else
     {

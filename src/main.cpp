@@ -1,6 +1,9 @@
 #include "bn_core.h"
 #include "bn_keypad.h"
 #include "bn_sound_items.h"
+#include "bn_sound.h"
+#include "bn_music.h"
+#include "bn_music_items.h"
 #include "game.h"
 #include "presentation.h"
 
@@ -19,6 +22,8 @@ class Application
 public:
     void run()
     {
+        bn::music_items::garden_theme.play();
+        apply_audio();
         while(true)
         {
             handle_input();
@@ -34,6 +39,19 @@ public:
     }
 
 private:
+    void apply_audio()
+    {
+        bn::sound::set_master_volume(bn::fixed(_view.audio.gain(garden::AudioChannel::effects)) / 100);
+        bn::music::set_volume(bn::fixed(_view.audio.gain(garden::AudioChannel::music)) / 100);
+    }
+
+    void reset_view()
+    {
+        auto audio = _view.audio;
+        _view = garden::ViewState();
+        _view.audio = audio;
+    }
+
     void play_events(garden::Phase previous_phase)
     {
         using garden::Phase;
@@ -66,7 +84,7 @@ private:
     void start_game()
     {
         _game.start();
-        _view = garden::ViewState();
+        reset_view();
         _repeat = {};
         _combat_sound_cooldown = 0;
         _bite_sound_cooldown = 0;
@@ -75,7 +93,7 @@ private:
     void show_title()
     {
         _game = garden::Game();
-        _view = garden::ViewState();
+        reset_view();
         _repeat = {};
     }
 
@@ -114,6 +132,18 @@ private:
             if(repeat(bn::keypad::down_held(), _repeat[1])) { choice = (choice + 1) % choices; }
             if(choice != static_cast<int>(_view.pause_choice)) { bn::sound_items::navigate.play(); }
             _view.pause_choice = static_cast<PauseChoice>(choice);
+            int delta = 0;
+            if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
+            if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
+            if(choice >= static_cast<int>(PauseChoice::master) && delta)
+            {
+                auto channel = static_cast<AudioChannel>(choice - static_cast<int>(PauseChoice::master));
+                if(_view.audio.adjust(channel, delta))
+                {
+                    apply_audio();
+                    bn::sound_items::navigate.play();
+                }
+            }
             if(bn::keypad::a_pressed())
             {
                 switch(_view.pause_choice)

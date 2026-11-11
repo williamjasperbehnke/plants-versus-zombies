@@ -9,7 +9,7 @@ inline constexpr std::array<int, 6> frame_offsets{{0, 34, 69, 103, 138, 173}};
 inline constexpr int sprite_width = 64;
 inline constexpr int sprite_height = 32;
 inline constexpr int bar_y = 14;
-inline constexpr int head_y = 10;
+inline constexpr int head_y = 18;
 
 constexpr int position(int progress)
 {

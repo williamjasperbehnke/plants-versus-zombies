@@ -37,8 +37,6 @@ def sunflower(draw, pose):
     for x in (cx - 2, cx + 2):
         draw.rectangle((x, cy - 1, x + 1, cy), fill=1)
         draw.point((x, cy - 1), fill=8)
-    if pose:
-        draw.line((21, 24, 25, 22), fill=6)
 
 
 def peashooter(draw, firing, pose=0):
@@ -97,62 +95,66 @@ def cherries(draw, pose=0):
 
 
 def seed_icon(kind, canvas):
-    """Draw recognizable 16px portraits directly, rather than downsampling units."""
-    image = canvas(16, 16)
+    """Draw centered native-pixel portraits, with an extra row for the walnut."""
+    height = 16 if kind == 2 else 15
+    image = canvas(15, height)
     draw = ImageDraw.Draw(image)
     if kind == 0:
         for i in range(8):
             angle = i * math.pi / 4
-            x, y = 7 + round(math.cos(angle) * 5), 7 + round(math.sin(angle) * 5)
+            x, y = 7 + round(math.cos(angle) * 4), 6 + round(math.sin(angle) * 4)
             ellipse(draw, (x - 2, y - 2, x + 2, y + 2), 7, 10)
             draw.point((x, y - 1), fill=8)
-        ellipse(draw, (3, 3, 11, 11), 9)
-        draw.ellipse((4, 4, 10, 9), fill=10)
-        draw.point((5, 6), fill=1)
-        draw.point((9, 6), fill=1)
-        draw.line((6, 9, 8, 9), fill=8)
-        draw.line((7, 12, 7, 15), fill=5)
-        draw.polygon([(6, 14), (1, 12), (2, 15), (6, 15)], fill=4)
-        draw.polygon([(8, 14), (13, 12), (12, 15), (8, 15)], fill=5)
+        ellipse(draw, (3, 2, 11, 10), 9)
+        draw.ellipse((4, 3, 10, 9), fill=10)
+        draw.line((5, 5, 5, 6), fill=1)
+        draw.line((9, 5, 9, 6), fill=1)
+        draw.line((6, 8, 8, 8), fill=8)
+        draw.line((7, 11, 7, 13), fill=5)
+        draw.polygon([(6, 12), (2, 11), (3, 13), (6, 13)], fill=4)
+        draw.polygon([(8, 12), (12, 11), (11, 13), (8, 13)], fill=5)
     elif kind == 1:
         ellipse(draw, (1, 2, 11, 12), 4)
         draw.ellipse((2, 3, 10, 10), fill=5)
         draw.line((4, 3, 7, 3), fill=6)
-        draw.rectangle((9, 5, 13, 10), fill=4)
-        ellipse(draw, (11, 4, 15, 11), 3)
-        draw.rectangle((13, 6, 15, 9), fill=1)
+        draw.rectangle((9, 5, 12, 10), fill=4)
+        ellipse(draw, (11, 4, 14, 11), 3)
+        draw.rectangle((13, 6, 14, 9), fill=1)
         draw.point((12, 5), fill=6)
         draw.rectangle((6, 5, 7, 7), fill=1)
         draw.point((6, 5), fill=8)
-        draw.line((6, 12, 6, 15), fill=5, width=2)
-        draw.polygon([(5, 14), (1, 12), (2, 15), (5, 15)], fill=4)
-        draw.polygon([(8, 14), (14, 12), (13, 15), (8, 15)], fill=4)
-        draw.line((9, 14, 12, 13), fill=6)
+        draw.line((6, 12, 6, 14), fill=5, width=2)
+        draw.polygon([(5, 13), (1, 11), (2, 14), (5, 14)], fill=4)
+        draw.polygon([(8, 13), (13, 11), (12, 14), (8, 14)], fill=4)
+        draw.line((9, 13, 12, 12), fill=6)
     elif kind == 2:
-        ellipse(draw, (2, 0, 14, 15), 9)
-        draw.ellipse((3, 1, 13, 14), fill=10)
-        draw.arc((4, 2, 11, 13), 110, 260, fill=7)
+        ellipse(draw, (1, 0, 14, 15), 9)
+        draw.ellipse((2, 1, 13, 14), fill=10)
+        draw.arc((3, 2, 11, 13), 110, 260, fill=7)
         draw.line((12, 3, 13, 7, 12, 11), fill=9)
-        for x in (5, 10):
+        for x in (5, 9):
             draw.rectangle((x, 5, x + 2, 8), fill=8)
             draw.rectangle((x + 1, 6, x + 2, 8), fill=1)
-        draw.line((7, 11, 9, 11), fill=9)
+        draw.line((7, 11, 8, 11), fill=9)
     elif kind == 3:
-        draw.line((4, 7, 8, 1, 12, 6), fill=5, width=2)
-        draw.polygon([(8, 2), (12, 0), (15, 1), (12, 4)], fill=4)
-        for x, y in [(0, 6), (8, 5)]:
-            ellipse(draw, (x, y, x + 7, 14), 9)
-            draw.ellipse((x + 1, y, x + 6, 12), fill=11)
+        draw.line((3, 7, 7, 3, 10, 6), fill=5)
+        draw.polygon([(7, 3), (10, 1), (13, 1), (11, 4)], fill=5, outline=3)
+        draw.line((9, 3, 11, 2), fill=6)
+        for x, y in [(1, 7), (8, 6)]:
+            # Keep a continuous, opaque fruit edge; facial marks stay inside it.
+            ellipse(draw, (x, y, x + 5, 13), 11, 9)
+            draw.ellipse((x + 1, y + 1, x + 4, 11), fill=11)
+            draw.line((x + 1, y + 2, x + 2, y + 1), fill=14)
             draw.point((x + 2, y + 2), fill=8)
-            draw.line((x + 4, y + 3, x + 5, y + 4), fill=1)
-            draw.point((x + 5, y + 5), fill=1)
+            draw.point((x + 3, y + 3), fill=1)
+            draw.point((x + 3, y + 4), fill=1)
     else:
         raise ValueError(f'Not a seed packet: {kind}')
     # Center the visible artwork, ignoring transparent padding; retain native pixels.
     bounds = image.getbbox()
     portrait = image.crop(bounds)
-    centered = canvas(16, 16)
-    centered.paste(portrait, ((16 - portrait.width + 1) // 2, (16 - portrait.height + 1) // 2))
+    centered = canvas(15, height)
+    centered.paste(portrait, ((15 - portrait.width + 1) // 2, (height - portrait.height + 1) // 2))
     return centered
 
 
@@ -171,38 +173,55 @@ def traffic_cone(draw):
 
 
 def zombie(draw, cone, pose, chewing):
-    draw.ellipse((6, 25, 26, 27), fill=2)
+    bite_pose = pose
+    if chewing:
+        pose = 0  # Keep feet and hands planted; only the jaw moves while eating.
+    draw.ellipse((8, 25, 24, 27), fill=2)
     # Opposing feet/arms form a two-frame shuffle, rather than just vertical bobbing.
     left = 11 - pose * 2
     right = 20 + pose
+    draw.line((15, 22, left + 2, 26), fill=1, width=5)
+    draw.line((20, 22, right, 26), fill=1, width=5)
     draw.line((15, 22, left + 2, 26), fill=15, width=3)
     draw.line((20, 22, right, 26), fill=15, width=3)
-    draw.rectangle((left - 1, 26, left + 3, 27), fill=1)
-    draw.rectangle((right - 2, 26, right + 2, 27), fill=1)
-    draw.polygon([(13, 16), (21, 17), (23, 23), (13, 23), (11, 20)], fill=9, outline=1)
+    draw.rounded_rectangle((left - 1, 25, left + 3, 27), radius=1, fill=1)
+    draw.rounded_rectangle((right - 2, 25, right + 2, 27), radius=1, fill=1)
+    draw.polygon([(14, 16), (20, 16), (22, 18), (23, 22),
+                  (21, 24), (14, 24), (12, 22), (11, 19)], fill=9, outline=1)
     draw.line((21, 18, 22, 21), fill=10)
     draw.polygon([(14, 17), (16, 20), (18, 17)], fill=8)
     draw.line((16, 19, 15, 22), fill=11, width=2)
-    draw.line((13, 19, 9, 21 - pose, 6, 20 - pose), fill=9, width=3)
-    draw.line((20, 19, 14, 22, 10, 21), fill=9, width=2)
-    if chewing:
-        draw.line((10, 21, 8, 16 + pose, 11, 15 + pose), fill=12, width=2)
-    else:
-        draw.rectangle((4, 18 - pose, 8, 20 - pose), fill=12)
-        draw.point((4, 18 - pose), fill=13)
+    # Sleeves stay outside the shirt instead of cutting dark stripes across it.
+    draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=1, width=3)
+    draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=9)
+    ellipse(draw, (3, 15 - pose, 8, 18 - pose), 12)
+    draw.line((4, 16 - pose, 5, 16 - pose), fill=13)
+    draw.line((12, 20, 9, 22 - pose, 6, 21 - pose), fill=1, width=3)
+    draw.line((12, 20, 9, 22 - pose, 6, 21 - pose), fill=9)
+    ellipse(draw, (2, 20 - pose, 7, 23 - pose), 12)
+    draw.line((3, 21 - pose, 4, 21 - pose), fill=13)
+    zombie_head(draw, cone, bite_pose, chewing)
+
+
+def zombie_head(draw, cone=False, pose=0, chewing=False):
+    """Shared face artwork for world sprites and the wave indicator."""
     ellipse(draw, (9, 8, 22, 18), 12)
-    draw.rectangle((11, 8, 20, 14), fill=13)
-    draw.polygon([(10, 13), (7, 14), (8, 18), (16, 18), (17, 15)], fill=12, outline=1)
-    for x in (10, 17):
-        draw.rectangle((x, 11, x + 3, 13), fill=8)
-        draw.point((x, 12), fill=1)
-    draw.line((11, 9, 14, 9), fill=12)
-    draw.point((21, 14), fill=1)
-    draw.rectangle((9, 16, 14, 17 + (pose if chewing else 0)), fill=1)
-    draw.point((10, 16), fill=8)
-    draw.point((13, 16), fill=8)
+    draw.ellipse((10, 9, 20, 16), fill=13)
+    # A sunken cheek and rounded jaw keep the mouth inside the face silhouette.
+    draw.line((19, 14, 20, 16), fill=12, width=2)
+    draw.line((10, 15, 10, 16), fill=12)
+    for x, y in ((10, 10), (17, 10)):
+        ellipse(draw, (x, y, x + 4, y + 4), 8)
+        draw.line((x + 1, y + 1, x + 1, y + 2), fill=1)
+    draw.line((15, 13, 15, 14), fill=12)
+    draw.line((12, 16, 14, 16), fill=1)
+    draw.point((12, 16), fill=13)
+    if chewing and pose:
+        draw.line((12, 17, 14, 17), fill=1)
+        draw.point((14, 16), fill=13)
     if not cone:
-        draw.line((12, 8, 13, 7, 16, 7), fill=1)
+        draw.line((12, 8, 13, 7), fill=1)
+        draw.point((16, 7), fill=1)
         draw.point((20, 8), fill=1)
     else:
         traffic_cone(draw)

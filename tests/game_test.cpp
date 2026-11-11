@@ -1,5 +1,6 @@
 #include "game.h"
 #include "wave_track.h"
+#include "audio_settings.h"
 #include <cassert>
 #include <cstdio>
 
@@ -258,6 +259,13 @@ void chewing_tracks_damage()
         game.tick();
         bool damaged = game.plants()[cell_index(1, 8)].health < health;
         assert(game.events().bite == damaged);
+        if(damaged || previous_bite >= 0)
+        {
+            bool eating = false;
+            for(const auto& zombie : game.zombies())
+            { eating |= zombie.active && zombie.eating; }
+            assert(eating);
+        }
         if(damaged)
         {
             if(previous_bite >= 0) { assert(frame - previous_bite == 40); }
@@ -275,6 +283,7 @@ void chewing_tracks_damage()
     {
         game.tick();
         assert(! game.events().bite);
+        for(const auto& zombie : game.zombies()) { assert(! zombie.eating); }
     }
     std::puts("PASS chewing cues match plant damage, bite cadence, pause, and target removal");
 }
@@ -282,6 +291,20 @@ void chewing_tracks_damage()
 
 int main()
 {
+    AudioSettings audio;
+    assert(audio.gain(AudioChannel::music) == 50);
+    assert(! audio.adjust(AudioChannel::effects, 1));
+    assert(audio.adjust(AudioChannel::master, -5));
+    assert(audio.gain(AudioChannel::music) == 25);
+    assert(audio.gain(AudioChannel::effects) == 50);
+    assert(audio.adjust(AudioChannel::music, -20));
+    assert(audio.gain(AudioChannel::music) == 0);
+    assert(audio.gain(AudioChannel::effects) == 50);
+    assert(! audio.adjust(AudioChannel::music, -1));
+    assert(audio.adjust(AudioChannel::master, -20));
+    assert(audio.gain(AudioChannel::effects) == 0);
+    assert(audio.adjust(AudioChannel::music, 30));
+    assert(audio.levels[1] == 10 && audio.gain(AudioChannel::music) == 0);
     wave_track_alignment();
     economy_and_pause();
     combat();

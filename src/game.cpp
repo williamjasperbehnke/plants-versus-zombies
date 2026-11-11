@@ -319,6 +319,7 @@ void Game::update_zombies()
                distance >= -5 * scale && distance <= 15 * scale)
             { target = &plant; break; }
         }
+        zombie.eating = target != nullptr;
         if(target)
         {
             if(--zombie.bite_timer <= 0)

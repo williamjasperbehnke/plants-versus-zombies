@@ -2,7 +2,7 @@
 
 A playable Plants vs. Zombies-inspired lawn defense game built in C++ with
 [Butano](https://github.com/GValiente/butano). Uses original, generated pixel art
-and synthesized sound effects. Open **garden_guard.gba** in mGBA or copy it to a
+and synthesized sound effects plus an original looping music track. Open **garden_guard.gba** in mGBA or copy it to a
 GBA-compatible flash cartridge.
 
 ![Gameplay captured from the ROM in mGBA](docs/gameplay.png)
@@ -14,7 +14,7 @@ and peashooters sway with flexing leaves, wall-nuts gently bob in every damage
 state, and cherry pairs rock while armed. Peashooters have a smaller head and a
 separate firing pose. Zombies have separate
 walking and chewing poses. Wall-nuts show two levels of damage. Seed packets
-use dedicated 16-pixel portraits centered by their visible artwork, on dark
+use dedicated 15-pixel portraits centered by their visible artwork, on dark
 inset panels. Both peashooter leaves are visible. The title uses the exact
 gameplay sunflower, peashooter, and regular zombie sprites at integer 2× scale,
 preserving their proportions, colors, and pixel shapes. The entire title screen
@@ -40,8 +40,16 @@ oval base wrapped around the crown, with shaded sides and a reflective band.
 | Hold SELECT + A | Remove the plant under the cursor; no refund |
 
 On the title/results screens, A also starts a run. On results, B returns to
-the title. Pause has a menu: Up/Down selects Resume, Restart, or Title, and A
-confirms. START or B immediately resumes.
+the title. In the pause menu, Up/Down selects Resume, Restart, Title, Master,
+Music, or Effects. A confirms actions; Left/Right adjusts the selected volume
+in 10% steps (hold to repeat). START or B immediately resumes. Master scales
+both music and effects; setting a slider to zero mutes that channel. Settings
+persist across restarts and title visits for the current session.
+
+The original **Garden at Dusk** track loops through four musical phrases using
+three synthesized instruments. Music continues through menus so volume changes
+can be heard immediately. Regenerate the tracker module along with the artwork
+using `python3 tools/generate_assets.py`; the composer is `tools/generate_music.py`.
 
 Survive five waves. A zombie reaching the house loses the game. Each lane has
 one lawn mower that automatically activates as a last defense. The next wave
@@ -67,7 +75,8 @@ a gap above the seed packets. Its continuous track has five flag markers and a
 moving zombie head. The track extends left to x=56 while keeping its right edge
 at x=224. The generated `include/wave_track.h` shares exact integer boundaries
 between the artwork and renderer. Unscaled segments, flag poles, fill frontier,
-and the head's pointer meet at the same pixel at every wave checkpoint.
+and the head's horizontal center meet at the same pixel at every wave checkpoint.
+The head sits on the track, with no triangle pointer.
 Red flags mark upcoming waves, gold marks progress through a wave,
 and green marks a cleared wave. Compact pennants have shorter poles and clean
 cloth shading. The slightly larger final pennant has a six-pixel skull with
@@ -82,7 +91,7 @@ wave. Wave changes also have sound cues.
 Placement feedback stays at the action: a red cross and cursor shake for an
 occupied tile, a green check for a successful plant, and an hourglass badge over
 the recharging packet's illustration. Its larger glass bulbs, narrow waist,
-brass caps, and subdued dark backing stay distinct from the plant art while
+brass caps, and borderless dark backing stay distinct from the plant art while
 leaving the price readable. Three sand levels track recharge progress.
 The selection outline follows the packet's rounded corners and exact bounds.
 An unaffordable packet's border pulses red while the sun bank
@@ -109,7 +118,7 @@ background layer. The lawn background is used only during play; menus contain
 no copied seed bar or empty lawn. Results include your wave, defeats, and time.
 Menus use a quiet frame and clear primary actions: Play on the title, Resume /
 Restart / Title while paused, and Retry or Play Again on results. The pause menu
-uses one caret; results show two compact stat rows.
+uses one caret and three volume sliders; results show two compact stat rows.
 
 [Menu overview](docs/menus.png)
 
