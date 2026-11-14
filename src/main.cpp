@@ -6,15 +6,16 @@
 #include "bn_music_items.h"
 #include "game.h"
 #include "presentation.h"
+#include "save_store.h"
 
 namespace
 {
 // Immediate response on press, then controlled repeat for comfortable grid navigation.
-bool repeat(bool held, int& frames)
+bool repeat(bool held, int& frames, int delay = 16, int interval = 5)
 {
     if(! held) { frames = 0; return false; }
     ++frames;
-    return frames == 1 || (frames > 16 && (frames - 16) % 5 == 0);
+    return frames == 1 || (frames > delay && (frames - delay) % interval == 0);
 }
 
 class Application
@@ -22,14 +23,19 @@ class Application
 public:
     void run()
     {
+        _game.load_progress(_save.load());
+        _save.update(_game.progress());
         bn::music_items::garden_theme.play();
         apply_audio();
         while(true)
         {
             handle_input();
+            if(_game.phase() != garden::Phase::lost && ! bn::music::playing())
+            { bn::music_items::garden_theme.play(); apply_audio(); }
             const auto old_phase = _game.phase();
             _game.tick();
             play_events(old_phase);
+            _save.update(_game.progress());
             if(_game.phase() == garden::Phase::playing && _view.feedback_frames > 0)
             { --_view.feedback_frames; }
             _view.shoveling = bn::keypad::select_held();
@@ -50,6 +56,7 @@ private:
         auto audio = _view.audio;
         _view = garden::ViewState();
         _view.audio = audio;
+        _seed_repeat = {};
     }
 
     void play_events(garden::Phase previous_phase)
@@ -58,7 +65,25 @@ private:
         if(previous_phase != _game.phase())
         {
             if(_game.phase() == Phase::won) { bn::sound_items::win.play(); return; }
-            if(_game.phase() == Phase::lost) { bn::sound_items::lose.play(); return; }
+            if(_game.phase() == Phase::lost)
+            {
+                bn::music::stop();
+                bn::sound::stop_all();
+                bn::sound_items::record_scratch.play();
+                return;
+            }
+        }
+        if(_game.phase() == Phase::won)
+        {
+            int frame = _game.reward_frames();
+            if(frame == 48 || frame == 84 || frame == 112 || frame == 132)
+            { bn::sound_items::plant.play(bn::fixed(0.35)); }
+            if(frame == garden::reward_reveal_frame) { bn::sound_items::collect.play(); }
+        }
+        if(_game.phase() == Phase::lost)
+        {
+            if(_game.loss_frames() == garden::defeat_audio::scream_frame) { bn::sound_items::scream.play(); }
+            return;
         }
         if(_game.phase() != Phase::playing) { return; }
         if(_combat_sound_cooldown > 0) { --_combat_sound_cooldown; }
@@ -71,7 +96,7 @@ private:
         }
         if(events.explosion) { bn::sound_items::boom.play(); }
         else if(events.mower) { bn::sound_items::mower.play(); }
-        else if(events.wave_started) { bn::sound_items::wave_start.play(); }
+        else if(events.final_wave_approaching || events.horde_started) { bn::sound_items::wave_start.play(); }
         else if(events.wave_cleared) { bn::sound_items::wave_clear.play(); }
         else if(! _combat_sound_cooldown && (events.hit || events.shot))
         {
@@ -83,7 +108,7 @@ private:
 
     void start_game()
     {
-        _game.start();
+        _game.prepare_level();
         reset_view();
         _repeat = {};
         _combat_sound_cooldown = 0;
@@ -92,7 +117,7 @@ private:
 
     void show_title()
     {
-        _game = garden::Game();
+        _game.return_to_title();
         reset_view();
         _repeat = {};
     }
@@ -112,10 +137,96 @@ private:
     void handle_input()
     {
         using namespace garden;
-        if(_game.phase() == Phase::title || _game.phase() == Phase::won || _game.phase() == Phase::lost)
+        if(_game.phase() != Phase::playing) { _seed_repeat = {}; }
+        if(_game.phase() == Phase::almanac)
         {
-            if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { start_game(); }
-            else if(bn::keypad::b_pressed() && _game.phase() != Phase::title) { show_title(); }
+            if(bn::keypad::b_pressed())
+            {
+                if(_view.almanac_details) { _view.almanac_details = false; }
+                else { _game.close_almanac(); }
+                _repeat = {};
+                return;
+            }
+            if(_view.almanac_details) { return; }
+            if(bn::keypad::a_pressed())
+            { _view.almanac_details = true; _repeat = {}; bn::sound_items::navigate.play(); return; }
+            if(bn::keypad::l_pressed() || bn::keypad::r_pressed())
+            { _view.almanac_zombies = ! _view.almanac_zombies; bn::sound_items::navigate.play(); }
+            int delta = 0;
+            if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
+            if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
+            if(repeat(bn::keypad::up_held(), _repeat[0])) { delta -= 3; }
+            if(repeat(bn::keypad::down_held(), _repeat[1])) { delta += 3; }
+            int count = _view.almanac_zombies ? zombie_type_count : plant_count;
+            if(delta)
+            {
+                _view.almanac_entry = (_view.almanac_entry + count + delta) % count;
+                bn::sound_items::navigate.play();
+            }
+            return;
+        }
+        if(_game.phase() == Phase::preview)
+        {
+            if(_game.preview_returning()) { return; }
+            if(bn::keypad::b_pressed())
+            { _game.open_level_select(); reset_view(); _repeat = {}; }
+            else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            { _game.begin_level(); _repeat = {}; }
+            return;
+        }
+        if(_game.phase() == Phase::lost)
+        {
+            if(! _game.loss_ready()) { return; }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed()) { start_game(); }
+            else if(bn::keypad::b_pressed())
+            { _game.open_level_select(); reset_view(); _repeat = {}; }
+            return;
+        }
+        if(_game.phase() == Phase::level_select)
+        {
+            int delta = 0;
+            if(repeat(bn::keypad::left_held(), _repeat[2]) && _game.level() % 5 > 0) { --delta; }
+            if(repeat(bn::keypad::right_held(), _repeat[3]) && _game.level() % 5 < 4) { ++delta; }
+            if(repeat(bn::keypad::up_held(), _repeat[0]) && _game.level() % levels_per_world >= 5) { delta -= 5; }
+            if(repeat(bn::keypad::down_held(), _repeat[1]) && _game.level() % levels_per_world < 5) { delta += 5; }
+            if(delta) { _game.select_level(delta); bn::sound_items::navigate.play(); }
+            if(bn::keypad::b_pressed()) { show_title(); }
+            else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                if(_game.level_unlocked(_game.level())) { start_game(); }
+                else { bn::sound_items::error.play(); }
+            }
+            return;
+        }
+        if(_game.phase() == Phase::title)
+        {
+            int choice = static_cast<int>(_view.title_choice);
+            bool up = repeat(bn::keypad::up_held(), _repeat[0]);
+            bool down = repeat(bn::keypad::down_held(), _repeat[1]);
+            if(up != down)
+            {
+                choice = (choice + 1) % static_cast<int>(TitleChoice::count);
+                _view.title_choice = static_cast<TitleChoice>(choice);
+                bn::sound_items::navigate.play();
+            }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                if(_view.title_choice == TitleChoice::almanac) { _game.open_almanac(); }
+                else { _game.open_level_select(); reset_view(); }
+                _repeat = {};
+            }
+            return;
+        }
+        if(_game.phase() == Phase::won)
+        {
+            if(! _game.reward_ready()) { return; }
+            if(bn::keypad::start_pressed() || bn::keypad::a_pressed())
+            {
+                _game.open_level_select();
+                reset_view();
+                _repeat = {};
+            }
+            else if(bn::keypad::b_pressed()) { show_title(); }
             return;
         }
         if(_game.phase() == Phase::paused)
@@ -150,7 +261,7 @@ private:
                 {
                 case PauseChoice::resume: _game.toggle_pause(); _repeat = {}; break;
                 case PauseChoice::restart: start_game(); break;
-                case PauseChoice::title: show_title(); break;
+                case PauseChoice::choose_levels: _game.open_level_select(); reset_view(); _repeat = {}; break;
                 default: break;
                 }
             }
@@ -168,10 +279,13 @@ private:
         if(repeat(bn::keypad::down_held(), _repeat[1]) && _view.cursor.row < rows - 1) { ++_view.cursor.row; }
         if(repeat(bn::keypad::left_held(), _repeat[2]) && _view.cursor.column > 0) { --_view.cursor.column; }
         if(repeat(bn::keypad::right_held(), _repeat[3]) && _view.cursor.column < columns - 1) { ++_view.cursor.column; }
-        int seed = static_cast<int>(_view.cursor.seed);
-        if(bn::keypad::l_pressed()) { _view.cursor.seed = static_cast<PlantType>((seed + plant_count - 1) % plant_count); }
-        if(bn::keypad::r_pressed()) { _view.cursor.seed = static_cast<PlantType>((seed + 1) % plant_count); }
-        if(seed != static_cast<int>(_view.cursor.seed)) { bn::sound_items::navigate.play(); }
+        int seed = seed_slot(_view.cursor.seed);
+        int count = _game.available_plants();
+        int seed_delta = 0;
+        if(repeat(bn::keypad::l_held(), _seed_repeat[0], 20, 10)) { --seed_delta; }
+        if(repeat(bn::keypad::r_held(), _seed_repeat[1], 20, 10)) { ++seed_delta; }
+        _view.cursor.seed = seed_order[(seed + count + seed_delta) % count];
+        if(seed != seed_slot(_view.cursor.seed)) { bn::sound_items::navigate.play(); }
         if(bn::keypad::b_pressed() || (bn::keypad::b_held() && _game.elapsed() % 15 == 0))
         {
             int collected = _game.collect_sun();
@@ -204,10 +318,12 @@ private:
         }
     }
 
+    garden::SaveStore _save;
     garden::Game _game;
     garden::ViewState _view;
     garden::Presentation _presentation;
     std::array<int, 4> _repeat{};
+    std::array<int, 2> _seed_repeat{};
     int _bite_sound_cooldown = 0;
     int _combat_sound_cooldown = 0;
 };

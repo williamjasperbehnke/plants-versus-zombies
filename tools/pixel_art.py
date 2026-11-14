@@ -1,6 +1,15 @@
 """Original pixel art for the garden and its characters, using the shared 16-color palette."""
 import math
+from pathlib import Path
 from PIL import Image, ImageDraw
+
+
+# Temporary mask index: character atlases pack this into a dedicated palette slot.
+SHADOW_PIXEL = 16
+
+
+def shadow(draw, box):
+    draw.ellipse(box, fill=SHADOW_PIXEL)
 
 
 def ellipse(draw, box, color, outline=1):
@@ -16,7 +25,7 @@ def leaf(draw, x, y, right=False):
 
 
 def plant_base(draw, pose=0):
-    draw.ellipse((6, 24, 26, 26), fill=2)
+    shadow(draw, (6, 24, 26, 26))
     draw.line((15, 17, 15, 24), fill=2, width=3)
     draw.line((15, 18, 15, 23), fill=5)
     leaf(draw, 14, 24 - pose)
@@ -59,8 +68,16 @@ def peashooter(draw, firing, pose=0):
         draw.line((6, 12, 5, 10), fill=6)
 
 
+def snow_peashooter(draw, firing, pose):
+    peashooter(draw, firing, pose)
+    draw.polygon([(10, 11 + pose), (10, 7 + pose), (13, 9 + pose),
+                  (15, 6 + pose), (16, 9 + pose), (20, 7 + pose), (19, 11 + pose)], fill=6, outline=4)
+    draw.point((15, 8 + pose), fill=8)
+    draw.point((11, 13 + pose), fill=6)
+
+
 def walnut(draw, damage):
-    draw.ellipse((7, 24, 26, 26), fill=2)
+    shadow(draw, (7, 24, 26, 26))
     ellipse(draw, (8, 8, 24, 26), 9)
     draw.ellipse((9, 9, 23, 24), fill=10)
     draw.arc((10, 10, 20, 23), 105, 260, fill=7, width=2)
@@ -81,7 +98,7 @@ def walnut(draw, damage):
 
 
 def cherries(draw, pose=0):
-    draw.ellipse((5, 24, 27, 26), fill=2)
+    shadow(draw, (5, 24, 27, 26))
     draw.line((11, 15, 17, 9, 22, 15), fill=2, width=2)
     draw.line((12, 14, 17, 10), fill=5)
     draw.polygon([(17, 10), (22, 8), (26, 9), (22, 12)], fill=4, outline=2)
@@ -90,15 +107,26 @@ def cherries(draw, pose=0):
         dy = -pose if index == 0 else 0
         ellipse(draw, (x, 14 + dy, x + 9, 25 + dy), 9)
         draw.ellipse((x + 1, 14 + dy, x + 8, 23 + dy), fill=11)
-        draw.line((x + 2, 16 + dy, x + 3, 15 + dy), fill=8, width=2)
-        draw.line((x + 4, 18 + dy, x + 6, 19 + dy), fill=1)
-        draw.point((x + 5, 20 + dy), fill=1)
-        draw.point((x + 6, 22 + dy), fill=14)
+        draw.line((x + 2, 16 + dy, x + 3, 15 + dy), fill=14)
+        draw.point((x + 3, 15 + dy), fill=8)
+        for eye in (x + 3, x + 6):
+            draw.rectangle((eye, 18 + dy, eye + 1, 20 + dy), fill=8)
+            draw.point((eye + (1 if index == 0 else 0), 19 + dy), fill=1)
+        if index == 0:
+            draw.line((x + 2, 17 + dy, x + 4, 18 + dy), fill=1)
+            draw.line((x + 6, 18 + dy, x + 7, 17 + dy), fill=1)
+            draw.line((x + 3, 22 + dy, x + 6, 22 + dy), fill=1)
+            draw.point((x + 4, 22 + dy), fill=8)
+        else:
+            draw.line((x + 2, 17 + dy, x + 4, 16 + dy), fill=9)
+            draw.line((x + 6, 16 + dy, x + 7, 17 + dy), fill=9)
+            draw.line((x + 4, 22 + dy, x + 6, 22 + dy), fill=1)
+            draw.point((x + 4, 23 + dy), fill=1)
 
 
 def seed_icon(kind, canvas):
     """Draw centered native-pixel portraits, with an extra row for the walnut."""
-    height = 16 if kind == 2 else 15
+    height = 16 if kind in (1, 2, 5) else 15
     image = canvas(15, height)
     draw = ImageDraw.Draw(image)
     if kind == 0:
@@ -115,7 +143,7 @@ def seed_icon(kind, canvas):
         draw.line((7, 11, 7, 13), fill=5)
         draw.polygon([(6, 12), (2, 11), (3, 13), (6, 13)], fill=4)
         draw.polygon([(8, 12), (12, 11), (11, 13), (8, 13)], fill=5)
-    elif kind == 1:
+    elif kind in (1, 5):
         ellipse(draw, (1, 2, 11, 12), 4)
         draw.ellipse((2, 3, 10, 10), fill=5)
         draw.line((4, 3, 7, 3), fill=6)
@@ -126,10 +154,13 @@ def seed_icon(kind, canvas):
         draw.point((12, 5), fill=6)
         draw.rectangle((6, 5, 7, 7), fill=1)
         draw.point((6, 5), fill=8)
-        draw.line((6, 12, 6, 14), fill=5, width=2)
+        draw.line((6, 12, 6, 15), fill=5, width=2)
         draw.polygon([(5, 13), (1, 11), (2, 14), (5, 14)], fill=4)
         draw.polygon([(8, 13), (13, 11), (12, 14), (8, 14)], fill=4)
         draw.line((9, 13, 12, 12), fill=6)
+        if kind == 5:
+            draw.polygon([(2, 3), (2, 0), (5, 2), (7, 0), (8, 2), (11, 1), (9, 4)], fill=6, outline=4)
+            draw.point((7, 1), fill=8)
     elif kind == 2:
         ellipse(draw, (1, 0, 14, 15), 9)
         draw.ellipse((2, 1, 13, 14), fill=10)
@@ -139,18 +170,31 @@ def seed_icon(kind, canvas):
             draw.rectangle((x, 5, x + 2, 8), fill=8)
             draw.rectangle((x + 1, 6, x + 2, 8), fill=1)
         draw.line((7, 11, 8, 11), fill=9)
+    elif kind == 4:
+        ellipse(draw, (1, 4, 13, 13), 10, 9)
+        draw.arc((2, 5, 12, 12), 140, 275, fill=7)
+        draw.line((4, 5, 8, 5), fill=7)
+        draw.point((3, 7), fill=8)
+        draw.point((11, 11), fill=9)
+        draw.line((7, 2, 7, 5), fill=1)
+        ellipse(draw, (5, 0, 9, 3), 11, 13)
+        draw.point((6, 1), fill=8)
+        for x in (4, 9):
+            draw.ellipse((x - 1, 7, x + 1, 10), fill=8)
+            draw.line((x, 8, x, 9), fill=1)
+        draw.line((6, 11, 8, 11), fill=9)
     elif kind == 3:
         draw.line((3, 7, 7, 3, 10, 6), fill=5)
         draw.polygon([(7, 3), (10, 1), (13, 1), (11, 4)], fill=5, outline=3)
         draw.line((9, 3, 11, 2), fill=6)
-        for x, y in [(1, 7), (8, 6)]:
-            # Keep a continuous, opaque fruit edge; facial marks stay inside it.
-            ellipse(draw, (x, y, x + 5, 13), 11, 9)
-            draw.ellipse((x + 1, y + 1, x + 4, 11), fill=11)
-            draw.line((x + 1, y + 2, x + 2, y + 1), fill=14)
-            draw.point((x + 2, y + 2), fill=8)
-            draw.point((x + 3, y + 3), fill=1)
-            draw.point((x + 3, y + 4), fill=1)
+        for x, y in [(1, 6), (8, 5)]:
+            # Two readable eyes and a little grin, enclosed by a solid fruit edge.
+            ellipse(draw, (x, y, x + (6 if x == 8 else 5), 14), 11, 9)
+            draw.point((x + 2, y + 1), fill=14)
+            for eye in (x + 1, x + (4 if x == 8 else 3)):
+                draw.line((eye, y + 2, eye, y + 3), fill=8)
+                draw.point((eye, y + 3), fill=1)
+            draw.line((x + 2, y + 5, x + 3, y + 5), fill=1)
     else:
         raise ValueError(f'Not a seed packet: {kind}')
     # Center the visible artwork, ignoring transparent padding; retain native pixels.
@@ -174,24 +218,27 @@ def traffic_cone(draw):
     draw.line((12, 8, 20, 8), fill=14)
 
 
-def zombie(draw, cone, pose, chewing):
+def zombie(draw, cone, pose, chewing, carrying=None):
     bite_pose = pose
     if chewing:
         pose = 0  # Keep feet and hands planted; only the jaw moves while eating.
-    draw.ellipse((8, 25, 24, 27), fill=2)
+    shadow(draw, (8, 25, 24, 27))
     # Opposing feet/arms form a two-frame shuffle, rather than just vertical bobbing.
     left = 11 - pose * 2
     right = 20 + pose
+    trousers = 15
     # Closed silhouettes retain a single-pixel border along each trouser leg.
-    draw.polygon([(13, 22), (17, 22), (left + 3, 26), (left, 26)], fill=15, outline=1)
-    draw.polygon([(18, 22), (22, 22), (right + 1, 26), (right - 2, 26)], fill=15, outline=1)
+    draw.polygon([(13, 22), (17, 22), (left + 3, 26), (left, 26)], fill=trousers, outline=1)
+    draw.polygon([(18, 22), (22, 22), (right + 1, 26), (right - 2, 26)], fill=trousers, outline=1)
     draw.rounded_rectangle((left - 1, 26, left + 3, 27), radius=1, fill=1)
     draw.rounded_rectangle((right - 2, 26, right + 2, 27), radius=1, fill=1)
+    coat = 9
+    coat_light = 10
     draw.polygon([(14, 16), (20, 16), (22, 18), (23, 22),
-                  (21, 24), (14, 24), (12, 22), (11, 19)], fill=9, outline=1)
-    draw.polygon([(19, 18), (21, 18), (22, 21), (21, 23), (19, 23)], fill=10)
-    draw.line((14, 18, 13, 20), fill=10)
-    draw.point((20, 22), fill=9)
+                  (21, 24), (14, 24), (12, 22), (11, 19)], fill=coat, outline=1)
+    draw.polygon([(19, 18), (21, 18), (22, 21), (21, 23), (19, 23)], fill=coat_light)
+    draw.line((14, 18, 13, 20), fill=coat_light)
+    draw.point((20, 22), fill=coat)
     # A shaded shirt and narrow tie leave room for small vertical fabric folds.
     draw.polygon([(14, 17), (18, 17), (18, 22), (16, 23), (14, 22)], fill=13)
     draw.line((14, 20, 14, 21), fill=12)
@@ -199,15 +246,170 @@ def zombie(draw, cone, pose, chewing):
     draw.polygon([(14, 17), (16, 20), (18, 17)], fill=8)
     draw.polygon([(16, 19), (17, 20), (16, 23), (15, 22)], fill=11)
     # Sleeves stay outside the shirt instead of cutting dark stripes across it.
-    draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=1, width=3)
-    draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=9)
-    ellipse(draw, (3, 15 - pose, 8, 18 - pose), 12)
-    draw.line((4, 16 - pose, 5, 16 - pose), fill=13)
-    draw.line((12, 20, 9, 22 - pose, 6, 21 - pose), fill=1, width=3)
-    draw.line((12, 20, 9, 22 - pose, 6, 21 - pose), fill=9)
-    ellipse(draw, (2, 20 - pose, 7, 23 - pose), 12)
-    draw.line((3, 21 - pose, 4, 21 - pose), fill=13)
+    if carrying != 'door':
+        draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=1, width=3)
+        draw.line((12, 18, 8, 18 - pose, 6, 17 - pose), fill=coat)
+        ellipse(draw, (3, 15 - pose, 8, 18 - pose), 12)
+        draw.line((4, 16 - pose, 5, 16 - pose), fill=13)
+    if carrying is None:
+        draw.line((12, 20, 9, 22 - pose, 6, 21 - pose), fill=1, width=3)
+        draw.line((12, 20, 9, 22 - pose, 6, 21 - pose), fill=coat)
+        ellipse(draw, (2, 20 - pose, 7, 23 - pose), 12)
+        draw.line((3, 21 - pose, 4, 21 - pose), fill=13)
     zombie_head(draw, cone, bite_pose, chewing)
+
+
+def newspaper_zombie(draw, pose, chewing, shielded):
+    # Preserve the runner's exposed brain, blue jacket, and original animation.
+    with Image.open(Path(__file__).parent / 'art' / 'runner_base.png') as base:
+        frame = int(chewing) * 2 + pose
+        for y in range(32):
+            for x in range(32):
+                color = base.getpixel((x, frame * 32 + y))
+                # The shielded poses use a new grip tied to the paper's motion.
+                # Remove the runner's reaching hands, which swing in the opposite direction.
+                if color == 2 and y >= 25: color = SHADOW_PIXEL
+                reaching_hand = shielded and x < 9 and 14 <= y <= 23
+                if color and not reaching_hand:
+                    draw.point((x, y), fill=color)
+    for x in (10, 17):
+        draw.rectangle((x, 10, x + 4, 14), outline=1)
+    draw.line((14, 11, 17, 11), fill=1)
+    if shielded:
+        dy = pose
+        # The bent sleeve passes behind the paper; only the fingertips peek over it.
+        draw.line((21, 18, 18, 18 + dy, 13, 15 + dy), fill=1, width=3)
+        draw.line((21, 18, 18, 18 + dy, 13, 15 + dy), fill=15)
+        draw.polygon([(2, 15 + dy), (8, 16 + dy), (14, 14 + dy), (15, 23 + dy),
+                      (9, 25 + dy), (3, 24 + dy)], fill=13, outline=1)
+        draw.polygon([(3, 16 + dy), (8, 17 + dy), (8, 23 + dy), (4, 23 + dy)], fill=8)
+        draw.line((9, 17 + dy, 9, 23 + dy), fill=12)
+        draw.line((4, 18 + dy, 7, 18 + dy), fill=1)
+        for y in (20, 22):
+            draw.line((4, y + dy, 7, y + dy), fill=12)
+            draw.line((11, y - 2 + dy, 13, y - 2 + dy), fill=12)
+        for x, y in ((4, 14 + dy), (11, 13 + dy)):
+            draw.rounded_rectangle((x, y, x + 4, y + 3), radius=1, fill=12, outline=1)
+            draw.line((x + 1, y + 1, x + 3, y + 1), fill=13)
+            draw.point((x + 2, y + 3), fill=1)
+    else:
+        draw.line((10, 9, 13, 10), fill=1)
+        draw.line((18, 10, 20, 9), fill=1)
+
+
+def flag_zombie(draw, pose, chewing, wind):
+    zombie(draw, False, pose, chewing, carrying='flag')
+    draw.line((25, 1, 25, 25), fill=1, width=2)
+    draw.line((25, 2, 25, 24), fill=13)
+    # The free edge lifts and curls while the edge fastened to the pole stays put.
+    edge = (0, 1, 2, 1)[wind]
+    tip = (11, 12, 14, 12)[wind]
+    draw.polygon([(tip, edge), (18, 1 + edge), (24, 0), (24, 6),
+                  (18, 7 - edge), (tip, 6 - edge), (tip + 2, 3)], fill=11, outline=9)
+    draw.line((tip + 3, 1 + edge, 18, 2 + edge, 23, 1), fill=14)
+    draw.line((18, 3 + edge, 20, 4, 23, 3), fill=9)
+    # A bent sleeve reaches the pole; fingers wrap over it rather than stopping short.
+    draw.line((21, 19, 22, 22, 25, 20), fill=1, width=4)
+    draw.line((21, 19, 22, 21, 24, 20), fill=9, width=2)
+    ellipse(draw, (23, 18, 27, 21), 12)
+    draw.line((24, 19, 26, 19), fill=13)
+    draw.point((26, 21), fill=1)
+
+
+def bucket_zombie(draw, pose, chewing, damaged):
+    zombie(draw, False, pose, chewing)
+    # A narrow steel pail sits on the forehead; its wire handle arches behind it.
+    draw.arc((10, 1, 23, 13), 180, 360, fill=1, width=3)
+    draw.arc((11, 2, 22, 12), 180, 360, fill=5)
+    draw.polygon([(12, 4), (20, 4), (22, 9), (10, 9)], fill=4, outline=1)
+    ellipse(draw, (12, 3, 20, 5), 4)
+    draw.line((13, 4, 19, 4), fill=6)
+    draw.polygon([(12, 5), (13, 5), (12, 8), (11, 8)], fill=5)
+    draw.polygon([(19, 5), (20, 5), (21, 8), (19, 8)], fill=3)
+    ellipse(draw, (10, 9, 23, 11), 3)
+    draw.line((11, 10, 22, 10), fill=5)
+    draw.point((11, 7), fill=6)
+    draw.point((22, 7), fill=6)
+    draw.point((18, 6), fill=3)
+    draw.point((19, 6), fill=6)
+    if damaged:
+        draw.line((17, 5, 16, 6, 18, 7, 17, 9), fill=3)
+        draw.point((18, 7), fill=6)
+        draw.line((12, 8, 14, 8), fill=3)
+
+
+def screen_door_zombie(draw, pose, chewing, damaged):
+    zombie(draw, False, pose, chewing, carrying='door')
+    dy = 0 if chewing else pose
+    for points in ((12, 18, 8, 22 + dy, 3, 23 + dy),):
+        draw.line(points, fill=1, width=3)
+        draw.line(points, fill=9)
+    draw.rounded_rectangle((1, 6 + dy, 15, 27 + dy), radius=1, outline=1, width=2)
+    draw.rectangle((2, 7 + dy, 14, 26 + dy), outline=13)
+    # Open mesh preserves the existing face and hands behind the door.
+    for x in (4, 7, 10, 13):
+        if damaged and x in (7, 10):
+            draw.line((x, 9 + dy, x, 13 + dy), fill=12)
+            draw.line((x, 20 + dy, x, 22 + dy), fill=12)
+        else:
+            draw.line((x, 9 + dy, x, 22 + dy), fill=12)
+    for y in (10, 13, 16, 19, 22):
+        if damaged and y in (16, 19):
+            draw.line((3, y + dy, 5, y + dy), fill=12)
+            draw.line((11, y + dy, 13, y + dy), fill=12)
+        else:
+            draw.line((3, y + dy, 13, y + dy), fill=12)
+    draw.line((3, 23 + dy, 13, 23 + dy), fill=13)
+    draw.rectangle((3, 24 + dy, 13, 25 + dy), fill=12)
+    draw.line((4, 24 + dy, 10, 24 + dy), fill=13)
+    draw.line((13, 15 + dy, 13, 18 + dy), fill=1)
+    # The face stays behind the frame and mesh; the gripping hand comes in front.
+    # A bent sleeve, visible cuff and curled fingers wrap around the near stile.
+    draw.line((21, 18, 20, 21 + dy, 16, 21 + dy), fill=1, width=3)
+    draw.line((21, 18, 20, 20 + dy, 17, 20 + dy), fill=9)
+    draw.line((17, 20 + dy, 17, 22 + dy), fill=13)
+    draw.rounded_rectangle((12, 19 + dy, 16, 22 + dy), radius=1, fill=12, outline=1)
+    draw.line((13, 20 + dy, 15, 20 + dy), fill=13)
+    draw.point((13, 22 + dy), fill=1)
+    ellipse(draw, (1, 21 + dy, 5, 24 + dy), 12)
+    draw.point((2, 22 + dy), fill=13)
+
+
+def potato_mine(draw, frame):
+    if frame == 28:
+        draw.polygon([(3, 25), (7, 19), (4, 13), (12, 16), (16, 7),
+                      (20, 16), (27, 12), (25, 20), (30, 26)], fill=10, outline=9)
+        ellipse(draw, (9, 17, 24, 27), 7, 10)
+        draw.ellipse((12, 20, 21, 25), fill=8)
+        return
+    armed = frame != 25
+    top = 16 if armed else 22
+    shadow(draw, (6, 24, 26, 26))
+    ellipse(draw, (9, top, 24, 26), 10, 1)
+    draw.arc((10, top + 1, 23, 25), 145, 280, fill=7)
+    draw.arc((10, top, 23, 26), 10, 65, fill=9)
+    draw.line((12, top + 1, 16, top + 1), fill=7)
+    draw.point((11, top + 2), fill=8)
+    draw.point((22, 24), fill=9)
+    draw.line((17, top - 4, 17, top), fill=9, width=2)
+    draw.line((17, top - 3, 17, top - 1), fill=13)
+    draw.line((16, top - 2, 18, top - 2), fill=12)
+    ellipse(draw, (14, top - 7, 20, top - 3), 7 if frame == 27 else (11 if armed else 12), 13)
+    draw.point((16, top - 6), fill=8 if armed else 13)
+    if armed:
+        draw.polygon([(11, 18), (14, 17), (17, 17), (15, 19),
+                      (12, 20), (11, 22), (10, 21)], fill=7)
+        draw.line((12, 18, 13, 18), fill=8)
+        for x in (12, 19):
+            draw.ellipse((x, 19, x + 2, 22), fill=8)
+            draw.line((x + 1, 20, x + 1, 21), fill=1)
+        for point in ((10, 22), (22, 20), (21, 24)):
+            draw.point(point, fill=9)
+        draw.point((12, 24), fill=7)
+        draw.point((18, 18), fill=7)
+        draw.line((21, 18, 22, 21), fill=9)
+        draw.line((19, 25, 21, 24), fill=9)
+        draw.line((15, 23, 16, 24, 18, 24, 19, 23), fill=9)
 
 
 def zombie_head(draw, cone=False, pose=0, chewing=False):
@@ -234,7 +436,7 @@ def zombie_head(draw, cone=False, pose=0, chewing=False):
         traffic_cone(draw)
 
 
-def actor(frame, canvas):
+def actor(frame, canvas, separate_shadow=False):
     image = canvas(32, 32)
     draw = ImageDraw.Draw(image)
     if frame in (0, 12):
@@ -251,13 +453,46 @@ def actor(frame, canvas):
             image.paste(body, (0, 1))
     elif frame in (3, 24):
         cherries(draw, int(frame == 24))
+    elif frame in (25, 26, 27, 28):
+        potato_mine(draw, frame)
+    elif 29 <= frame <= 36:
+        local = (frame - 29) % 4
+        newspaper_zombie(draw, local % 2, local >= 2, frame < 33)
+    elif 37 <= frame <= 52:
+        local = (frame - 37) % 4
+        flag_zombie(draw, local % 2, local >= 2, (frame - 37) // 4)
+    elif 69 <= frame <= 76:
+        local = (frame - 69) % 4
+        bucket_zombie(draw, local % 2, local >= 2, frame >= 73)
+    elif 85 <= frame <= 92:
+        local = (frame - 85) % 4
+        screen_door_zombie(draw, local % 2, local >= 2, frame >= 89)
+    elif 101 <= frame <= 104:
+        if frame == 104:
+            ellipse(draw, (13, 13, 18, 18), 5, 4)
+            draw.line((14, 14, 16, 14), fill=6)
+            draw.point((14, 15), fill=8)
+            draw.point((10, 16), fill=6)
+            draw.point((8, 14), fill=5)
+        else:
+            snow_peashooter(draw, frame == 103, int(frame == 102))
     elif frame in (4, 5, 14, 15, 16, 17, 18, 19):
         cone = frame % 2 == 1
         pose = int(frame in (14, 15, 18, 19))
         zombie(draw, cone, pose, frame >= 16)
     else:
         raise ValueError(f'Not a character frame: {frame}')
+    if not separate_shadow:
+        image = image.point([2 if index == SHADOW_PIXEL else index for index in range(256)])
     return image
+
+
+def character_layers(frame, canvas):
+    """Return independently editable body pixels and the ground-shadow mask."""
+    image = actor(frame, canvas, separate_shadow=True)
+    body = image.point([0 if index == SHADOW_PIXEL else index for index in range(256)])
+    mask = image.point([15 if index == SHADOW_PIXEL else 0 for index in range(256)])
+    return body, mask
 
 
 def shovel_icon(canvas):
@@ -299,10 +534,6 @@ def draw_garden(image):
         draw.rounded_rectangle((16, y + 1, 30, bottom - 2), radius=1, fill=13)
         draw.line((18, y + 1, 28, y + 1), fill=8)
         draw.line((17, bottom - 1, 29, bottom - 1), fill=12)
-    # Preserve the narrow opposite-side path.
-    draw.rectangle((234, 57, 239, 153), fill=12)
-    for y in range(58, 154, 19):
-        draw.line((235, y + 8, 239, y + 8), fill=2)
     # Keep cell centers quiet for units; grass clusters sit mostly at tile edges.
     for row in range(5):
         for column in range(9):
@@ -336,3 +567,20 @@ def draw_garden(image):
         draw.point((x - 1, 155), fill=8 if x % 2 else 7)
         draw.point((x + 1, 155), fill=8 if x % 2 else 7)
         draw.point((x, 156), fill=14)
+
+    draw_sidewalk(image)
+
+
+def draw_sidewalk(image, right=239):
+    """The lawn's road edge continues into the scouting panorama without a seam."""
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((234, 57, right, 159), fill=13)
+    draw.line((234, 57, 234, 159), fill=12)
+    for y in range(58, 160, 19):
+        draw.line((236, y, right, y), fill=12)
+        draw.line((236, y + 1, right, y + 1), fill=8)
+    # A few blades overhang the concrete rather than ending at a ruler-straight edge.
+    for y in (65, 103, 141):
+        draw.line((233, y + 2, 235, y), fill=3)
+        draw.point((234, y + 1), fill=5)
+        draw.point((235, y), fill=4)

@@ -1,0 +1,25 @@
+Plants vs. Zombies — project notes
+
+Completed
+[x] Refine and shrink seed portraits; reduce the inset boxes on the right/bottom.
+[x] Give the sunflower portrait a larger face and visible eyes; widen and lengthen the wall-nut portrait.
+[x] Remove the hourglass border and keep the cooldown badge on the seed packet.
+[x] Move the wave zombie head down, remove the triangle, and share enemy face artwork.
+[x] Fix the sunflower idle leaf highlight spilling outside its silhouette.
+[x] Improve zombie faces, cones, visible hands, chest textures, and eating animation.
+[x] Add original looping music and Master/Music/Effects volume sliders.
+[x] Increase default volume: 100% sliders, louder effects, shared 1.5x output gain.
+[x] Add graveyard menus, tombstones, wooden signs, and a readable pause footer.
+[x] Rename the game to Plants vs. Zombies and remove old Garden Guard output files.
+
+[x] Add Front Yard, Cone Trouble, and Last Stand with session level unlocks.
+[x] Unlock Potato Mine after Front Yard; add arming, contact detonation, and vulnerable unarmed state.
+[x] Add a fast, fragile runner in later encounters.
+
+Remaining ideas / follow-up
+[ ] Make the wave-start icon match the wave-bar flags more closely.
+[ ] Expand content beyond the current five plants, three enemies, and three levels.
+[ ] Check the current volume and mix on a physical Game Boy Advance.
+
+The documentation and screenshot gallery describe implemented features; these
+remaining ideas are not part of the current playable MVP.

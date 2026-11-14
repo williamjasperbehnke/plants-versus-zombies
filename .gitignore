@@ -1,4 +1,7 @@
 build/
+build_debug/
+plants_vs_zombies_debug.gba
+plants_vs_zombies_debug.sav
 *.elf
 *.map
 __pycache__/

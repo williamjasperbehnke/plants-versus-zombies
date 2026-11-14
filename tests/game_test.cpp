@@ -1,30 +1,112 @@
 #include "game.h"
+#include "almanac.h"
 #include "wave_track.h"
 #include "audio_settings.h"
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 
 using namespace garden;
 
 namespace
 {
+void scouting_and_almanac()
+{
+    Game game;
+    const auto progress = game.progress();
+    game.open_almanac();
+    assert(game.phase() == Phase::almanac);
+    for(int i = 0; i < 100; ++i) { game.tick(); }
+    assert(game.elapsed() == 0 && game.progress() == progress);
+    game.close_almanac();
+    assert(game.phase() == Phase::title);
+    game.open_level_select();
+    game.select_level(1);
+    assert(! game.prepare_level() && game.phase() == Phase::level_select);
+    game.select_level(-1);
+    assert(game.prepare_level() && game.phase() == Phase::preview);
+    game.begin_level();
+    assert(! game.preview_returning());
+    assert(game.plant(0, 0, PlantType::sunflower) == PlantResult::inactive);
+    for(int i = 0; i < preview_ready_frame; ++i) { game.tick(); }
+    assert(game.preview_ready() && game.elapsed() == 0 && game.sun() == 175);
+    game.open_almanac();
+    game.tick();
+    assert(game.preview_frames() == preview_ready_frame && game.phase() == Phase::preview);
+    game.close_almanac();
+    assert(game.phase() == Phase::preview && game.preview_ready());
+    game.begin_level();
+    assert(game.preview_returning());
+    game.open_almanac();
+    assert(game.phase() == Phase::preview);
+    for(int i = 0; i < preview_pan_frames - 1; ++i) { game.tick(); }
+    assert(game.phase() == Phase::preview && game.elapsed() == 0);
+    game.tick();
+    assert(game.phase() == Phase::playing && game.elapsed() == 0 && game.next_wave_frames() == 900);
+    game.open_almanac();
+    assert(game.phase() == Phase::playing);
+    game.tick();
+    assert(game.elapsed() == 1);
+    for(int i = 0; i < zombie_type_count; ++i)
+    {
+        auto type = static_cast<ZombieType>(i);
+        assert(appears_in_level(levels[0], type) == (type == ZombieType::normal || type == ZombieType::flag));
+        assert(appears_in_level(levels[9], type));
+        assert(zombie_entries[i].name[0] && zombie_display_frame(type, 0) >= 4);
+        for(const auto* line : zombie_entries[i].description) { assert(std::strlen(line) <= 24); }
+    }
+    for(auto type : seed_order)
+    {
+        const auto& entry = plant_entries[static_cast<int>(type)];
+        assert(entry.name[0]);
+        for(const auto* line : entry.description) { assert(std::strlen(line) <= 24); }
+    }
+    game.open_level_select();
+    game.open_almanac();
+    game.close_almanac();
+    assert(game.phase() == Phase::level_select);
+    std::puts("PASS level-specific scouting, preview timing, no early simulation, title-only almanac and catalogue");
+}
+
+void reward_animation()
+{
+    int previous_x = reward_pose(0).x;
+    for(int frame = 0; frame <= reward_ready_frame; ++frame)
+    {
+        auto pose = reward_pose(frame);
+        assert(pose.x <= previous_x && pose.x >= 120);
+        assert(pose.height >= 0 && pose.height <= 35);
+        assert(pose.scale >= 50 && pose.scale <= 100);
+        previous_x = pose.x;
+    }
+    for(int contact : {0, 48, 84, 112, 132})
+    { assert(reward_pose(contact).height == 0 && reward_pose(contact).y == 112); }
+    assert(reward_pose(24).height > reward_pose(66).height);
+    assert(reward_pose(66).height > reward_pose(98).height);
+    assert(reward_pose(98).height > reward_pose(122).height);
+    assert(reward_pose(149).y - reward_pose(150).y <= 1);
+    assert(reward_pose(reward_reveal_frame).scale == 100);
+    std::puts("PASS reward travel, diminishing bounces, landing contacts, and reveal timing");
+}
+
 void wave_track_alignment()
 {
-    constexpr std::array<int, 6> expected_flags{{56, 89, 123, 156, 190, 224}};
-    for(int wave = 0; wave <= wave_count; ++wave)
-    { assert(wave_track::position(wave * 100) == expected_flags[wave]); }
-    int previous = wave_track::boundaries.front();
-    for(int progress = 0; progress <= wave_count * 100; ++progress)
+    for(int total : {3, 5})
     {
-        int filled = 0;
-        for(int wave = 0; wave < wave_count; ++wave)
-        { filled += wave_track::fill(wave, progress); }
-        int head = wave_track::position(progress);
-        assert(head == wave_track::boundaries.front() + filled);
-        assert(head >= previous && head <= wave_track::boundaries.back());
-        previous = head;
+        int previous = 56;
+        for(int progress = 0; progress <= total * 100; ++progress)
+        {
+            int filled = 0;
+            for(int wave = 0; wave < total; ++wave)
+            { filled += wave_track::fill(wave, progress, total); }
+            int head = wave_track::position(progress, total);
+            assert(head == 56 + filled && head >= previous && head <= 224);
+            if(progress % 100 == 0)
+            { assert(head == wave_track::boundary(progress / 100, total)); }
+            previous = head;
+        }
     }
-    std::puts("PASS wave fill frontier and head align at every pixel and all five flag poles");
+    std::puts("PASS three- and five-wave tracks align at every pixel and flag pole");
 }
 
 void advance(Game& game, int frames)
@@ -32,19 +114,191 @@ void advance(Game& game, int frames)
     for(int i = 0; i < frames; ++i) { game.tick(); }
 }
 
+void flag_rallies()
+{
+    Game game;
+    game.load_progress(Progress::all_unlocked());
+    assert(game.start(4));
+    for(const auto& mower : game.mowers()) { assert(mower.available); }
+    for(int frame = 0; ! game.events().horde_started && frame < 6000; ++frame)
+    {
+        assert(! game.horde_entered(1));
+        for(const auto& zombie : game.zombies())
+        { if(zombie.active) { assert(zombie.type == ZombieType::normal); } }
+        game.tick();
+    }
+    assert(game.events().horde_started && game.horde_entered(1) && game.wave_progress() == 100);
+    advance(game, 480);
+    int group = 0;
+    int buffed = 0;
+    for(const auto& zombie : game.zombies())
+    {
+        if(! zombie.active) { continue; }
+        ++group;
+        if(zombie.type == ZombieType::flag)
+        { assert(! game.flag_buffed(zombie)); continue; }
+        if(game.flag_buffed(zombie))
+        {
+            assert(game.zombie_speed(zombie) == movement_speed(zombie) * 9 / 8);
+            assert(game.bite_delay(zombie) == 35);
+            ++buffed;
+        }
+    }
+    assert(group == 5 && buffed >= 3);
+    Zombie far = game.zombies()[1];
+    far.x -= 120 * scale;
+    assert(! game.flag_buffed(far));
+    assert(game.plant(0, 6, PlantType::cherry) == PlantResult::planted);
+    advance(game, 65);
+    assert(! game.zombies()[0].active);
+    int survivors = 0;
+    for(const auto& zombie : game.zombies())
+    {
+        if(! zombie.active) { continue; }
+        ++survivors;
+        assert(! game.flag_buffed(zombie));
+        assert(game.zombie_speed(zombie) == movement_speed(zombie));
+        assert(game.bite_delay(zombie) == 40);
+    }
+    assert(survivors > 0);
+    assert(game.start(0));
+    for(int row = 0; row < rows; ++row)
+    { assert(game.mowers()[row].available); }
+    assert(game.plant(0, 0, PlantType::sunflower) == PlantResult::planted);
+    std::puts("PASS flag escorts, speed/bite aura, distance limit, leader death, all five lanes restored");
+}
+
+void armor_damage()
+{
+    auto enemy = [](ZombieType type) {
+        Zombie zombie;
+        zombie.active = true;
+        zombie.type = type;
+        zombie.health = spec(type).health;
+        zombie.shield_health = spec(type).shield_health;
+        return zombie;
+    };
+    auto paper = enemy(ZombieType::newspaper);
+    assert(paper.health == spec(ZombieType::normal).health && movement_speed(paper) == 32);
+    for(int hit = 0; hit < 16; ++hit)
+    {
+        assert(! take_zombie_damage(paper, 1, DamageType::projectile));
+        assert(paper.health == 6);
+    }
+    assert(paper.shield_health == 0 && movement_speed(paper) == 96);
+    assert(take_zombie_damage(paper, 6, DamageType::projectile));
+    auto bucket = enemy(ZombieType::bucket);
+    assert(bucket.shield_health + bucket.health == 36);
+    assert(! take_zombie_damage(bucket, 30, DamageType::projectile));
+    assert(bucket.shield_health == 0 && bucket.health == 6);
+    auto door = enemy(ZombieType::screen_door);
+    for(int hit = 0; hit < 18; ++hit)
+    { assert(! take_zombie_damage(door, 1, DamageType::projectile)); assert(door.health == 6); }
+    assert(door.shield_health == 0 && take_zombie_damage(door, 6, DamageType::projectile));
+    door = enemy(ZombieType::screen_door);
+    assert(! take_zombie_damage(door, 5, DamageType::blast));
+    assert(door.health == 1 && door.shield_health == 18);
+    assert(take_zombie_damage(door, 1, DamageType::blast));
+    for(auto type : {ZombieType::newspaper, ZombieType::bucket, ZombieType::screen_door})
+    {
+        auto zombie = enemy(type);
+        assert(take_zombie_damage(zombie, 100, DamageType::crush));
+        zombie = enemy(type);
+        assert(take_zombie_damage(zombie, 100, DamageType::blast));
+    }
+    std::puts("PASS newspaper durability and full body health, bucket armor, door blocking, blasts and mowers");
+}
+
+void frost_effects()
+{
+    Zombie zombie;
+    zombie.active = true;
+    zombie.health = 6;
+    zombie.bite_timer = 20;
+    assert(! take_zombie_damage(zombie, 1, DamageType::frost));
+    assert(zombie.frost_frames == frost_duration && movement_speed(zombie) == 16);
+    assert(zombie.bite_timer == 40);
+    for(int frame = 0; frame < 90; ++frame) { advance_zombie_status(zombie); }
+    assert(! take_zombie_damage(zombie, 1, DamageType::frost));
+    assert(zombie.frost_frames == frost_duration && zombie.bite_timer == 40);
+    for(int frame = 0; frame < frost_duration; ++frame) { advance_zombie_status(zombie); }
+    assert(zombie.frost_frames == 0 && movement_speed(zombie) == 32 && zombie.bite_timer == 20);
+    for(auto type : {ZombieType::bucket, ZombieType::newspaper, ZombieType::screen_door})
+    {
+        Zombie armored;
+        armored.active = true;
+        armored.type = type;
+        armored.health = spec(type).health;
+        armored.shield_health = spec(type).shield_health;
+        assert(! take_zombie_damage(armored, 1, DamageType::frost));
+        assert(armored.health == 6 && armored.shield_health == spec(type).shield_health - 1);
+        assert((armored.frost_frames > 0) == (type != ZombieType::screen_door));
+        if(type == ZombieType::screen_door)
+        {
+            for(int hit = 1; hit < spec(type).shield_health; ++hit)
+            { assert(! take_zombie_damage(armored, 1, DamageType::frost)); }
+            assert(armored.shield_health == 0 && armored.frost_frames == 0);
+            assert(! take_zombie_damage(armored, 1, DamageType::frost));
+            assert(armored.health == 5 && armored.frost_frames == frost_duration);
+        }
+    }
+    Game game;
+    assert(game.start());
+    assert(game.plant(1, 2, PlantType::snow_pea) == PlantResult::inactive);
+    game.load_progress(Progress::all_unlocked());
+    assert(game.start(4) && game.available_plants() == 6);
+    assert(game.plant(1, 2, PlantType::snow_pea) == PlantResult::planted && game.sun() == 0);
+    int chilled = -1;
+    for(int frame = 0; frame < 1600 && chilled < 0; ++frame)
+    {
+        game.tick();
+        for(int i = 0; i < zombie_capacity; ++i)
+        { if(game.zombies()[i].active && game.zombies()[i].frost_frames > 0) { chilled = i; break; } }
+    }
+    assert(chilled >= 0);
+    assert(game.zombie_speed(game.zombies()[chilled]) == 16 && game.bite_delay(game.zombies()[chilled]) == 80);
+    int timer = game.zombies()[chilled].frost_frames, x = game.zombies()[chilled].x;
+    game.toggle_pause(); advance(game, 120);
+    assert(game.zombies()[chilled].frost_frames == timer && game.zombies()[chilled].x == x);
+    game.toggle_pause(); game.tick();
+    assert(game.zombies()[chilled].frost_frames == timer - 1 && x - game.zombies()[chilled].x == 16);
+    std::puts("PASS snow pea cost/unlock, icy hits, half movement/bites, refresh/expiry, pause, armor and door immunity");
+}
+
+void sun_cadence()
+{
+    Game game;
+    game.start();
+    assert(game.plant(2, 0, PlantType::sunflower) == PlantResult::planted);
+    auto tokens = [&]() { int count = 0; for(const auto& sun : game.suns()) { count += sun.active; } return count; };
+    advance(game, 179);
+    assert(tokens() == 0);
+    game.tick();
+    assert(tokens() == 1);
+    advance(game, 359);
+    assert(tokens() == 1 && game.plants()[cell_index(2, 0)].timer == 1);
+    game.tick();
+    assert(tokens() == 2);
+    advance(game, 239);
+    assert(tokens() == 2);
+    game.tick();
+    assert(tokens() == 3);
+    std::puts("PASS sky sun every ten seconds, sunflower sun every nine seconds");
+}
+
 void economy_and_pause()
 {
     Game game;
-    assert(game.plant(0, 0, PlantType::sunflower) == PlantResult::inactive);
+    assert(game.plant(2, 0, PlantType::sunflower) == PlantResult::inactive);
     game.start();
     assert(game.sun() == 175);
-    assert(game.plant(0, 0, PlantType::sunflower) == PlantResult::planted);
+    assert(game.plant(2, 0, PlantType::sunflower) == PlantResult::planted);
     assert(game.sun() == 125);
-    assert(game.plant(0, 0, PlantType::peashooter) == PlantResult::occupied);
-    assert(game.plant(1, 0, PlantType::sunflower) == PlantResult::cooling_down);
+    assert(game.plant(2, 0, PlantType::peashooter) == PlantResult::occupied);
+    assert(game.plant(2, 1, PlantType::sunflower) == PlantResult::cooling_down);
     assert(game.plant(-1, 0, PlantType::walnut) == PlantResult::inactive);
     assert(game.plant(0, columns, PlantType::walnut) == PlantResult::inactive);
-    assert(game.plant(0, 1, PlantType::cherry) == PlantResult::insufficient_sun);
+    assert(game.plant(0, 1, PlantType::cherry) == PlantResult::inactive);
     game.toggle_pause();
     advance(game, 1000);
     assert(game.elapsed() == 0);
@@ -58,10 +312,10 @@ void economy_and_pause()
     assert(game.collect_sun() == 0);
     assert(game.sun() == 150);
     advance(game, 360);
-    assert(game.collect_sun() == 50); // One sunflower sun and the next sky sun.
-    assert(game.shovel(0, 0));
-    assert(! game.shovel(0, 0));
-    assert(game.sun() == 200); // Shoveling gives no refund.
+    assert(game.collect_sun() == 25); // The sunflower produces; the next sky token arrives at frame 780.
+    assert(game.shovel(2, 0));
+    assert(! game.shovel(2, 0));
+    assert(game.sun() == 175); // Shoveling gives no refund.
     game.start();
     assert(game.elapsed() == 0 && game.sun() == 175 && game.wave() == 0);
     for(const auto& plant : game.plants()) { assert(! plant.active); }
@@ -71,14 +325,15 @@ void economy_and_pause()
 void combat()
 {
     Game bomb;
-    bomb.start();
+    bomb.load_progress(Progress::all_unlocked());
+    bomb.start(4);
     advance(bomb, 900);
     assert(bomb.wave() == 1);
     assert(bomb.zombies()[0].active && bomb.zombies()[0].row == 1);
     assert(bomb.plant(1, 8, PlantType::cherry) == PlantResult::planted);
     advance(bomb, 65);
     assert(bomb.events().explosion && bomb.events().hit);
-    assert(bomb.wave_progress() == 20); // One defeat out of five; queued enemies still count.
+    assert(bomb.wave_progress() == 100 / ((bomb.level_spec().normal_size(1) + 1) / 2));
     assert(! bomb.zombies()[0].active);
     assert(bomb.kills() == 1);
     assert(bomb.plants()[cell_index(1, 8)].active);
@@ -87,7 +342,8 @@ void combat()
     assert(! bomb.plants()[cell_index(1, 8)].active);
 
     Game wall;
-    wall.start();
+    wall.load_progress(Progress::all_unlocked());
+    wall.start(1);
     assert(wall.plant(1, 8, PlantType::walnut) == PlantResult::planted);
     advance(wall, 1400);
     const auto& nut = wall.plants()[cell_index(1, 8)];
@@ -100,14 +356,14 @@ void all_collected_suns_fly_to_bank()
 {
     Game game;
     game.start();
-    assert(game.plant(0, 0, PlantType::sunflower) == PlantResult::planted);
+    assert(game.plant(2, 0, PlantType::sunflower) == PlantResult::planted);
     advance(game, 600);
     auto origins = game.suns();
     int tokens = 0;
     for(const auto& sun : origins) { tokens += sun.active; }
-    assert(tokens == 3); // A sunflower token and two sky tokens at different positions.
+    assert(tokens == 2); // A sunflower token and the less frequent sky token.
     assert(game.collect_sun() == tokens * 25);
-    assert(game.sun() == 200);
+    assert(game.sun() == 175);
     assert(game.collect_sun() == 0); // Repeated collection cannot restart a flight or pay twice.
     game.tick();
     for(int i = 0; i < sun_capacity; ++i)
@@ -134,7 +390,7 @@ void all_collected_suns_fly_to_bank()
         assert(! game.suns()[i].active);
         assert(game.suns()[i].x == sun_bank_x * scale && game.suns()[i].y == sun_bank_y * scale);
     }
-    assert(game.sun() == 200 && game.collect_sun() == 0);
+    assert(game.sun() == 175 && game.collect_sun() == 0);
 
     game.start();
     advance(game, 839); // The first sky token is one frame away from expiring.
@@ -156,14 +412,51 @@ void unattended_loss()
     assert(game.kills() >= rows);
     for(const auto& mower : game.mowers()) { assert(! mower.available); }
     int elapsed = game.elapsed();
+    assert(game.breached_zombie() >= 0 && ! game.loss_ready());
     advance(game, 100);
-    assert(game.elapsed() == elapsed);
+    assert(game.elapsed() == elapsed && game.loss_frames() == 100 && ! game.loss_ready());
+    advance(game, defeat_audio::ready_frame - 100);
+    assert(game.loss_ready() && game.elapsed() == elapsed);
+    assert(game.start() && game.loss_frames() == 0 && game.breached_zombie() == -1);
     std::puts("PASS one-use mowers, unattended loss, terminal state freezes");
 }
 
 void defend(Game& game)
 {
     game.collect_sun();
+    // Save for a Cherry Bomb when a rally presents a worthwhile blast target.
+    if(game.plant_available(PlantType::cherry) && ! game.cooldown(PlantType::cherry))
+    {
+        int best = 0, best_row = 0, best_column = 0;
+        for(int row = 0; row < rows; ++row)
+        {
+            for(int column = 0; column < columns; ++column)
+            {
+                if(game.plants()[cell_index(row, column)].active) { continue; }
+                int count = 0;
+                for(const auto& zombie : game.zombies())
+                {
+                    int dy = zombie.row - row;
+                    int dx = zombie.x / scale - cell_x(column);
+                    if(zombie.active && dy >= -1 && dy <= 1 && dx >= -37 && dx <= 37)
+                    { count += zombie.x < 130 * scale ? 3 : 1; }
+                }
+                if(count > best) { best = count; best_row = row; best_column = column; }
+            }
+        }
+        if(best >= 3 && game.plant(best_row, best_column, PlantType::cherry) == PlantResult::insufficient_sun)
+        { return; }
+    }
+    if(game.plant_available(PlantType::walnut))
+    {
+        for(const auto& zombie : game.zombies())
+        {
+            if(zombie.active && zombie.x < 190 * scale && zombie.x > 145 * scale &&
+               game.plants()[cell_index(zombie.row, 2)].active &&
+               ! game.plants()[cell_index(zombie.row, 5)].active)
+            { game.plant(zombie.row, 5, PlantType::walnut); }
+        }
+    }
     // A simple player strategy, using only the same public actions as the controller.
     // Cover the lane with the nearest approaching enemy before expanding the economy.
     for(const auto& zombie : game.zombies())
@@ -178,6 +471,15 @@ void defend(Game& game)
         if(! game.plants()[cell_index(row, 0)].active)
         { game.plant(row, 0, PlantType::sunflower); }
     }
+    if(game.wave() == 0) { return; }
+    if(game.plant_available(PlantType::snow_pea))
+    {
+        for(int row = 0; row < rows; ++row)
+        {
+            if(! game.plants()[cell_index(row, 1)].active)
+            { game.plant(row, 1, PlantType::snow_pea); }
+        }
+    }
     for(int column = 2; column <= 4; ++column)
     {
         for(int row = 0; row < rows; ++row)
@@ -188,35 +490,230 @@ void defend(Game& game)
     }
 }
 
-void playable_victory()
+void unlock_next(Game& game)
+{
+    while(game.phase() == Phase::playing) { defend(game); game.tick(); }
+    assert(game.phase() == Phase::won);
+    game.open_level_select();
+    assert(game.start());
+}
+
+void mine_and_newspaper()
 {
     Game game;
     game.start();
-    int frames = 0;
-    int previous_progress = 0;
-    int started_waves = 0;
-    int cleared_waves = 0;
-    while(game.phase() == Phase::playing && frames++ < 60000)
+    assert(game.plant(1, 7, PlantType::potato_mine) == PlantResult::inactive);
+    assert(! game.start(1));
+    unlock_next(game);
+    assert(game.available_plants() == 3);
+    game.load_progress(Progress::all_unlocked());
+    assert(game.start(3));
+    assert(game.plant(1, 7, PlantType::potato_mine) == PlantResult::planted);
+    assert(game.sun() == 150);
+    advance(game, 479);
+    assert(game.plants()[cell_index(1, 7)].timer == 1);
+    game.toggle_pause();
+    advance(game, 100);
+    assert(game.plants()[cell_index(1, 7)].timer == 1);
+    game.toggle_pause();
+    game.tick();
+    assert(game.plants()[cell_index(1, 7)].timer == 0);
+    int detonations = 0;
+    for(int frame = 0; frame < 1000; ++frame)
     {
-        defend(game);
         game.tick();
-        assert(game.sun() >= 0);
-        int progress = game.wave_progress();
-        assert(progress >= previous_progress && progress <= wave_count * 100);
-        previous_progress = progress;
-        started_waves += game.events().wave_started;
-        cleared_waves += game.events().wave_cleared;
+        if(game.events().explosion)
+        {
+            ++detonations;
+            assert(game.kills() == 1 && ! game.zombies()[0].active);
+            for(const auto& zombie : game.zombies())
+            {
+                if(zombie.active)
+                {
+                    assert(zombie.row != 1);
+                    assert(zombie.health == spec(zombie.type).health);
+                }
+            }
+            assert(game.plants()[cell_index(1, 7)].health == 0);
+            game.toggle_pause();
+            advance(game, 60);
+            assert(game.plants()[cell_index(1, 7)].timer == 18);
+            game.toggle_pause();
+        }
     }
-    std::printf("Defense run: phase=%d waves=%d kills=%d time=%ds\n",
-                int(game.phase()), game.wave(), game.kills(), frames / 60);
-    assert(game.phase() == Phase::won);
-    assert(game.wave() == wave_count);
-    assert(game.kills() == 45);
-    assert(game.enemies_left() == 0);
-    assert(game.wave_progress() == wave_count * 100);
-    assert(started_waves == wave_count && cleared_waves == wave_count);
-    for(const auto& zombie : game.zombies()) { assert(! zombie.active); }
-    std::puts("PASS full five-wave victory through public player actions");
+    assert(detonations == 1 && ! game.plants()[cell_index(1, 7)].active);
+    assert(game.plant(1, 7, PlantType::potato_mine) == PlantResult::planted);
+    assert(game.plant(2, 7, PlantType::potato_mine) == PlantResult::cooling_down);
+    game.start();
+    advance(game, 900);
+    assert(game.plant(1, 8, PlantType::potato_mine) == PlantResult::planted);
+    for(int frame = 0; frame < 200; ++frame) { game.tick(); assert(! game.events().explosion); }
+    assert(! game.plants()[cell_index(1, 8)].active); // Eaten before arming.
+    game.load_progress(Progress::all_unlocked());
+    assert(game.start(9));
+    assert(game.level() == 9);
+    for(int frame = 0; ! game.events().horde_started && frame < 6000; ++frame) { game.tick(); }
+    assert(game.events().horde_started);
+    advance(game, 480);
+    bool newspaper_seen = false;
+    for(int i = 0; i < zombie_capacity; ++i)
+    {
+        if(game.zombies()[i].active && game.zombies()[i].type == ZombieType::newspaper)
+        {
+            newspaper_seen = true;
+            int x = game.zombies()[i].x;
+            assert(game.zombies()[i].health == spec(ZombieType::normal).health);
+            game.tick();
+            assert(game.zombies()[i].shield_health == 16);
+            assert(x - game.zombies()[i].x == game.zombie_speed(game.zombies()[i]));
+            assert(game.plant(game.zombies()[i].row, 0, PlantType::peashooter) == PlantResult::planted);
+            bool paper_hit = false;
+            for(int tick = 0; tick < 900 && game.zombies()[i].active; ++tick)
+            {
+                game.tick();
+                assert(game.zombies()[i].health == spec(ZombieType::normal).health);
+                paper_hit |= game.zombies()[i].shield_health < 16;
+            }
+            assert(paper_hit && game.zombies()[i].shield_health > 0);
+            break;
+        }
+    }
+    assert(newspaper_seen && spec(ZombieType::newspaper).health == spec(ZombieType::normal).health);
+    std::puts("PASS mine unlock, price, arming, pause, cooldown, detonation, lane scope, vulnerability, newspaper shield and rage speed");
+}
+
+void playable_victory()
+{
+    Game game;
+    assert(! game.start(1));
+    game.select_level(1);
+    assert(game.level() == 0);
+    assert(game.start());
+    bool queued_overlap_seen = false;
+    std::array<uint32_t, zombie_kind_count> campaign_kills{};
+    for(int level = 0; level < level_count; ++level)
+    {
+        assert(game.level() == level);
+        int frames = 0;
+        int previous_progress = 0;
+        int started = 0;
+        int hordes = 0;
+        int final_warnings = 0;
+        int cleared = 0;
+        bool cone_seen = false;
+        bool newspaper_seen = false;
+        bool bucket_seen = false;
+        bool door_seen = false;
+        bool overlap_seen = false;
+        while(game.phase() == Phase::playing && frames++ < 60000)
+        {
+            auto previous_zombies = game.zombies();
+            int previous_group = game.current_group();
+            int previous_size = game.horde_active() ? game.level_spec().wave_size(game.wave()) : game.level_spec().normal_size(game.wave());
+            defend(game);
+            game.tick();
+            for(int i = 0; i < zombie_capacity; ++i)
+            {
+                const auto& zombie = game.zombies()[i];
+                bool new_spawn = zombie.active && (! previous_zombies[i].active || previous_zombies[i].group != zombie.group);
+                queued_overlap_seen |= new_spawn && zombie.group < game.current_group();
+            }
+            if(previous_group > 0 && game.current_group() != previous_group)
+            {
+                int survivors = 0;
+                for(const auto& zombie : game.zombies())
+                { survivors += zombie.active && zombie.group == previous_group; }
+                assert(survivors <= previous_size / 2);
+                overlap_seen |= survivors > 0;
+                assert(game.next_wave_frames() == 0);
+            }
+            assert(game.sun() >= 0);
+            int progress = game.wave_progress();
+            assert(progress >= previous_progress && progress <= game.total_waves() * 100);
+            previous_progress = progress;
+            started += game.events().wave_started;
+            hordes += game.events().horde_started;
+            final_warnings += game.events().final_wave_approaching;
+            if(game.events().final_wave_approaching)
+            {
+                assert(game.final_wave_approaching());
+                assert(! game.horde_active() && game.next_wave_frames() == 0);
+                int base = game.level_spec().wave_base + game.total_waves() * 2;
+                assert(game.level_spec().wave_size(game.wave()) >= base * 3 / 2);
+            }
+            if(game.events().horde_started)
+            {
+                assert(game.wave_progress() == game.wave() * 100);
+                assert(game.horde_entered(game.wave()));
+                bool flag = false;
+                for(const auto& z : game.zombies())
+                { flag |= z.active && z.type == ZombieType::flag && z.x >= 239 * scale; }
+                assert(flag);
+            }
+            cleared += game.events().wave_cleared;
+            if(game.events().wave_cleared && game.phase() == Phase::playing)
+            { assert(game.next_wave_frames() == 0); }
+            for(const auto& zombie : game.zombies())
+            {
+                if(! zombie.active) { continue; }
+                if(! game.horde_active() && zombie.group == game.current_group()) { assert(zombie.type == ZombieType::normal); }
+                cone_seen |= zombie.type == ZombieType::cone;
+                newspaper_seen |= zombie.type == ZombieType::newspaper;
+                bucket_seen |= zombie.type == ZombieType::bucket;
+                door_seen |= zombie.type == ZombieType::screen_door;
+                if(zombie.type == ZombieType::newspaper) { assert(game.wave() >= game.level_spec().newspaper_first_wave); }
+            }
+        }
+        int expected_kills = 0;
+        for(int wave = 1; wave <= game.total_waves(); ++wave)
+        { expected_kills += game.level_spec().normal_size(wave) + game.level_spec().wave_size(wave); }
+        std::printf("Defense: %s phase=%d waves=%d kills=%d time=%ds\n",
+                    game.level_spec().name, int(game.phase()), game.wave(), game.kills(), frames / 60);
+        assert(game.phase() == Phase::won);
+        uint32_t recorded = 0;
+        for(int i = 0; i < zombie_kind_count; ++i)
+        {
+            auto total = game.lifetime_kills(static_cast<ZombieType>(i));
+            assert(total >= campaign_kills[i]);
+            assert(total - campaign_kills[i] == uint32_t(game.zombie_roster()[i]));
+            recorded += total - campaign_kills[i];
+            campaign_kills[i] = total;
+        }
+        assert(recorded == uint32_t(game.kills()));
+        assert(game.wave() == game.total_waves() && game.kills() == expected_kills);
+        assert(game.enemies_left() == 0 && game.wave_progress() == game.total_waves() * 100);
+        assert(started == game.total_waves() && hordes == game.total_waves() && cleared == game.total_waves());
+        assert(overlap_seen && final_warnings == 1);
+        assert(cone_seen == (level > 0) && newspaper_seen == (level >= 3));
+        assert(bucket_seen == game.level_spec().bucketheads && door_seen == game.level_spec().screen_doors);
+        assert(game.available_plants() == (level < 4 ? level + 2 : plant_count));
+        for(int slot = 0; slot < plant_count; ++slot)
+        {
+            assert(seed_slot(seed_order[slot]) == slot);
+            assert(game.plant_available(seed_order[slot]) == (slot < game.available_plants()));
+        }
+        assert(game.unlocked_plant() == (level < 4 ? seed_order[level + 2] : PlantType::count));
+        { assert(! game.reward_ready()); advance(game, reward_ready_frame); assert(game.reward_ready()); }
+        if(level + 1 < level_count) { game.open_level_select(); assert(game.start()); }
+    }
+    for(auto total : campaign_kills) { assert(total > 0); }
+    assert(queued_overlap_seen); // Advancing a group never discards its remaining queued zombies.
+    assert(game.progress().completed == (uint32_t(1) << level_count) - 1);
+    game.return_to_title();
+    assert(game.unlocked_level() == 9 && game.available_plants() == plant_count);
+    game.open_level_select();
+    game.select_level(-level_count);
+    assert(game.level() == 0 && game.start());
+    assert(game.unlocked_level() == 9 && game.available_plants() == 2);
+    assert(game.plant(0, 0, PlantType::walnut) == PlantResult::inactive);
+    while(game.phase() == Phase::playing) { defend(game); game.tick(); }
+    assert(game.phase() == Phase::won && game.unlocked_plant() == PlantType::count);
+    assert(game.lifetime_kills(ZombieType::flag) == campaign_kills[3] + 3);
+    assert(game.lifetime_kills(ZombieType::normal) == campaign_kills[0] + 35);
+    assert(! game.reward_ready());
+    advance(game, reward_ready_frame);
+    assert(game.reward_ready());
+    std::puts("PASS full campaign, level unlocks, mine unlock, replay, and session retention");
 }
 
 void wave_feedback_and_active_pause()
@@ -228,15 +725,14 @@ void wave_feedback_and_active_pause()
     advance(game, 899);
     assert(game.next_wave_frames() == 1);
     game.tick();
-    assert(game.wave() == 1 && game.enemies_left() == 5 && game.next_wave_frames() == 0);
+    assert(game.wave() == 1 && game.enemies_left() == 3 && game.next_wave_frames() == 0);
     assert(game.events().wave_started && game.wave_progress() == 0);
     int x = game.zombies()[0].x;
-    int warning = game.wave_warning();
     int elapsed = game.elapsed();
     game.toggle_pause();
     advance(game, 1000);
     assert(! game.events().wave_started && ! game.events().shot && ! game.events().hit);
-    assert(game.zombies()[0].x == x && game.wave_warning() == warning && game.elapsed() == elapsed);
+    assert(game.zombies()[0].x == x && game.elapsed() == elapsed);
     assert(game.plant(0, 0, PlantType::peashooter) == PlantResult::inactive);
     game.toggle_pause();
     game.tick();
@@ -247,7 +743,8 @@ void wave_feedback_and_active_pause()
 void chewing_tracks_damage()
 {
     Game game;
-    game.start();
+    game.load_progress(Progress::all_unlocked());
+    game.start(1);
     assert(game.plant(1, 8, PlantType::walnut) == PlantResult::planted);
     advance(game, 900);
     assert(! game.events().bite);
@@ -291,6 +788,56 @@ void chewing_tracks_damage()
 
 int main()
 {
+    Progress fresh;
+    assert(fresh.valid() && fresh.unlocked == 1);
+    for(int unlocked = 1; unlocked <= level_count; ++unlocked)
+    {
+        Progress progress{(uint32_t(1) << (unlocked - 1)) - 1, unlocked, unlocked - 1};
+        for(int i = 0; i < zombie_kind_count; ++i) { progress.zombie_kills[i] = uint32_t(i + 1) * 1234567u; }
+        progress.zombie_kills[5] = UINT32_MAX;
+        auto record = encode_progress(progress, 123);
+        Progress loaded;
+        assert(decode_progress(record, loaded) && loaded == progress);
+        for(int byte = 0; byte < int(record.size()); ++byte)
+        {
+            auto corrupt = record;
+            corrupt[byte] ^= 1;
+            assert(! decode_progress(corrupt, loaded));
+        }
+        Game game;
+        game.load_progress(progress);
+        game.open_level_select();
+        game.select_level(level_count);
+        assert(game.level() == 9);
+        if(unlocked < level_count) { assert(! game.start()); }
+        game.select_level(-level_count);
+        assert(game.start() && game.level() == 0);
+        assert(game.progress().unlocked == unlocked);
+    }
+    LegacySaveRecord legacy{};
+    put_save_word(legacy, 0, 0x31535653);
+    legacy[4] = 1; legacy[5] = 4; legacy[6] = 2;
+    put_save_word(legacy, 8, 7);
+    put_save_word(legacy, 12, 99);
+    put_save_word(legacy, 20, save_checksum(legacy));
+    Progress migrated;
+    assert(decode_legacy_progress(legacy, migrated));
+    assert(migrated.unlocked == 4 && migrated.selected == 2 && migrated.completed == 7);
+    for(auto count : migrated.zombie_kills) { assert(count == 0); }
+    Progress restored;
+    assert(decode_progress(encode_progress(migrated, 100), restored) && restored == migrated);
+    Game saturated;
+    Progress maximum;
+    maximum.zombie_kills[0] = UINT32_MAX;
+    saturated.load_progress(maximum);
+    saturated.start();
+    while(saturated.phase() == Phase::playing) { saturated.tick(); }
+    assert(saturated.kills() > 0 && saturated.lifetime_kills(ZombieType::normal) == UINT32_MAX);
+    std::puts("PASS kill counter round-trips, legacy save conversion, saturation, and original zombie types");
+    Progress invalid{0, 11, 0};
+    Progress loaded;
+    assert(! decode_progress(encode_progress(invalid, 1), loaded));
+    std::puts("PASS versioned progress encoding, corrupt-save rejection, locked selection, restored unlocks");
     AudioSettings audio;
     assert(audio.gain(AudioChannel::music) == 100);
     assert(! audio.adjust(AudioChannel::effects, 1));
@@ -305,12 +852,19 @@ int main()
     assert(audio.gain(AudioChannel::effects) == 0);
     assert(audio.adjust(AudioChannel::music, 30));
     assert(audio.levels[1] == 10 && audio.gain(AudioChannel::music) == 0);
+    scouting_and_almanac();
+    reward_animation();
     wave_track_alignment();
+    flag_rallies();
+    armor_damage();
+    frost_effects();
+    sun_cadence();
     economy_and_pause();
     combat();
     all_collected_suns_fly_to_bank();
     unattended_loss();
     wave_feedback_and_active_pause();
     chewing_tracks_damage();
+    mine_and_newspaper();
     playable_victory();
 }

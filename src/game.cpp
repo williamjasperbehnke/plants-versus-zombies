@@ -19,10 +19,71 @@ bool valid_cell(int row, int column)
 }
 }
 
-void Game::start()
+bool Game::start(int level)
 {
+    if(level < 0) { level = _level; }
+    if(! level_unlocked(level)) { return false; }
+    auto progress = _progress;
+    progress.selected = level;
     *this = Game();
+    _level = level;
+    _progress = progress;
     _phase = Phase::playing;
+    return true;
+}
+
+bool Game::prepare_level()
+{
+    if(! start()) { return false; }
+    _phase = Phase::preview;
+    return true;
+}
+
+void Game::begin_level()
+{
+    if(_phase != Phase::preview || ! preview_ready()) { return; }
+    _preview_returning = true;
+    _preview_frames = 0;
+}
+
+void Game::open_almanac()
+{
+    if(_phase == Phase::title) { _phase = Phase::almanac; }
+}
+
+void Game::close_almanac()
+{
+    if(_phase == Phase::almanac) { _phase = Phase::title; }
+}
+
+void Game::load_progress(const Progress& progress)
+{
+    if(! progress.valid()) { return; }
+    _progress = progress;
+    _level = progress.selected;
+}
+
+void Game::return_to_title()
+{
+    auto progress = _progress;
+    *this = Game();
+    load_progress(progress);
+}
+
+void Game::open_level_select()
+{
+    int selected = _level;
+    if(_phase == Phase::won && has_next_level()) { ++selected; }
+    return_to_title();
+    _level = selected;
+    _phase = Phase::level_select;
+}
+
+void Game::select_level(int delta)
+{
+    if(_phase != Phase::level_select) { return; }
+    int selected = _level + delta;
+    _level = selected < 0 ? 0 : (selected >= level_count ? level_count - 1 : selected);
 }
 
 void Game::toggle_pause()
@@ -33,7 +94,8 @@ void Game::toggle_pause()
 
 PlantResult Game::plant(int row, int column, PlantType type)
 {
-    if(_phase != Phase::playing || ! valid_cell(row, column) || type >= PlantType::count)
+    if(_phase != Phase::playing || ! valid_cell(row, column) ||
+       ! plant_available(type))
     {
         return PlantResult::inactive;
     }
@@ -80,9 +142,19 @@ int Game::collect_sun()
 void Game::tick()
 {
     _events = {};
+    if(_phase == Phase::preview)
+    {
+        if(_preview_frames < preview_ready_frame) { ++_preview_frames; }
+        if(_preview_returning && _preview_frames >= preview_pan_frames) { _phase = Phase::playing; }
+        return;
+    }
+    if(_phase == Phase::won)
+    { if(_reward_frames < reward_ready_frame) { ++_reward_frames; } return; }
+    if(_phase == Phase::lost)
+    { if(_loss_frames < defeat_audio::ready_frame) { ++_loss_frames; } return; }
     if(_phase != Phase::playing) { return; }
     ++_frame;
-    if(_wave_warning > 0) { --_wave_warning; }
+    for(auto& zombie : _zombies) { if(zombie.active) { advance_zombie_status(zombie); } }
     for(auto& cooldown : _cooldowns) { if(cooldown > 0) { --cooldown; } }
     update_suns();
     update_waves();
@@ -110,54 +182,141 @@ bool Game::any_zombies() const
 int Game::enemies_left() const
 {
     int count = _remaining;
+    for(const auto& pending : _pending_groups) { count += pending.remaining; }
     for(const auto& zombie : _zombies) { if(zombie.active) { ++count; } }
     return count;
+}
+
+int Game::active_group_zombies() const
+{
+    int count = 0;
+    for(const auto& zombie : _zombies) { count += zombie.active && zombie.group == _group; }
+    return count;
+}
+
+bool Game::horde_remaining(int wave) const
+{
+    int group = wave * 2;
+    if(_group == group && _remaining > 0) { return true; }
+    if(_pending_groups[group - 1].remaining > 0) { return true; }
+    for(const auto& zombie : _zombies)
+    { if(zombie.active && zombie.group == group) { return true; } }
+    return false;
 }
 
 int Game::wave_progress() const
 {
     if(_wave == 0) { return 0; }
-    return (_wave - 1) * 100 + (wave_size(_wave) - enemies_left()) * 100 / wave_size(_wave);
+    if(_horde) { return _wave * 100; }
+    int size = level_spec().normal_size(_wave);
+    int threshold = (size + 1) / 2;
+    int defeated = size - _remaining - active_group_zombies();
+    if(defeated > threshold) { defeated = threshold; }
+    return (_wave - 1) * 100 + defeated * 100 / threshold;
+}
+
+void Game::retain_group_spawns()
+{
+    if(_remaining > 0)
+    { _pending_groups[_group - 1] = {_remaining, _spawn_timer, _group, _wave, _horde}; }
+}
+
+bool Game::pending_spawns() const
+{
+    for(const auto& pending : _pending_groups) { if(pending.remaining > 0) { return true; } }
+    return false;
+}
+
+int Game::spawn_delay(int wave, bool horde) const
+{
+    if(! horde) { return 240; }
+    int delay = level_spec().spawn_delay;
+    return wave == total_waves() ? delay * 2 / 3 : delay;
 }
 
 void Game::update_waves()
 {
-    if(_remaining == 0 && ! any_zombies())
+    bool start_normal = false;
+    if(_wave == 0)
     {
-        if(_wave > _reported_clear)
+        start_normal = --_preparation <= 0;
+    }
+    else
+    {
+        int size = _horde ? level_spec().wave_size(_wave) : level_spec().normal_size(_wave);
+        int defeated = size - _remaining - active_group_zombies();
+        bool half_defeated = defeated >= (size + 1) / 2;
+        if(! _horde && half_defeated)
         {
-            _reported_clear = _wave;
-            _events.wave_cleared = true;
-        }
-        if(_wave == wave_count) { _phase = Phase::won; return; }
-        if(--_intermission <= 0)
-        {
-            ++_wave;
-            _remaining = wave_size(_wave);
-            _events.wave_started = true;
+            retain_group_spawns();
+            _horde = true;
+            ++_group;
+            _remaining = level_spec().wave_size(_wave);
             _spawn_timer = 1;
-            _wave_warning = 150;
+        }
+        else if(_horde && _wave < total_waves() && half_defeated)
+        {
+            retain_group_spawns();
+            _events.wave_cleared = true;
+            start_normal = true;
+        }
+        else if(_horde && _wave == total_waves() && _remaining == 0 && ! pending_spawns() && ! any_zombies())
+        {
+            _events.wave_cleared = true;
+            if(! level_completed(_level) && available_plants() < plant_count)
+            { _unlocked_plant = seed_order[available_plants()]; }
+            _phase = Phase::won;
+            _progress.completed |= uint32_t(1) << _level;
+            if(has_next_level() && _progress.unlocked <= _level + 1) { _progress.unlocked = _level + 2; }
+            return;
         }
     }
-    if(_remaining > 0 && --_spawn_timer <= 0)
+    if(start_normal)
     {
-        if(spawn_zombie())
+        ++_wave;
+        ++_group;
+        _horde = false;
+        _remaining = level_spec().normal_size(_wave);
+        _events.wave_started = true;
+        if(_wave == total_waves())
         {
-            --_remaining;
-            _spawn_timer = 250 - _wave * 24;
-            if(_remaining == 0) { _intermission = 300; }
+            _events.final_wave_approaching = true;
         }
+        _spawn_timer = 1;
+    }
+    // Keep releasing any unspawned stragglers after their group has advanced.
+    for(auto& pending : _pending_groups)
+    {
+        if(pending.remaining > 0 && --pending.timer <= 0 &&
+           spawn_zombie(pending.wave, pending.horde, pending.remaining, pending.group))
+        {
+            --pending.remaining;
+            pending.timer = spawn_delay(pending.wave, pending.horde);
+        }
+    }
+    if(_remaining > 0 && --_spawn_timer <= 0 && spawn_zombie(_wave, _horde, _remaining, _group))
+    {
+        --_remaining;
+        _spawn_timer = spawn_delay(_wave, _horde);
     }
 }
 
-bool Game::spawn_zombie()
+bool Game::spawn_zombie(int wave, bool horde, int remaining, int group)
 {
     auto* zombie = free_slot(_zombies);
     if(! zombie) { return false; }
-    // Each group of five visits every lane, with a changing offset per wave.
-    const int row = (_spawn_number * 3 + _wave) % rows;
-    const bool armored = _wave >= 2 && (_spawn_number % 3 == 0);
-    *zombie = {true, armored, row, 240 * scale, armored ? 12 : 6, 40, 0};
+    const int row = (_spawn_number * 3 + wave) % rows;
+    const auto& definition = level_spec();
+    int size = horde ? definition.wave_size(wave) : definition.normal_size(wave);
+    ZombieType type = scheduled_zombie(definition, wave, horde, size - remaining);
+    *zombie = {true, type, row, 240 * scale, spec(type).health, 40, 0};
+    zombie->shield_health = spec(type).shield_health;
+    zombie->group = group;
+    if(type == ZombieType::flag)
+    {
+        _hordes_entered[wave - 1] = true;
+        _events.horde_started = true;
+    }
     ++_spawn_number;
     return true;
 }
@@ -193,7 +352,7 @@ void Game::update_suns()
     {
         spawn_sun((45 + int(random() % 174)) * scale, lawn_top * scale,
                   cell_y(int(random() % rows)) * scale);
-        _sky_timer = 360;
+        _sky_timer = sky_sun_interval;
     }
 }
 
@@ -206,21 +365,27 @@ bool Game::lane_has_target(int row, int x) const
     return false;
 }
 
-bool Game::shoot(int row, int x)
+bool Game::shoot(int row, int x, bool frozen)
 {
     auto* shot = free_slot(_shots);
     if(! shot) { return false; }
-    *shot = {true, row, x};
+    *shot = {true, row, x, frozen};
     _events.shot = true;
     return true;
 }
 
-void Game::damage(Zombie& zombie, int amount)
+void Game::damage(Zombie& zombie, int amount, DamageType type)
 {
-    zombie.health -= amount;
+    bool killed = take_zombie_damage(zombie, amount, type);
     _events.hit = true;
     zombie.flash = 6;
-    if(zombie.health <= 0) { zombie.active = false; ++_kills; }
+    if(killed)
+    {
+        zombie.active = false;
+        ++_kills;
+        auto& total = _progress.zombie_kills[static_cast<int>(zombie.type)];
+        if(total < UINT32_MAX) { ++total; }
+    }
 }
 
 void Game::explode(int row, int column)
@@ -231,7 +396,7 @@ void Game::explode(int row, int column)
         if(zombie.active && absolute(zombie.row - row) <= 1 &&
            absolute(zombie.x - cell_x(column) * scale) <= 37 * scale)
         {
-            damage(zombie, 100);
+            damage(zombie, 100, DamageType::blast);
         }
     }
 }
@@ -255,13 +420,32 @@ void Game::update_plants()
                 { plant.timer = spec(plant.type).action_delay; }
                 break;
             case PlantType::peashooter:
-                if(lane_has_target(row, x) && shoot(row, x + 8 * scale))
+            case PlantType::snow_pea:
+                if(lane_has_target(row, x) && shoot(row, x + 8 * scale, plant.type == PlantType::snow_pea))
                 { plant.timer = spec(plant.type).action_delay; }
                 break;
             case PlantType::cherry:
                 // Keep an explosion sprite alive for 18 frames, then remove it.
                 if(plant.health > 0) { explode(row, column); plant.health = 0; plant.timer = 18; }
                 else { plant.active = false; }
+                break;
+            case PlantType::potato_mine:
+                if(plant.health == 0) { plant.active = false; break; }
+                for(auto& zombie : _zombies)
+                {
+                    if(zombie.active && zombie.row == row && absolute(zombie.x - x) <= 8 * scale)
+                    {
+                        _events.explosion = true;
+                        for(auto& nearby : _zombies)
+                        {
+                            if(nearby.active && nearby.row == row && absolute(nearby.x - x) <= 18 * scale)
+                            { damage(nearby, 100, DamageType::blast); }
+                        }
+                        plant.health = 0;
+                        plant.timer = 18;
+                        break;
+                    }
+                }
                 break;
             default: break;
             }
@@ -283,7 +467,7 @@ void Game::update_shots()
                zombie.x - 7 * scale <= shot.x && (! closest || zombie.x < closest->x))
             { closest = &zombie; }
         }
-        if(closest) { damage(*closest, 1); shot.active = false; }
+        if(closest) { damage(*closest, 1, shot.frozen ? DamageType::frost : DamageType::projectile); shot.active = false; }
         else if(shot.x > 245 * scale) { shot.active = false; }
     }
 }
@@ -298,16 +482,38 @@ void Game::update_mowers()
         for(auto& zombie : _zombies)
         {
             if(zombie.active && zombie.row == row && zombie.x <= mower.x + 12 * scale)
-            { damage(zombie, 100); }
+            { damage(zombie, 100, DamageType::crush); }
         }
         if(mower.x > 252 * scale) { mower.moving = false; }
     }
 }
 
+bool Game::flag_buffed(const Zombie& zombie) const
+{
+    if(! zombie.active || zombie.type == ZombieType::flag) { return false; }
+    constexpr int radius = 80 * scale;
+    for(const auto& leader : _zombies)
+    {
+        if(! leader.active || leader.type != ZombieType::flag) { continue; }
+        int dx = absolute(leader.x - zombie.x);
+        int dy = absolute(leader.row - zombie.row) * cell_height * scale;
+        if(dx <= radius && dy <= radius && dx * dx + dy * dy <= radius * radius)
+        { return true; }
+    }
+    return false;
+}
+
+int Game::zombie_speed(const Zombie& zombie) const
+{
+    int speed = movement_speed(zombie);
+    return flag_buffed(zombie) ? speed * 9 / 8 : speed;
+}
+
 void Game::update_zombies()
 {
-    for(auto& zombie : _zombies)
+    for(int i = 0; i < zombie_capacity; ++i)
     {
+        auto& zombie = _zombies[i];
         if(! zombie.active) { continue; }
         if(zombie.flash > 0) { --zombie.flash; }
         Plant* target = nullptr;
@@ -316,6 +522,7 @@ void Game::update_zombies()
             auto& plant = _plants[cell_index(zombie.row, column)];
             int distance = zombie.x - cell_x(column) * scale;
             if(plant.active && plant.type != PlantType::cherry && plant.health > 0 &&
+               ! (plant.type == PlantType::potato_mine && plant.timer == 0) &&
                distance >= -5 * scale && distance <= 15 * scale)
             { target = &plant; break; }
         }
@@ -327,14 +534,14 @@ void Game::update_zombies()
                 --target->health;
                 _events.bite = true;
                 target->flash = 8;
-                zombie.bite_timer = 40;
+                zombie.bite_timer = bite_delay(zombie);
                 if(target->health <= 0) { target->active = false; }
             }
         }
         else
         {
-            zombie.x -= zombie.armored ? 28 : 32;
-            zombie.bite_timer = 40;
+            zombie.x -= zombie_speed(zombie);
+            zombie.bite_timer = bite_delay(zombie);
         }
         auto& mower = _mowers[zombie.row];
         if(zombie.x < 29 * scale && mower.available)
@@ -342,9 +549,14 @@ void Game::update_zombies()
             mower.available = false;
             mower.moving = true;
             _events.mower = true;
-            damage(zombie, 100);
+            damage(zombie, 100, DamageType::crush);
         }
-        else if(zombie.x < 8 * scale) { _phase = Phase::lost; }
+        else if(zombie.x < 8 * scale)
+        {
+            _breached_zombie = i;
+            _phase = Phase::lost;
+            return;
+        }
     }
 }
 }

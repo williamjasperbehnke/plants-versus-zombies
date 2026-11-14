@@ -5,25 +5,32 @@
 namespace garden::wave_track
 {
 inline constexpr std::array<int, 6> boundaries{{56, 89, 123, 156, 190, 224}};
-inline constexpr std::array<int, 6> frame_offsets{{0, 34, 69, 103, 138, 173}};
+inline constexpr std::array<int, 6> frame_offsets{{0, 35, 71, 106, 142, 178}};
 inline constexpr int sprite_width = 64;
 inline constexpr int sprite_height = 32;
 inline constexpr int bar_y = 14;
 inline constexpr int head_y = 18;
 
-constexpr int position(int progress)
+constexpr int boundary(int wave, int total = 5) { return 56 + 168 * wave / total; }
+constexpr int frame_offset(int wave, int total = 5)
+{ return total == 3 ? wave * 58 : frame_offsets[wave]; }
+
+constexpr int position(int progress, int total = 5)
 {
     if(progress <= 0) { return boundaries.front(); }
-    if(progress >= 500) { return boundaries.back(); }
+    if(progress >= total * 100) { return boundaries.back(); }
     int wave = progress / 100;
-    int width = boundaries[wave + 1] - boundaries[wave];
-    return boundaries[wave] + width * (progress % 100) / 100;
+    int width = boundary(wave + 1, total) - boundary(wave, total);
+    return boundary(wave, total) + width * (progress % 100) / 100;
 }
 
-constexpr int fill(int wave, int progress)
+constexpr int display_position(int progress, int total = 5)
+{ return 280 - position(progress, total); }
+
+constexpr int fill(int wave, int progress, int total = 5)
 {
-    int pixels = position(progress) - boundaries[wave];
-    int width = boundaries[wave + 1] - boundaries[wave];
+    int pixels = position(progress, total) - boundary(wave, total);
+    int width = boundary(wave + 1, total) - boundary(wave, total);
     return pixels < 0 ? 0 : (pixels > width ? width : pixels);
 }
 }

@@ -1,0 +1,23 @@
+{
+  "record_scratch": {
+    "title": "Record Scratches.wav",
+    "author": "filmsndfx",
+    "source": "https://freesound.org/people/filmsndfx/sounds/369673/",
+    "download": "https://cdn.freesound.org/previews/369/369673_6373431-hq.mp3",
+    "excerpt_seconds": [
+      0.395,
+      0.765
+    ],
+    "processing": "First isolated scratch; 70 Hz high-pass; mono 16 kHz PCM. The asset generator removes DC, adds short edge fades, and sets peak level.",
+    "license": "CC0 1.0 Universal",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "scream": {
+    "title": "Plants vs. Zombies original defeat scream (scream.ogg)",
+    "rights_holder": "PopCap Games / Electronic Arts",
+    "source": "https://plantsvszombies.fandom.com/wiki/File:Scream.ogg",
+    "download": "https://static.wikia.nocookie.net/plantsvszombies/images/e/e1/Scream.ogg/revision/latest",
+    "license": "Original game audio; not CC0. Rights remain with the original rights holder.",
+    "processing": "Full original clip and pitch; converted from 44.1 kHz Ogg Vorbis to mono 16 kHz PCM. The asset generator removes DC, applies short edge fades, and levels the peak."
+  }
+}
