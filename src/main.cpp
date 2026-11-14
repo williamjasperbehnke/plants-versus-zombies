@@ -7,6 +7,7 @@
 #include "game.h"
 #include "presentation.h"
 #include "save_store.h"
+#include "menu_layout.h"
 
 namespace
 {
@@ -64,7 +65,6 @@ private:
         using garden::Phase;
         if(previous_phase != _game.phase())
         {
-            if(_game.phase() == Phase::won) { bn::sound_items::win.play(); return; }
             if(_game.phase() == Phase::lost)
             {
                 bn::music::stop();
@@ -76,6 +76,7 @@ private:
         if(_game.phase() == Phase::won)
         {
             int frame = _game.reward_frames();
+            if(frame == 1) { bn::sound_items::win.play(); }
             if(frame == 48 || frame == 84 || frame == 112 || frame == 132)
             { bn::sound_items::plant.play(bn::fixed(0.35)); }
             if(frame == garden::reward_reveal_frame) { bn::sound_items::collect.play(); }
@@ -122,6 +123,13 @@ private:
         _repeat = {};
     }
 
+    void show_level_select()
+    {
+        _game.open_level_select();
+        reset_view();
+        _repeat = {};
+    }
+
     void feedback(garden::Feedback kind)
     {
         _view.feedback = kind;
@@ -136,137 +144,152 @@ private:
 
     void handle_input()
     {
-        using namespace garden;
+        using garden::Phase;
         if(_game.phase() != Phase::playing) { _seed_repeat = {}; }
-        if(_game.phase() == Phase::almanac)
+        switch(_game.phase())
         {
-            if(bn::keypad::b_pressed())
+        case Phase::almanac: handle_almanac_input(); break;
+        case Phase::preview: handle_preview_input(); break;
+        case Phase::lost: handle_lost_input(); break;
+        case Phase::level_select: handle_level_select_input(); break;
+        case Phase::title: handle_title_input(); break;
+        case Phase::won: handle_won_input(); break;
+        case Phase::paused: handle_paused_input(); break;
+        case Phase::playing: handle_playing_input(); break;
+        default: break;
+        }
+    }
+
+    void handle_almanac_input()
+    {
+        using namespace garden;
+        if(bn::keypad::b_pressed())
+        {
+            if(_view.almanac_details) { _view.almanac_details = false; }
+            else { _game.close_almanac(); }
+            _repeat = {};
+            return;
+        }
+        if(_view.almanac_details) { return; }
+        if(bn::keypad::a_pressed())
+        { _view.almanac_details = true; _repeat = {}; bn::sound_items::navigate.play(); return; }
+        if(bn::keypad::l_pressed() || bn::keypad::r_pressed())
+        { _view.almanac_zombies = ! _view.almanac_zombies; bn::sound_items::navigate.play(); }
+        int delta = 0;
+        if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
+        if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
+        if(repeat(bn::keypad::up_held(), _repeat[0])) { delta -= menu_layout::almanac_columns; }
+        if(repeat(bn::keypad::down_held(), _repeat[1])) { delta += menu_layout::almanac_columns; }
+        int count = plant_count;
+        if(_view.almanac_zombies) { count = zombie_type_count; }
+        if(delta)
+        {
+            _view.almanac_entry = (_view.almanac_entry + count + delta) % count;
+            bn::sound_items::navigate.play();
+        }
+    }
+
+    void handle_preview_input()
+    {
+        if(_game.preview_returning()) { return; }
+        if(bn::keypad::b_pressed())
+        { show_level_select(); }
+        else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+        { _game.begin_level(); _repeat = {}; }
+    }
+
+    void handle_lost_input()
+    {
+        if(! _game.loss_ready()) { return; }
+        if(bn::keypad::a_pressed() || bn::keypad::start_pressed()) { start_game(); }
+        else if(bn::keypad::b_pressed())
+        { show_level_select(); }
+    }
+
+    void handle_level_select_input()
+    {
+        using namespace garden;
+        int delta = 0;
+        if(repeat(bn::keypad::left_held(), _repeat[2]) && _game.level() % menu_layout::level_columns > 0) { --delta; }
+        if(repeat(bn::keypad::right_held(), _repeat[3]) && _game.level() % menu_layout::level_columns < menu_layout::level_columns - 1) { ++delta; }
+        if(repeat(bn::keypad::up_held(), _repeat[0]) && _game.level() % levels_per_world >= menu_layout::level_columns) { delta -= menu_layout::level_columns; }
+        if(repeat(bn::keypad::down_held(), _repeat[1]) && _game.level() % levels_per_world < menu_layout::level_columns) { delta += menu_layout::level_columns; }
+        if(delta) { _game.select_level(delta); bn::sound_items::navigate.play(); }
+        if(bn::keypad::b_pressed()) { show_title(); }
+        else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+        {
+            if(_game.level_unlocked(_game.level())) { start_game(); }
+            else { bn::sound_items::error.play(); }
+        }
+    }
+
+    void handle_title_input()
+    {
+        using namespace garden;
+        int choice = static_cast<int>(_view.title_choice);
+        bool up = repeat(bn::keypad::up_held(), _repeat[0]);
+        bool down = repeat(bn::keypad::down_held(), _repeat[1]);
+        if(up != down)
+        {
+            choice = (choice + 1) % static_cast<int>(TitleChoice::count);
+            _view.title_choice = static_cast<TitleChoice>(choice);
+            bn::sound_items::navigate.play();
+        }
+        if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+        {
+            if(_view.title_choice == TitleChoice::almanac) { _game.open_almanac(); }
+            else { show_level_select(); }
+            _repeat = {};
+        }
+    }
+
+    void handle_won_input()
+    {
+        if(_game.reward_ready() && bn::keypad::any_pressed()) { show_level_select(); }
+    }
+
+    void handle_paused_input()
+    {
+        using namespace garden;
+        if(bn::keypad::start_pressed() || bn::keypad::b_pressed())
+        {
+            _game.toggle_pause();
+            _repeat = {};
+            return;
+        }
+        constexpr int choices = static_cast<int>(PauseChoice::count);
+        int choice = static_cast<int>(_view.pause_choice);
+        if(repeat(bn::keypad::up_held(), _repeat[0])) { choice = (choice + choices - 1) % choices; }
+        if(repeat(bn::keypad::down_held(), _repeat[1])) { choice = (choice + 1) % choices; }
+        if(choice != static_cast<int>(_view.pause_choice)) { bn::sound_items::navigate.play(); }
+        _view.pause_choice = static_cast<PauseChoice>(choice);
+        int delta = 0;
+        if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
+        if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
+        if(choice >= static_cast<int>(PauseChoice::master) && delta)
+        {
+            auto channel = static_cast<AudioChannel>(choice - static_cast<int>(PauseChoice::master));
+            if(_view.audio.adjust(channel, delta))
             {
-                if(_view.almanac_details) { _view.almanac_details = false; }
-                else { _game.close_almanac(); }
-                _repeat = {};
-                return;
-            }
-            if(_view.almanac_details) { return; }
-            if(bn::keypad::a_pressed())
-            { _view.almanac_details = true; _repeat = {}; bn::sound_items::navigate.play(); return; }
-            if(bn::keypad::l_pressed() || bn::keypad::r_pressed())
-            { _view.almanac_zombies = ! _view.almanac_zombies; bn::sound_items::navigate.play(); }
-            int delta = 0;
-            if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
-            if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
-            if(repeat(bn::keypad::up_held(), _repeat[0])) { delta -= 3; }
-            if(repeat(bn::keypad::down_held(), _repeat[1])) { delta += 3; }
-            int count = _view.almanac_zombies ? zombie_type_count : plant_count;
-            if(delta)
-            {
-                _view.almanac_entry = (_view.almanac_entry + count + delta) % count;
+                apply_audio();
                 bn::sound_items::navigate.play();
             }
-            return;
         }
-        if(_game.phase() == Phase::preview)
+        if(bn::keypad::a_pressed())
         {
-            if(_game.preview_returning()) { return; }
-            if(bn::keypad::b_pressed())
-            { _game.open_level_select(); reset_view(); _repeat = {}; }
-            else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
-            { _game.begin_level(); _repeat = {}; }
-            return;
+            switch(_view.pause_choice)
+            {
+            case PauseChoice::resume: _game.toggle_pause(); _repeat = {}; break;
+            case PauseChoice::restart: start_game(); break;
+            case PauseChoice::choose_levels: show_level_select(); break;
+            default: break;
+            }
         }
-        if(_game.phase() == Phase::lost)
-        {
-            if(! _game.loss_ready()) { return; }
-            if(bn::keypad::a_pressed() || bn::keypad::start_pressed()) { start_game(); }
-            else if(bn::keypad::b_pressed())
-            { _game.open_level_select(); reset_view(); _repeat = {}; }
-            return;
-        }
-        if(_game.phase() == Phase::level_select)
-        {
-            int delta = 0;
-            if(repeat(bn::keypad::left_held(), _repeat[2]) && _game.level() % 5 > 0) { --delta; }
-            if(repeat(bn::keypad::right_held(), _repeat[3]) && _game.level() % 5 < 4) { ++delta; }
-            if(repeat(bn::keypad::up_held(), _repeat[0]) && _game.level() % levels_per_world >= 5) { delta -= 5; }
-            if(repeat(bn::keypad::down_held(), _repeat[1]) && _game.level() % levels_per_world < 5) { delta += 5; }
-            if(delta) { _game.select_level(delta); bn::sound_items::navigate.play(); }
-            if(bn::keypad::b_pressed()) { show_title(); }
-            else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
-            {
-                if(_game.level_unlocked(_game.level())) { start_game(); }
-                else { bn::sound_items::error.play(); }
-            }
-            return;
-        }
-        if(_game.phase() == Phase::title)
-        {
-            int choice = static_cast<int>(_view.title_choice);
-            bool up = repeat(bn::keypad::up_held(), _repeat[0]);
-            bool down = repeat(bn::keypad::down_held(), _repeat[1]);
-            if(up != down)
-            {
-                choice = (choice + 1) % static_cast<int>(TitleChoice::count);
-                _view.title_choice = static_cast<TitleChoice>(choice);
-                bn::sound_items::navigate.play();
-            }
-            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
-            {
-                if(_view.title_choice == TitleChoice::almanac) { _game.open_almanac(); }
-                else { _game.open_level_select(); reset_view(); }
-                _repeat = {};
-            }
-            return;
-        }
-        if(_game.phase() == Phase::won)
-        {
-            if(! _game.reward_ready()) { return; }
-            if(bn::keypad::start_pressed() || bn::keypad::a_pressed())
-            {
-                _game.open_level_select();
-                reset_view();
-                _repeat = {};
-            }
-            else if(bn::keypad::b_pressed()) { show_title(); }
-            return;
-        }
-        if(_game.phase() == Phase::paused)
-        {
-            if(bn::keypad::start_pressed() || bn::keypad::b_pressed())
-            {
-                _game.toggle_pause();
-                _repeat = {};
-                return;
-            }
-            constexpr int choices = static_cast<int>(PauseChoice::count);
-            int choice = static_cast<int>(_view.pause_choice);
-            if(repeat(bn::keypad::up_held(), _repeat[0])) { choice = (choice + choices - 1) % choices; }
-            if(repeat(bn::keypad::down_held(), _repeat[1])) { choice = (choice + 1) % choices; }
-            if(choice != static_cast<int>(_view.pause_choice)) { bn::sound_items::navigate.play(); }
-            _view.pause_choice = static_cast<PauseChoice>(choice);
-            int delta = 0;
-            if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
-            if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
-            if(choice >= static_cast<int>(PauseChoice::master) && delta)
-            {
-                auto channel = static_cast<AudioChannel>(choice - static_cast<int>(PauseChoice::master));
-                if(_view.audio.adjust(channel, delta))
-                {
-                    apply_audio();
-                    bn::sound_items::navigate.play();
-                }
-            }
-            if(bn::keypad::a_pressed())
-            {
-                switch(_view.pause_choice)
-                {
-                case PauseChoice::resume: _game.toggle_pause(); _repeat = {}; break;
-                case PauseChoice::restart: start_game(); break;
-                case PauseChoice::choose_levels: _game.open_level_select(); reset_view(); _repeat = {}; break;
-                default: break;
-                }
-            }
-            return;
-        }
+    }
+
+    void handle_playing_input()
+    {
+        using namespace garden;
         if(bn::keypad::start_pressed())
         {
             _game.toggle_pause();
@@ -274,7 +297,6 @@ private:
             _repeat = {};
             return;
         }
-        if(_game.phase() != Phase::playing) { return; }
         if(repeat(bn::keypad::up_held(), _repeat[0]) && _view.cursor.row > 0) { --_view.cursor.row; }
         if(repeat(bn::keypad::down_held(), _repeat[1]) && _view.cursor.row < rows - 1) { ++_view.cursor.row; }
         if(repeat(bn::keypad::left_held(), _repeat[2]) && _view.cursor.column > 0) { --_view.cursor.column; }

@@ -41,10 +41,10 @@ private:
             valid[i] = decode(records[i], values[i]);
         }
         if(! valid[0] && ! valid[1]) { return false; }
-        uint32_t distance = save_word(records[1], 12) - save_word(records[0], 12);
+        uint32_t distance = save_word(records[1], save_format::sequence_offset) - save_word(records[0], save_format::sequence_offset);
         bool second_newer = valid[1] && (! valid[0] || distance < 0x80000000u);
         _slot = second_newer ? 1 : 0;
-        _sequence = save_word(records[_slot], 12);
+        _sequence = save_word(records[_slot], save_format::sequence_offset);
         _last = values[_slot];
         _loaded = true;
         return true;

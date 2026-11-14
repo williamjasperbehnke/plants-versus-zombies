@@ -27,13 +27,14 @@ static void log_message(struct mLogger* logger, int category, enum mLogLevel lev
     }
 }
 
+// Hash visible RGB; the unused high byte can vary between background and sprite layers.
 static uint32_t region_hash(int x, int y, int width, int height)
 {
     uint32_t hash = 2166136261u;
     for(int row = y; row < y + height; ++row)
     {
         for(int column = x; column < x + width; ++column)
-        { hash = (hash ^ pixels[row * 240 + column]) * 16777619u; }
+        { hash = (hash ^ (pixels[row * 240 + column] & 0x00ffffffu)) * 16777619u; }
     }
     return hash;
 }
@@ -276,6 +277,96 @@ static void check_portrait_pixels(void)
     }
 }
 
+static void tombstone_test(struct mCore* core)
+{
+    screenshot("build/tombstones_lawn.ppm");
+    press(core, 1 << 6); press(core, 1 << 6); // Top lane.
+    for(int i = 0; i < 5; ++i) { press(core, 1 << 4); }
+    press(core, 1 << 8); // Peashooter immediately left of the first grave.
+    press(core, 1 << 0);
+    uint32_t intact = region_hash(170, 58, 15, 16);
+    frames(core, 1 << 1, 300);
+    screenshot("build/tombstone_cracked.ppm");
+    assert(region_hash(170, 58, 15, 16) != intact);
+    frames(core, 1 << 1, 300);
+    screenshot("build/tombstone_destroyed.ppm");
+    // Every remaining pixel in the old stone's top edge is grass, rather than gray stone.
+    int gray = 0;
+    for(int y = 58; y < 64; ++y)
+    {
+        for(int x = 172; x < 184; ++x)
+        {
+            uint32_t pixel = pixels[y * 240 + x];
+            int r = pixel & 255, g = pixel >> 8 & 255, b = pixel >> 16 & 255;
+            gray += b > 110 && r > 100 && g < r + 50;
+        }
+    }
+    assert(gray == 0 && on_lawn());
+    reset_cartridge(core);
+    press(core, 1 << 0);
+    start_round(core, NULL);
+}
+
+static void grave_emergence_test(struct mCore* core)
+{
+    bool dirt = false;
+    for(int tick = 0; tick < 4500 && ! dirt; ++tick)
+    {
+        frames(core, 1 << 1, 1);
+        int brown = 0;
+        for(int y = 72; y < 79; ++y)
+        {
+            for(int x = 164; x < 190; ++x)
+            {
+                uint32_t pixel = pixels[y * 240 + x];
+                int r = pixel & 255, g = pixel >> 8 & 255, b = pixel >> 16 & 255;
+                brown += r > 100 && r < 140 && g > 60 && g < 90 && b < 65;
+            }
+        }
+        dirt = brown > 8;
+    }
+    assert(dirt && on_lawn());
+    uint32_t previous = 0;
+    for(int stage = 0; stage < 6; ++stage)
+    {
+        char path[80];
+        if(stage) { frames(core, 1 << 1, 8); }
+        snprintf(path, sizeof(path), "build/grave_emergence_%d.ppm", stage);
+        screenshot(path);
+        uint32_t image = region_hash(161, 47, 32, 32);
+        assert(image != previous);
+        previous = image;
+    }
+    reset_cartridge(core);
+    press(core, 1 << 0);
+    start_round(core, NULL);
+}
+
+static void explosion_layer_test(struct mCore* core)
+{
+    press(core, 1 << 0); // Sunflower at the initial cursor.
+    press(core, 1 << 7); press(core, 1 << 7);
+    press(core, 1 << 4); press(core, 1 << 8);
+    press(core, 1 << 0); // Peashooter in the bottom lane.
+    frames(core, 1 << 1, 1700);
+    press(core, 1 << 6); // Cherry Bomb directly above it.
+    for(int i = 0; i < 4; ++i) { press(core, 1 << 8); }
+    press(core, 1 << 0);
+    bool covered = false;
+    for(int tick = 0; tick < 70 && ! covered; ++tick)
+    {
+        frames(core, 0, 1);
+        // This pixel belongs to the lower Peashooter's head until the blast covers it.
+        uint32_t pixel = pixels[137 * 240 + 67];
+        covered = (pixel & 255) > 240 && (pixel >> 8 & 255) > 180 && (pixel >> 16 & 255) < 120;
+    }
+    assert(covered && on_lawn());
+    screenshot("build/explosion_above_plants.ppm");
+    reset_cartridge(core);
+    press(core, 1 << 0);
+    start_round(core, NULL);
+}
+
 static void plant_damage_test(struct mCore* core)
 {
     press(core, 1 << 8); press(core, 1 << 8); // Wall-nut.
@@ -443,6 +534,9 @@ int main(int argc, char** argv)
         start_round(core, NULL);
         assert(on_lawn());
         assert(core->busRead8(core, 0x0e000100) != 'P'); // Debug save is isolated.
+        tombstone_test(core);
+        grave_emergence_test(core);
+        explosion_layer_test(core);
         plant_damage_test(core);
         // Six repeated steps wrap around; four more select Snow Pea in the new order.
         frames(core, 1 << 8, 75);
@@ -549,7 +643,8 @@ int main(int argc, char** argv)
         }
         screenshot("build/plant_reward.ppm");
         assert(region_hash(0, 80, 30, 70) == reward_lawn); // Lawn and mowers survive the overlay.
-        press(core, 1 << 0); // Result goes to the selector, not directly into level 2.
+        assert(on_lawn()); // The sun bank, wave track and packets remain visible through the reward.
+        press(core, 1 << 8); // A shoulder button dismisses the unlock to level selection.
         assert(! on_lawn());
         assert(region_hash(76, 70, 13, 11) != second_badge);
         screenshot("build/levels_progress.ppm");
@@ -578,8 +673,9 @@ int main(int argc, char** argv)
         screenshot("build/trophy_reward.ppm");
         assert(saved_kills(core, offset, 0) == 70 && saved_kills(core, offset, 3) == 6);
         assert(image_hash() != reward_start);
-        press(core, 1 << 0);
+        press(core, 1 << 1); // B also dismisses a repeat-clear trophy to levels, rather than title.
         assert(! on_lawn());
+        assert(region_hash(76, 70, 13, 11) != second_badge);
     }
     if(! debug && ! loss)
     {

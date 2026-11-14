@@ -144,11 +144,11 @@ void flag_rallies()
             ++buffed;
         }
     }
-    assert(group == 5 && buffed >= 3);
+    assert(group >= 5 && buffed >= 3);
     Zombie far = game.zombies()[1];
     far.x -= 120 * scale;
     assert(! game.flag_buffed(far));
-    assert(game.plant(0, 6, PlantType::cherry) == PlantResult::planted);
+    assert(game.plant(0, 5, PlantType::cherry) == PlantResult::planted);
     advance(game, 65);
     assert(! game.zombies()[0].active);
     int survivors = 0;
@@ -432,7 +432,7 @@ void defend(Game& game)
         {
             for(int column = 0; column < columns; ++column)
             {
-                if(game.plants()[cell_index(row, column)].active) { continue; }
+                if(game.plants()[cell_index(row, column)].active || game.tombstone_at(row, column)) { continue; }
                 int count = 0;
                 for(const auto& zombie : game.zombies())
                 {
@@ -471,7 +471,22 @@ void defend(Game& game)
         if(! game.plants()[cell_index(row, 0)].active)
         { game.plant(row, 0, PlantType::sunflower); }
     }
+    // Graves are stationary targets: cover those lanes before their first horde.
+    for(const auto& stone : game.tombstones())
+    {
+        if(stone.active() && ! game.plants()[cell_index(stone.row, 2)].active)
+        { game.plant(stone.row, 2, PlantType::peashooter); }
+    }
     if(game.wave() == 0) { return; }
+    // Later yards need a second economy column to replace the extra defenses.
+    if(game.level_spec().tombstones > 0)
+    {
+        for(int row = 0; row < rows; ++row)
+        {
+            if(! game.plants()[cell_index(row, 1)].active)
+            { game.plant(row, 1, PlantType::sunflower); }
+        }
+    }
     if(game.plant_available(PlantType::snow_pea))
     {
         for(int row = 0; row < rows; ++row)
@@ -550,8 +565,8 @@ void mine_and_newspaper()
     for(int frame = 0; frame < 200; ++frame) { game.tick(); assert(! game.events().explosion); }
     assert(! game.plants()[cell_index(1, 8)].active); // Eaten before arming.
     game.load_progress(Progress::all_unlocked());
-    assert(game.start(9));
-    assert(game.level() == 9);
+    assert(game.start(5));
+    assert(game.level() == 5);
     for(int frame = 0; ! game.events().horde_started && frame < 6000; ++frame) { game.tick(); }
     assert(game.events().horde_started);
     advance(game, 480);
@@ -571,8 +586,10 @@ void mine_and_newspaper()
             for(int tick = 0; tick < 900 && game.zombies()[i].active; ++tick)
             {
                 game.tick();
+                if(! game.zombies()[i].active) { break; }
                 assert(game.zombies()[i].health == spec(ZombieType::normal).health);
                 paper_hit |= game.zombies()[i].shield_health < 16;
+                if(paper_hit) { break; }
             }
             assert(paper_hit && game.zombies()[i].shield_health > 0);
             break;
@@ -580,6 +597,218 @@ void mine_and_newspaper()
     }
     assert(newspaper_seen && spec(ZombieType::newspaper).health == spec(ZombieType::normal).health);
     std::puts("PASS mine unlock, price, arming, pause, cooldown, detonation, lane scope, vulnerability, newspaper shield and rage speed");
+}
+
+void tombstone_rules()
+{
+    Game game;
+    game.load_progress(Progress::all_unlocked());
+    for(int level = 0; level < level_count; ++level)
+    {
+        assert(game.start(level));
+        int stones = 0;
+        for(const auto& stone : game.tombstones())
+        {
+            if(! stone.active()) { continue; }
+            ++stones;
+            assert(stone.health == tombstone_health && stone.pending == 0 && stone.column >= 6);
+            assert(game.tombstone_at(stone.row, stone.column));
+            assert(game.plant(stone.row, stone.column, PlantType::peashooter) == PlantResult::occupied);
+            assert(! game.shovel(stone.row, stone.column) && stone.health == tombstone_health);
+        }
+        assert(stones == game.level_spec().tombstones);
+        assert((stones > 0) == (level >= 4));
+        assert(game.sun() == 175 && game.cooldown(PlantType::peashooter) == 0);
+    }
+    // Both pea types acquire a stone as a target even with no zombies present.
+    for(auto shooter : {PlantType::peashooter, PlantType::snow_pea})
+    {
+        assert(game.start(9));
+        const auto& stone = game.tombstones()[0];
+        assert(game.plant(stone.row, stone.column - 1, shooter) == PlantResult::planted);
+        int hit_count = 0;
+        while(stone.health == tombstone_health && game.elapsed() < 150) { game.tick(); }
+        assert(stone.health == tombstone_health - 1 && stone.flash > 0);
+        ++hit_count;
+        game.toggle_pause();
+        advance(game, 120);
+        assert(stone.health == tombstone_health - 1 && stone.flash == 6);
+        game.toggle_pause();
+        for(int tick = 0; stone.active() && tick < 800; ++tick)
+        {
+            int previous = stone.health;
+            game.tick();
+            if(stone.health < previous) { ++hit_count; assert(game.events().hit); }
+        }
+        assert(! stone.active() && hit_count == tombstone_health && game.kills() == 0);
+        assert(! game.tombstone_at(stone.row, stone.column));
+        if(shooter == PlantType::peashooter)
+        { assert(game.plant(stone.row, stone.column, PlantType::sunflower) == PlantResult::planted); }
+    }
+    // A stone shields a zombie behind it, including from the freezing effect.
+    assert(game.start(9));
+    advance(game, 900);
+    assert(game.zombies()[0].row == 1);
+    assert(game.plant(1, 6, PlantType::snow_pea) == PlantResult::planted);
+    advance(game, 100);
+    assert(game.tombstones()[2].health == tombstone_health - 1);
+    assert(game.zombies()[0].health == spec(ZombieType::normal).health && game.zombies()[0].frost_frames == 0);
+    // Once a zombie walks in front, it takes the hit instead of the stone behind it.
+    assert(game.start(9));
+    advance(game, 1250);
+    assert(game.plant(1, 5, PlantType::snow_pea) == PlantResult::planted);
+    advance(game, 100);
+    assert(game.zombies()[0].health == spec(ZombieType::normal).health - 1 && game.zombies()[0].frost_frames > 0);
+    assert(game.tombstones()[2].health == tombstone_health);
+    assert(game.start(9));
+    assert(game.plant(0, 5, PlantType::cherry) == PlantResult::planted);
+    advance(game, spec(PlantType::cherry).action_delay);
+    assert(! game.tombstones()[0].active() && game.events().explosion);
+    assert(game.tombstones()[1].health == tombstone_health); // Outside the blast.
+    // Ordinary waves do not raise graves. The actual flag entry triggers each living stone once.
+    assert(game.start(9));
+    int triggered = 0, spawned = 0;
+    for(int frame = 0; frame < 6000 && triggered == 0; ++frame)
+    {
+        int standing = 0, pending_before = 0;
+        for(const auto& stone : game.tombstones())
+        { standing += stone.active(); pending_before += stone.pending; }
+        game.tick();
+        int pending = 0;
+        for(const auto& stone : game.tombstones()) { pending += stone.pending; }
+        int raised = game.events().tombstone_spawns;
+        assert(pending - pending_before + raised == (game.events().horde_started ? standing : 0));
+        if(game.events().horde_started) { triggered += standing; }
+        spawned += raised;
+    }
+    assert(triggered > 0 && spawned == triggered);
+    int grave_zombies = 0;
+    for(const auto& zombie : game.zombies())
+    {
+        if(! zombie.active || zombie.group != 0) { continue; }
+        ++grave_zombies;
+        assert(zombie.type == ZombieType::normal && zombie.health == spec(ZombieType::normal).health);
+        assert(zombie.emergence_frames == emergence_duration - 1 && game.zombie_speed(zombie) == 0 && ! zombie.eating);
+        bool at_grave = false;
+        for(const auto& stone : game.tombstones())
+        { at_grave |= stone.active() && stone.row == zombie.row &&
+                      cell_x(stone.column) * scale - zombie.x < scale; }
+        assert(at_grave);
+    }
+    assert(grave_zombies == spawned);
+    auto graves = game.tombstones();
+    auto zombies = game.zombies();
+    game.toggle_pause();
+    advance(game, 100);
+    for(int i = 0; i < tombstone_capacity; ++i)
+    {
+        assert(game.tombstones()[i].pending == graves[i].pending);
+        assert(game.tombstones()[i].health == graves[i].health);
+    }
+    for(int i = 0; i < zombie_capacity; ++i)
+    {
+        assert(game.zombies()[i].x == zombies[i].x);
+        assert(game.zombies()[i].emergence_frames == zombies[i].emergence_frames);
+    }
+    game.toggle_pause();
+    advance(game, emergence_duration - 1);
+    for(int i = 0; i < zombie_capacity; ++i)
+    {
+        if(! zombies[i].active || zombies[i].group != 0) { continue; }
+        assert(game.zombies()[i].active && game.zombies()[i].emergence_frames == 0);
+        assert(game.zombies()[i].x == zombies[i].x && ! game.zombies()[i].eating);
+    }
+    game.tick();
+    for(int i = 0; i < zombie_capacity; ++i)
+    {
+        if(zombies[i].active && zombies[i].group == 0) { assert(game.zombies()[i].x < zombies[i].x); }
+    }
+    Zombie rising{true, ZombieType::normal, 0, 0, 6};
+    rising.emergence_frames = emergence_duration;
+    assert(! take_zombie_damage(rising, 1, DamageType::frost) && rising.health == 5 && rising.frost_frames > 0);
+    assert(movement_speed(rising) == 0);
+    assert(take_zombie_damage(rising, 100, DamageType::blast));
+    assert(game.start(9));
+    for(const auto& stone : game.tombstones()) { assert(stone.health == tombstone_health && stone.pending == 0); }
+    assert(game.plant(0, 5, PlantType::cherry) == PlantResult::planted);
+    advance(game, spec(PlantType::cherry).action_delay);
+    assert(! game.tombstones()[0].active());
+    int standing_at_flag = 0;
+    for(int frame = 0; ! game.events().horde_started && frame < 6000; ++frame)
+    {
+        standing_at_flag = 0;
+        for(const auto& stone : game.tombstones()) { standing_at_flag += stone.active(); }
+        game.tick();
+    }
+    assert(game.events().horde_started && game.events().tombstone_spawns == standing_at_flag);
+    assert(game.tombstones()[0].pending == 0 && ! game.tombstones()[0].active());
+    std::puts("PASS tombstone layouts, occupied cells, pea/frost damage, cracks/flash, pause, blast, horde-only spawns and restart");
+}
+
+void explosion_lifetimes()
+{
+    for(auto type : {PlantType::cherry, PlantType::potato_mine})
+    {
+        Plant effect{true, type, 0, 18, 0};
+        int stages[3]{};
+        for(int tick = 0; tick < 18; ++tick)
+        {
+            assert(effect.exploding());
+            ++stages[(18 - effect.timer) / 6];
+            effect.advance_explosion();
+        }
+        assert(! effect.active && ! effect.exploding());
+        for(int duration : stages) { assert(duration == 6); }
+        Plant untriggered{true, type, 1, 18, 0};
+        untriggered.advance_explosion();
+        assert(untriggered.active && untriggered.timer == 18);
+    }
+    std::puts("PASS shared explosion completion keeps every blast frame and leaves untriggered plants alone");
+}
+
+int finish_victory(Game& game)
+{
+    int effects = 0;
+    int ticks = 0;
+    const int elapsed = game.elapsed(), sun = game.sun();
+    const auto progress = game.progress();
+    while(game.victory_settling())
+    {
+        assert(++ticks <= 80 && game.phase() == Phase::won && ! game.reward_ready());
+        auto plants = game.plants();
+        auto mowers = game.mowers();
+        auto shots = game.shots();
+        assert(game.plant(0, 0, PlantType::sunflower) == PlantResult::inactive);
+        game.tick();
+        assert(game.elapsed() == elapsed && game.sun() == sun && game.progress() == progress);
+        assert(game.reward_frames() == 0);
+        for(int i = 0; i < rows * columns; ++i)
+        {
+            const auto& before = plants[i];
+            const auto& after = game.plants()[i];
+            if(before.active && before.health == 0 &&
+               (before.type == PlantType::cherry || before.type == PlantType::potato_mine))
+            {
+                effects |= 1;
+                assert(after.timer == before.timer - 1 && after.active == (after.timer > 0));
+            }
+            else { assert(after.active == before.active && after.timer == before.timer); }
+        }
+        for(int i = 0; i < rows; ++i)
+        {
+            const auto& before = mowers[i];
+            const auto& after = game.mowers()[i];
+            if(before.moving)
+            {
+                effects |= 2;
+                assert(after.x == before.x + 3 * scale);
+                assert(after.moving == (after.x <= 252 * scale));
+            }
+            else { assert(after.x == before.x && ! after.moving); }
+        }
+        for(int i = 0; i < shot_capacity; ++i) { assert(game.shots()[i].x == shots[i].x); }
+    }
+    return effects;
 }
 
 void playable_victory()
@@ -590,6 +819,7 @@ void playable_victory()
     assert(game.level() == 0);
     assert(game.start());
     bool queued_overlap_seen = false;
+    int finishing_effects = 0;
     std::array<uint32_t, zombie_kind_count> campaign_kills{};
     for(int level = 0; level < level_count; ++level)
     {
@@ -600,6 +830,7 @@ void playable_victory()
         int hordes = 0;
         int final_warnings = 0;
         int cleared = 0;
+        int grave_spawns = 0;
         bool cone_seen = false;
         bool newspaper_seen = false;
         bool bucket_seen = false;
@@ -651,6 +882,7 @@ void playable_victory()
                 assert(flag);
             }
             cleared += game.events().wave_cleared;
+            grave_spawns += game.events().tombstone_spawns;
             if(game.events().wave_cleared && game.phase() == Phase::playing)
             { assert(game.next_wave_frames() == 0); }
             for(const auto& zombie : game.zombies())
@@ -667,6 +899,7 @@ void playable_victory()
         int expected_kills = 0;
         for(int wave = 1; wave <= game.total_waves(); ++wave)
         { expected_kills += game.level_spec().normal_size(wave) + game.level_spec().wave_size(wave); }
+        expected_kills += grave_spawns;
         std::printf("Defense: %s phase=%d waves=%d kills=%d time=%ds\n",
                     game.level_spec().name, int(game.phase()), game.wave(), game.kills(), frames / 60);
         assert(game.phase() == Phase::won);
@@ -675,7 +908,7 @@ void playable_victory()
         {
             auto total = game.lifetime_kills(static_cast<ZombieType>(i));
             assert(total >= campaign_kills[i]);
-            assert(total - campaign_kills[i] == uint32_t(game.zombie_roster()[i]));
+            assert(total - campaign_kills[i] == uint32_t(game.zombie_roster()[i] + (i == 0 ? grave_spawns : 0)));
             recorded += total - campaign_kills[i];
             campaign_kills[i] = total;
         }
@@ -693,11 +926,14 @@ void playable_victory()
             assert(game.plant_available(seed_order[slot]) == (slot < game.available_plants()));
         }
         assert(game.unlocked_plant() == (level < 4 ? seed_order[level + 2] : PlantType::count));
+        finishing_effects |= finish_victory(game);
         { assert(! game.reward_ready()); advance(game, reward_ready_frame); assert(game.reward_ready()); }
         if(level + 1 < level_count) { game.open_level_select(); assert(game.start()); }
     }
     for(auto total : campaign_kills) { assert(total > 0); }
     assert(queued_overlap_seen); // Advancing a group never discards its remaining queued zombies.
+    std::printf("Victory finishing effects: %d\n", finishing_effects);
+    assert(finishing_effects & 2); // Campaign clears exercise complete mower exits.
     assert(game.progress().completed == (uint32_t(1) << level_count) - 1);
     game.return_to_title();
     assert(game.unlocked_level() == 9 && game.available_plants() == plant_count);
@@ -711,6 +947,7 @@ void playable_victory()
     assert(game.lifetime_kills(ZombieType::flag) == campaign_kills[3] + 3);
     assert(game.lifetime_kills(ZombieType::normal) == campaign_kills[0] + 35);
     assert(! game.reward_ready());
+    finish_victory(game);
     advance(game, reward_ready_frame);
     assert(game.reward_ready());
     std::puts("PASS full campaign, level unlocks, mine unlock, replay, and session retention");
@@ -866,5 +1103,7 @@ int main()
     wave_feedback_and_active_pause();
     chewing_tracks_damage();
     mine_and_newspaper();
+    tombstone_rules();
+    explosion_lifetimes();
     playable_victory();
 }

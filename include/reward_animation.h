@@ -7,7 +7,7 @@ inline constexpr int reward_reveal_frame = 180;
 inline constexpr int reward_ready_frame = 210;
 struct RewardPose { int x; int y; int scale; int height; int squash; };
 
-inline RewardPose reward_pose(int frame)
+inline RewardPose reward_pose(int frame, int lift = 0)
 {
     if(frame < 150)
     {
@@ -33,7 +33,7 @@ inline RewardPose reward_pose(int frame)
     int zoom = frame < reward_reveal_frame ? frame - 150 : 30;
     int remaining = 30 - zoom;
     int eased = 900 - remaining * remaining;
-    return {120, 112 - 30 * eased / 900, 50 + 50 * eased / 900, 0, 0};
+    return {120, 112 - (14 + lift) * eased / 900, 50 + 50 * eased / 900, 0, 0};
 }
 }
 #endif

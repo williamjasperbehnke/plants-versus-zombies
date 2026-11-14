@@ -545,12 +545,14 @@ def pause_screen():
 
 def reward_panel(heading):
     image = canvas(256, 256, 0)
-    tombstone(image, (35, 35, 204, 158), crown_radius=22)
-    d = ImageDraw.Draw(image)
-    d.rounded_rectangle((44, 43, 195, 140), radius=6, fill=1, outline=2)
-    wooden_sign(image, (20, 3, 219, 30))
-    text(image, 120, 12, heading, color=7, scale=2, centered=True)
-    wooden_sign(image, (44, 142, 195, 159))
+    # Keep the HUD and lawn visible; only the information below the packet is boxed.
+    lift = 8 if heading == 'NEW PLANT!' else 0
+    wooden_sign(image, (34, 128 - lift, 205, 159 - lift))
+    if heading != 'NEW PLANT!':
+        # Trophy results retain their floating heading.
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
+            text(image, 120 + dx, 56 + dy, heading, color=1, scale=2, centered=True)
+        text(image, 120, 56, heading, color=7, scale=2, centered=True)
     return image
 
 
@@ -589,7 +591,7 @@ def loss_notice(prompt=False):
     return image
 
 
-def sound(name, notes):
+def sound(name, notes, gain=1.0):
     rate = 16000
     data = []
     for frequency, seconds in notes:
@@ -597,7 +599,7 @@ def sound(name, notes):
         for i in range(length):
             envelope = min(1, i / 70) * (1 - i / length) ** 2
             sample = math.sin(2 * math.pi * frequency * i / rate)
-            data.append(struct.pack('<h', int(sample * envelope * 14000 * OUTPUT_GAIN)))
+            data.append(struct.pack('<h', int(sample * envelope * 14000 * OUTPUT_GAIN * gain)))
     with wave.open(str(ROOT / 'audio' / f'{name}.wav'), 'wb') as output:
         output.setnchannels(1)
         output.setsampwidth(2)
@@ -696,7 +698,68 @@ def defeat_sounds():
         timing_path.write_text(timing)
 
 
+def emerging_zombies():
+    atlas = canvas(32, 32 * 12)
+    # The dirt opens, then the head, shoulders and legs pull free.
+    for buffed in (False, True):
+        for stage, drop in enumerate((21, 16, 11, 7, 3, 0)):
+            source = character_sprite(4 if stage % 2 == 0 else 14, COLORS, 3, buffed)
+            frame = canvas(32, 32)
+            frame.putpalette(source.getpalette())
+            d = ImageDraw.Draw(frame)
+            d.ellipse((6, 24, 26, 28), fill=15)
+            d.ellipse((8, 24, 24, 27), fill=9)
+            if stage:
+                # Clip at the ground rather than sliding an entire sprite above the lawn.
+                body = source.point([0 if index == 15 else index for index in range(256)])
+                visible = body.crop((0, 0, 32, 27 - drop))
+                frame.paste(visible, (0, drop), visible.point([0] + [255] * 255, 'L'))
+            if stage < 5:
+                d.point((10 - stage % 2, 28), fill=10)
+                d.point((25, 25 + stage % 2), fill=10)
+            else:
+                # Last pose matches the walking silhouette and shadow for a clean handoff.
+                frame = source
+            atlas.paste(frame, (0, (int(buffed) * 6 + stage) * 32))
+    apply_palette(atlas, character_palette(COLORS, 3))
+    return atlas
+
+
+def lawn_tombstones():
+    atlas = canvas(32, 32 * 3)
+    for stage in range(3):
+        stone = canvas(32, 32)
+        d = ImageDraw.Draw(stone)
+        d.ellipse((6, 24, 26, 28), fill=15)
+        d.polygon([(7, 25), (7, 13), (9, 9), (12, 7), (20, 7), (24, 10),
+                   (25, 14), (25, 25)], fill=12, outline=1)
+        d.line((8, 14, 8, 13, 10, 10, 13, 8, 20, 8), fill=13)
+        d.line((24, 14, 24, 24, 9, 24), fill=2)
+        # Shallow carved cross, with a light edge rather than a heavy inset box.
+        d.line((16, 12, 16, 20), fill=2)
+        d.line((12, 15, 20, 15), fill=2)
+        d.line((17, 13, 17, 20), fill=13)
+        d.line((13, 16, 20, 16), fill=13)
+        d.point((10, 22), fill=13)
+        d.line((18, 24, 21, 24), fill=3)
+        if stage:
+            d.line((20, 9, 18, 12, 20, 14, 17, 17, 18, 19), fill=1)
+            d.point((19, 12), fill=13)
+        if stage == 2:
+            d.line((9, 19, 12, 17, 14, 20, 13, 23), fill=1)
+            d.line((22, 21, 20, 23, 20, 25), fill=1)
+            d.point((24, 12), fill=0)
+        atlas.paste(stone, (0, stage * 32))
+    # Match the independently colored character ground shadows.
+    colors = list(COLORS)
+    colors[15] = SHADOW_COLOR
+    apply_palette(atlas, colors)
+    return atlas
+
+
 def main():
+    save(emerging_zombies(), 'emerging_zombies', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    save(lawn_tombstones(), 'tombstones', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     (ROOT / 'graphics').mkdir(exist_ok=True)
     (ROOT / 'audio').mkdir(exist_ok=True)
     wave_layout_header()
@@ -974,9 +1037,9 @@ def main():
     chewing_sound()
     sound('wave_start', [(262, .08), (330, .08), (392, .14)])
     sound('wave_clear', [(659, .07), (784, .07), (1046, .13)])
-    sound('mower', [(100, .06), (140, .06), (180, .12)])
+    sound('mower', [(100, .06), (140, .06), (180, .12)], gain=1.5)
     sound('error', [(150, .08)])
-    sound('boom', [(90, .06), (55, .12)])
+    sound('boom', [(90, .06), (55, .12)], gain=1.5)
     sound('win', [(523, .09), (659, .09), (784, .09), (1046, .22)])
     defeat_sounds()
 

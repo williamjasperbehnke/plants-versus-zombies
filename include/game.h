@@ -19,6 +19,10 @@ inline constexpr int cell_height = 19;
 inline constexpr int lawn_left = 34;
 inline constexpr int lawn_top = 58;
 inline constexpr int zombie_capacity = 16;
+inline constexpr int tombstone_capacity = 3;
+inline constexpr int tombstone_health = 6;
+inline constexpr int emergence_duration = 48;
+inline constexpr int emergence_stages = 6;
 inline constexpr int shot_capacity = 18;
 inline constexpr int sun_capacity = 10;
 inline constexpr int sun_bank_x = 11;
@@ -40,6 +44,7 @@ struct LevelSpec
     int newspaper_first_wave;
     bool bucketheads = false;
     bool screen_doors = false;
+    int tombstones = 0;
     constexpr int normal_size(int wave) const { return wave > 0 ? wave + 2 : 0; }
     constexpr int wave_size(int wave) const
     {
@@ -52,13 +57,19 @@ inline constexpr std::array<LevelSpec, level_count> levels{{
     {"Backyard 1-2", 3, 3, 96, 4, 0, 0},
     {"Backyard 1-3", 3, 5, 96, 3, 0, 0, true, false},
     {"Backyard 1-4", 5, 3, 96, 3, 5, 3, true, false},
-    {"Backyard 1-5", 5, 3, 96, 3, 5, 2, true, true},
-    {"Backyard 1-6", 5, 4, 96, 3, 5, 1, true, true},
-    {"Backyard 1-7", 5, 4, 96, 3, 4, 1, true, true},
-    {"Backyard 1-8", 5, 5, 96, 3, 4, 1, true, true},
-    {"Backyard 1-9", 5, 5, 96, 3, 4, 1, true, true},
-    {"Backyard 1-10", 5, 6, 96, 3, 4, 1, true, true}
+    {"Backyard 1-5", 5, 3, 96, 3, 5, 2, true, true, 1},
+    {"Backyard 1-6", 5, 4, 96, 3, 5, 1, true, true, 1},
+    {"Backyard 1-7", 5, 4, 96, 3, 4, 1, true, true, 2},
+    {"Backyard 1-8", 5, 5, 96, 3, 4, 1, true, true, 2},
+    {"Backyard 1-9", 5, 5, 96, 3, 4, 1, true, true, 3},
+    {"Backyard 1-10", 5, 6, 96, 3, 4, 1, true, true, 3}
 }};
+
+static_assert([] {
+    for(const auto& level : levels)
+    { if(level.tombstones < 0 || level.tombstones > tombstone_capacity) { return false; } }
+    return true;
+}(), "Level tombstones exceed the fixed pool");
 
 constexpr int cell_x(int column) { return lawn_left + column * cell_width + cell_width / 2; }
 constexpr int cell_y(int row) { return lawn_top + row * cell_height + cell_height / 2; }
@@ -92,6 +103,10 @@ struct Plant
     int health = 0;
     int timer = 0;
     int flash = 0;
+    bool exploding() const
+    { return active && health == 0 && (type == PlantType::cherry || type == PlantType::potato_mine); }
+    void advance_explosion()
+    { if(exploding() && --timer <= 0) { active = false; } }
 };
 enum class ZombieType : uint8_t { normal, cone, newspaper, flag, bucket, screen_door };
 inline constexpr int zombie_type_count = zombie_kind_count;
@@ -157,9 +172,11 @@ struct Zombie
     int shield_health = 0;
     int group = 0;
     int frost_frames = 0;
+    int emergence_frames = 0;
 };
 inline int movement_speed(const Zombie& zombie)
 {
+    if(zombie.emergence_frames > 0) { return 0; }
     int speed = zombie.type == ZombieType::newspaper && zombie.shield_health > 0 ?
                 spec(ZombieType::normal).speed : spec(zombie.type).speed;
     return zombie.frost_frames > 0 ? speed / 2 : speed;
@@ -191,6 +208,16 @@ inline bool take_zombie_damage(Zombie& zombie, int amount, DamageType type)
     return zombie.health <= 0;
 }
 
+struct Tombstone
+{
+    int row = 0;
+    int column = 0;
+    int health = 0;
+    int flash = 0;
+    int pending = 0; // Triggered spawns survive pool pressure, even if the stone is destroyed.
+    bool active() const { return health > 0; }
+};
+
 struct Shot { bool active = false; int row = 0; int x = 0; bool frozen = false; };
 struct Sun
 {
@@ -218,6 +245,7 @@ struct Events
     bool horde_started = false;
     bool final_wave_approaching = false;
     bool wave_cleared = false;
+    int tombstone_spawns = 0;
 };
 
 class Game
@@ -240,6 +268,7 @@ public:
     void toggle_pause();
     PlantResult plant(int row, int column, PlantType type);
     bool shovel(int row, int column);
+    bool tombstone_at(int row, int column) const;
     int collect_sun();
 
     Phase phase() const { return _phase; }
@@ -262,6 +291,7 @@ public:
     bool plant_available(PlantType type) const { return seed_slot(type) < available_plants(); }
     PlantType unlocked_plant() const { return _unlocked_plant; }
     int reward_frames() const { return _reward_frames; }
+    bool victory_settling() const;
     bool reward_ready() const { return _reward_frames >= reward_ready_frame; }
     int loss_frames() const { return _loss_frames; }
     bool loss_ready() const { return _loss_frames >= defeat_audio::ready_frame; }
@@ -281,6 +311,7 @@ public:
     int wave_progress() const;
     const Events& events() const { return _events; }
     int cooldown(PlantType type) const { return _cooldowns[static_cast<int>(type)]; }
+    const auto& tombstones() const { return _tombstones; }
     const auto& plants() const { return _plants; }
     const auto& zombies() const { return _zombies; }
     const auto& shots() const { return _shots; }
@@ -303,6 +334,9 @@ private:
         bool horde = false;
     };
     bool spawn_zombie(int wave, bool horde, int remaining, int group);
+    Zombie* spawn_zombie_at(ZombieType type, int row, int x, int group);
+    void update_tombstone_spawns();
+    void damage(Tombstone& tombstone, int amount);
     void retain_group_spawns();
     bool pending_spawns() const;
     int spawn_delay(int wave, bool horde) const;
@@ -340,6 +374,7 @@ private:
     Events _events;
     uint32_t _random = 0x6d2b79f5;
     std::array<int, plant_count> _cooldowns{};
+    std::array<Tombstone, tombstone_capacity> _tombstones{};
     std::array<Plant, rows * columns> _plants{};
     std::array<Zombie, zombie_capacity> _zombies{};
     std::array<Shot, shot_capacity> _shots{};

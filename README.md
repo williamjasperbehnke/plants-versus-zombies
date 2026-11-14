@@ -1,250 +1,180 @@
-# Plants vs. Zombies
+# Plants vs. Zombies for Game Boy Advance
 
-A playable GBA lawn defense game inspired by Plants vs. Zombies, built with
-[Butano](https://github.com/GValiente/butano). The game uses original pixel art,
-synthesized sound effects, and an original looping music track.
+A playable lawn defense game built with [Butano](https://github.com/GValiente/butano).
+It has ten Backyard levels, six plants, six zombie types, persistent progress,
+an animated Almanac, music, and adjustable audio.
 
-Open **[plants_vs_zombies.gba](plants_vs_zombies.gba)** in mGBA or use a compatible
-GBA flash cartridge. This is the current ROM filename; the old Garden Guard files
-have been removed.
+Open [plants_vs_zombies.gba](plants_vs_zombies.gba) in mGBA or on a compatible GBA
+flash cartridge. The debug ROM, `plants_vs_zombies_debug.gba`, starts with every
+level unlocked and keeps its progress separate from the normal game.
 
-![Current gameplay captured in mGBA](docs/gameplay.png)
+![Gameplay from the current ROM](docs/gameplay.png)
 
 ## Playing
 
-Defend a five-lane, nine-column lawn through a three-level campaign. You start with 175 sun
-and approximately 15 seconds to prepare. Build sunflowers, collect sun, and cover
-the lanes with peashooters. Each lane has a single-use mower as a last defense.
-A zombie reaching the house after that defense is spent ends the run.
+Choose **Play** on the title screen, then select an unlocked tombstone. Scouting
+pans to the road and shows the exact number of each zombie type planned for that
+level’s road spawns. Tombstones can raise additional zombies during the round.
+The preview hides the gameplay HUD and displays the level name above
+“Incoming Zombies.” Press **A / START** after the pan to return to the lawn.
+Simulation starts after the camera returns; preview time does not use preparation time.
+
+Defend the five-lane, nine-column lawn. Each level starts with 175 sun and about
+15 seconds to prepare. Each lane has a single-use mower. A zombie reaching the
+house after that defense is spent ends the round.
 
 | Button | During play |
 | --- | --- |
 | D-pad | Move the planting cursor; hold to repeat |
 | A | Plant the selected seed |
-| L / R | Select the previous / next seed packet |
-| B | Collect all available sun; hold to collect new tokens as they appear |
-| Hold SELECT + A | Shovel the plant under the cursor; no refund |
+| L / R | Previous / next seed; hold to cycle |
+| B | Collect all available sun; hold to collect newly appearing sun |
+| Hold SELECT + A | Shovel the selected plant, without a refund |
 | START | Pause |
 
-On the title screen, **A or START** begins a run. On results, **A or START**
-advances after a level clear, retries after a loss, or replays Last Stand after
-the final clear. **B** returns to the title. On the title, **Left/Right or L/R**
-selects an unlocked level. Progress and plant unlocks last for the current session.
+The first level offers Sunflower and Peashooter. The next four levels introduce
+Wall-nut, Potato Mine, Snow Pea, and Cherry Bomb, in that order. Replaying an early
+level retains that level’s original plant selection. A first clear with a new
+plant shows a bouncing seed packet; repeat clears and levels without a new plant
+show a trophy. Any active explosions and moving mowers finish before the reward
+bounce starts; combat and the economy stay stopped during that finish. The final
+reveal leaves the HUD visible, with the seed above plant information on a wooden
+sign, without a heading or button prompt. Once the reveal finishes, **any button**
+returns to level selection, including after Backyard 1-10.
+
+When the house is breached, music stops, a record scratch and scream play, and the
+loss animation runs before input is accepted. **A / START** retries via scouting;
+**B** opens level selection.
+
+## Plants and zombies
+
+Times assume approximately 60 simulation updates per second.
 
 | Plant | Cost | Seed recharge | Role |
-| --- | --- | --- | --- |
-| Sunflower | 50 | ~4 seconds | Produces 25 sun approximately every eight seconds |
-| Peashooter | 100 | ~3 seconds | Shoots zombies ahead in its lane |
-| Wall-nut | 50 | ~10 seconds | Blocks zombies and absorbs bites |
-| Cherry bomb | 150 | ~20 seconds | Explodes after a short fuse, damaging nearby zombies across three lanes |
-| Potato Mine | 25 | ~15 seconds | Unlocks after Front Yard; arms in eight seconds, then detonates on contact in its own lane |
+| --- | ---: | ---: | --- |
+| Sunflower | 50 | 4 s | Produces 25 sun about every 9 seconds |
+| Peashooter | 100 | 3 s | Shoots down its lane |
+| Wall-nut | 50 | 10 s | Absorbs bites; appearance changes as health falls |
+| Potato Mine | 25 | 15 s | Arms in 8 seconds, then detonates on contact in its lane |
+| Snow Pea | 175 | 7.5 s | Slows movement and biting with freezing peas |
+| Cherry Bomb | 150 | 20 s | Short fuse, then a blast across three nearby lanes |
 
-Timing is measured in simulation updates; seconds above assume approximately
-60 updates per second. Normal zombies have six health; cone zombies have twelve. Runners have three
-health and move three times as fast as normal zombies. Their chipped skulls, exposed
-pink brain tissue, mottled faces, and blue jackets distinguish them from the regular
-enemies. They appear from wave three in Cone Trouble and throughout Last Stand.
+Natural sun falls every ten seconds after the initial drop. Collected suns credit
+immediately and fly to the bank; they cannot credit twice. Seed packets show an
+icon and price, with a vertical recharge reveal and gray coloring when unavailable.
+Placement feedback uses a check, cross, or borderless hourglass at the target cell.
 
-| Level | Waves | Enemies per wave | Break between waves | Encounter |
-| --- | --- | --- | --- | --- |
-| Front Yard | 3 | 5, 7, 9 | ~6 seconds | Normal zombies and a gentler introduction |
-| Cone Trouble | 5 | 5, 7, 9, 11, 13 | ~5 seconds | More cones; runners join in later waves |
-| Last Stand | 5 | 7, 9, 11, 13, 15 | ~3 seconds | Larger waves, cones, and runners from the start |
+| Zombie | Defense and behavior |
+| --- | --- |
+| Normal | Standard walking zombie |
+| Conehead | Extra health from its cone |
+| Newspaper | A durable newspaper shields full body health; runs when it breaks |
+| Flag | Leads hordes and increases nearby zombies’ movement and bite speed while alive |
+| Buckethead | Heavy bucket armor |
+| Screen Door | Shield blocks peas and freezing; blasts bypass the door |
 
-Clearing each level unlocks the next. Potato Mine becomes available after Front Yard,
-including when replaying an earlier level. Unarmed mines can be eaten; an armed mine
-consumes itself to blast nearby enemies in its lane. Its raised mound and blinking
-bulb signal readiness. Its rounded tan body has small dents, curved highlights,
-a light brown edge, and no wide soil shadow. L/R cycles all unlocked seeds; selecting
-the fifth seed shifts the four-packet bank to show Potato Mine without shrinking the portraits. A yellow
-right arrow shows that more seeds are available; after paging, a left arrow marks
-the hidden earlier seed. Arrows appear only after the fifth plant is unlocked.
+The wave track advances toward each horde flag. Between flags, ordinary zombies
+arrive; crossing a flag starts a horde led by a flag zombie. Flags turn yellow
+when that leader enters the screen. Groups overlap once half the current group
+has died, so keeping one zombie alive cannot stall the level. Pending spawns are
+retained, and the final horde is larger. There is no preparation break between groups.
+Damage flashes plants and zombies red while their ground shadows retain their color.
+Explosions render above plants across lane boundaries.
 
-[Campaign screenshots](docs/campaign.png) · [Potato Mine](docs/potato_mine.png) ·
-[Runner animation](docs/runner.gif)
+Backyard 1-5 and 1-6 have one tombstone, 1-7 and 1-8 have two, and 1-9 and 1-10
+have three. Stones block planting and absorb six regular or frozen peas; cracks
+show their damage. Shooters target them even before zombies arrive. Bombs and
+mowers can also destroy them, but the shovel cannot. Every standing stone raises
+one normal zombie when a flag zombie enters. Destroying it prevents future raises;
+spawns already triggered wait for an enemy slot if necessary. Raised zombies climb
+from the dirt for 0.8 seconds before walking or biting, and can be damaged during
+the climb. Clear all raised
+zombies as well as the road roster to finish the level.
 
-## Pause menu and audio
+## Menus, Almanac, and saves
 
-**Up/Down** selects Resume, Restart, Title, Master, Music, or Effects. **A** confirms
-a menu action. **Left/Right** adjusts the selected volume in 10% steps; holding a
-direction repeats. **B or START** immediately resumes.
+Title options use font color to show selection. **Up / Down** selects Play or
+Almanac; **A / START** opens it. In level selection, use the **D-pad** to move,
+**A / START** to choose, and **B** to return. Locked levels show a gray lock;
+completed levels show a check. Clearing a level unlocks the next.
 
-Master scales both music and effects. Either channel can be muted independently,
-and master at zero silences both. All three sliders default to **100%**. Settings
-survive restarts and title visits within the current session; they are not saved
-when the emulator or console closes.
+The Almanac is available from the title. **L / R** switches plants and zombies,
+the **D-pad** selects a cell, **A** opens details, and **B** closes details or
+returns to the title. Entries animate at integer pixel scales. Details include
+sun cost, recharge, health/armor, and lifetime kills by zombie type where applicable.
 
-The generated audio uses a shared **1.5× output gain** from
-[`tools/audio_config.py`](tools/audio_config.py). The sliders attenuate this louder
-baseline. The original **Garden at Dusk** track uses three synthesized instruments
-and four looping phrases. It continues through menus so music adjustments are
-immediately audible. Navigation, planting, collection, shooting, hits, chewing,
-explosions, mowers, wave changes, and results have sound effects. Chewing sounds
-follow actual plant damage, with a separate playback cooldown.
+Pause offers Resume, Restart, Levels, Master, Music, and Effects. **Up / Down**
+selects, **A** confirms an action, **Left / Right** adjusts a slider in 10% steps,
+and **B / START** resumes. All sliders default to 100%. Audio settings survive
+menu visits and restarts within the session, but are not saved across launches.
 
-![Current pause menu and default volume settings](docs/paused.png)
+SRAM stores completed levels, unlocked levels, the last started level, and
+lifetime kills by zombie type. Two checksummed records provide a backup. Legacy
+saves migrate automatically. Normal and debug builds use separate save regions;
+keep your emulator’s `.sav` file beside the corresponding ROM.
 
-## Graphics and feedback
+![Current menus](docs/menus.png)
 
-The house-side lawn border has broad wooden porch boards, a raised timber lip,
-one patio slab per lane beneath the mowers, and small grass overhangs along the path. Details stay
-near the cell edges so plants and mowers remain readable. Mowers sit toward the
-left of their patio slabs and have no drop shadows.
+## Build
 
-The title has a centered wooden logo, a rounded Play tombstone with a carved
-sprout, and animated sunflower and peashooter sprites enlarged at integer
-2× scale. Their staggered idle poses play independently of the scenery, while
-the A / START prompt gently pulses. [Watch the title animation](docs/title.gif).
-Menus share graveyard scenery with a crescent moon, distant silhouettes,
-grass, and moss. Pause actions are unboxed; audio controls share aligned labels
-and stone slider handles. The pause tombstone extends below the controls to keep
-the instruction text clear. Results show wave progress, defeats, and elapsed time.
-
-![Title, pause, and results captured from the current ROM](docs/menus.png)
-
-During play, feedback uses icons and animation rather than status-text banners:
-
-- Seed recharge bars fill yellow, turn green when ready, and show red when sun
-  is insufficient. The selected packet pulses red for an unaffordable placement.
-- The cursor is cream for a valid placement, red when blocked, and gold while
-  holding SELECT. A check marks a successful planting; a cross marks an occupied
-  cell. The shovel appears at the selected cell.
-- A borderless hourglass appears over a recharging seed portrait, with three sand
-  levels indicating recharge progress.
-- Collected suns fly independently to the sun bank over 24 updates. The bank
-  credits them immediately; flights pause with the game and cannot credit twice.
-- The wave track has three or five flags to match the level, a skull on the final flag, and a zombie head
-  drawn from the same face artwork as the enemies. Upcoming flags are red,
-  active flags turn gold, and cleared flags turn green; the final skull flag
-  stays red until cleared. The head and fill meet each flag pole at its checkpoint.
-- Plants have idle poses; peashooters recoil while firing. Wall-nuts show two
-  damage stages. Zombies shuffle while walking and hold a steady stance with a
-  small jaw movement while eating. Shaded shirt folds, jacket panels, and clean
-  trouser outlines separate their clothing shapes. Both hands remain visible.
-
-[Seed packets](docs/seed_packets.png) · [Wave indicator](docs/wave_indicator.png) ·
-[Plant animation](docs/plant_idle.gif) · [Zombie animation](docs/zombie_eating.gif)
-
-See the **[screenshot and asset gallery](docs/README.md)** for all current previews.
-Screenshots come from the ROM; sprite sheets and animation studies are identified
-separately in the gallery.
-
-## Build and regenerate assets
-
-Install devkitPro's GBA tools (devkitARM, grit, mmutil, gbafix), Python 3, and
-Butano. Butano is an external dependency, not vendored here. The Makefile defaults
-to `~/gba_development/butano`; override that path as needed:
+Install devkitPro’s GBA tools (`devkitARM`, `grit`, `mmutil`, `gbafix`), Python 3,
+and Butano. Butano is external; the default path is `~/gba_development/butano`.
 
 ```sh
 export DEVKITARM=/opt/devkitpro/devkitARM
 export PATH="$DEVKITARM/bin:/opt/devkitpro/tools/bin:$PATH"
 make -j8 BUTANO_ROOT=/absolute/path/to/butano
-mgba plants_vs_zombies.gba
+make -j8 DEBUG_SAVE=1 BUTANO_ROOT=/absolute/path/to/butano
 ```
 
-Generated BMP, WAV, and MOD assets are included, so Pillow is only needed when
-regenerating artwork, audio, or documentation previews:
+Build normal and debug sequentially: their audio conversion uses shared temporary
+files. Separate object directories keep their startup/save settings isolated.
+The old `TEST_LEVEL` shortcut is retired; use the debug ROM’s level selector.
+
+Generated BMP, WAV, MOD, and layout headers are included. To edit artwork or audio,
+change its source and regenerate before building:
 
 ```sh
 python3 -m pip install Pillow
 python3 tools/generate_assets.py
 make -j8
+make -j8 DEBUG_SAVE=1
 ```
 
-The music composer, pixel art, menu scenery, and audio gain configuration feed
-the asset generator. Run it after editing any of those sources, then rebuild.
+The original music and most effects are synthesized. Defeat audio uses a CC0
+record scratch and the original Plants vs. Zombies scream. The scream is **not
+CC0**; rights remain with PopCap / EA. See the source and processing information
+in [audio credits](tools/audio_sources/credits.json). The shared generated output
+gain is 1.5×; mower and explosion effects receive a further 1.5× boost. The mixer
+sliders attenuate those baselines.
 
-## Start a specific level for testing
-
-Build a test ROM with a level number from 1 to 3:
-
-```sh
-make -j8 TEST_LEVEL=1  # Front Yard
-make -j8 TEST_LEVEL=2  # Cone Trouble
-make -j8 TEST_LEVEL=3  # Last Stand
-mgba plants_vs_zombies_test_3.gba
-```
-
-Each test ROM starts directly on the selected lawn, with every level and plant
-unlocked. Pause → Restart retries the current level. Pause → Title lets you select
-another level with L/R. These builds use separate object directories and ROM
-filenames, so switching test levels cannot reuse the wrong startup setting or
-overwrite the normal campaign ROM. Test outputs are ignored by Git.
-
-Run `make -j8 TEST_LEVEL=` to build the ordinary campaign again. It retains the
-normal title screen and unlock progression. You do not need to clean between
-normal and test builds.
-
-## Verification and screenshots
-
-Portable C++17 simulation tests run with AddressSanitizer and
-UndefinedBehaviorSanitizer:
+## Verification and development
 
 ```sh
 sh tools/test.sh
 ```
 
-Coverage includes economy, cooldowns, sun flights and single-credit collection,
-pause/restart, shovel, explosions, walls, bite timing and eating state, mowers,
-loss, complete victories across all three levels, level and mine unlock retention,
-mine arming/vulnerability/detonation, runner speed, both wave-track layouts, and audio settings.
+The portable simulation suite uses C++17, AddressSanitizer, and
+UndefinedBehaviorSanitizer. It covers all ten level clears, exact spawn rosters,
+unlocks/replays, waves, combat, shields, freezing, sun collection, rewards, scouting,
+progress serialization/migration, kill counters, and audio settings.
 
-The optional headless mGBA check runs the actual ROM, exercises menus and controls,
-verifies visual feedback and wave alignment, and captures screenshots. It also
-measures emulator audio to check independent music/effects muting, master muting
-and restoration, setting retention through restart/title visits, and an isolated
-chewing encounter. With libmgba development headers installed:
+For actual ROM checks, install libmgba development headers and libraries:
 
 ```sh
-mkdir -p build
 cc -Wall -Wextra -Werror tools/rom_smoke.c \
   -I/usr/local/include -L/usr/local/lib -lmgba -o build/rom_smoke
-build/rom_smoke plants_vs_zombies.gba campaign
+build/rom_smoke plants_vs_zombies.gba
+build/rom_smoke plants_vs_zombies_debug.gba debug
+build/rom_smoke plants_vs_zombies.gba loss
+build/rom_smoke plants_vs_zombies.gba legacy
 python3 tools/generate_previews.py
 ```
 
-Adjust the compiler's include/library paths for your libmgba installation. The
-smoke check loads `plants_vs_zombies.gba` by default, or accepts a ROM path as its
-first argument. The optional `campaign` second argument plays all three levels
-using ordinary button inputs, checks level transitions and unlocked seed paging,
-and captures the campaign and mine previews. Omit it for the shorter smoke check.
-It writes raw PPM captures to `build/`; the preview script updates
-all documentation images, including close-ups and animated sprite studies, in
-`docs/`. Refresh captures after rebuilding before running the preview script.
+Adjust include/library paths for your installation. Run checks sequentially because
+they share capture filenames. The checks use fresh emulated SRAM and do not write
+your `.sav` files. Screenshots must be newer than their ROM before publication.
+These checks do not establish performance or perceived audio volume on physical hardware.
 
-Build, simulation, and headless emulator checks have been run locally. These
-checks do not establish compatibility, performance, or perceived volume on
-physical GBA hardware.
-
-## Code layout
-
-| Source | Responsibility |
-| --- | --- |
-| `include/game.h`, `src/game.cpp` | Level definitions, session unlocks, deterministic simulation, mine/runner behavior, economy, waves, collisions, bounded entity pools |
-| `include/audio_settings.h` | Volume levels, adjustment limits, and master/channel gains |
-| `src/main.cpp` | Input, key repeat, application state, audio playback and mixer settings |
-| `include/presentation.h`, `src/presentation.cpp` | Butano rendering, sprite poses, cached text, menu selection, sliders, visual feedback |
-| `include/wave_track.h` | Generated geometry shared by wave artwork and rendering |
-| `tools/generate_assets.py` | Asset assembly, backgrounds, HUD, and synthesized effects |
-| `tools/pixel_art.py` | Characters, seed portraits, lawn, shovel, shared zombie face |
-| `tools/menu_art.py` | Graveyard scenery, tombstones, wooden signs |
-| `tools/generate_music.py`, `tools/audio_config.py` | Original tracker composition and shared output gain |
-| `tools/generate_previews.py` | Documentation captures, close-ups, and animation previews |
-| `tests/game_test.cpp`, `tools/test.sh` | Host simulation and audio-setting checks |
-| `tools/rom_smoke.c` | Emulator input, visual/audio assertions, and captures |
-
-The simulation has no Butano dependency or heap allocation. Fixed pools hold
-45 plants, 16 zombies, 18 shots, 10 suns, and five mowers. Collection flights reuse
-the sun pool. A compile-time check bounds the gameplay sprite allocation within
-the GBA's 128-sprite limit. Menu sliders exist only on the pause screen, after
-entity sprites have been cleared. Plants and regular enemies use a 29-frame, 32×32 sprite atlas. Runners use a
-separate four-frame atlas and a 16-color palette with pink brain colors; backgrounds use separate palettes. Positions use integer
-subpixels and advance once per update at the GBA's native refresh rate.
-
-## Scope and remaining ideas
-
-The MVP has one lawn layout, three encounter levels, five plants, three enemy types,
-win/loss results, graveyard menus, volume controls, original music, sound effects,
-and visual feedback. It has no persistent save system, touch controls,
-or original Plants vs. Zombies assets. Additional content beyond this three-level
-campaign remains an idea. See [notes.txt](notes.txt).
+See the [current screenshot gallery](docs/README.md),
+[development guide](docs/DEVELOPMENT.md), and [project notes](notes.txt).

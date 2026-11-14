@@ -51,6 +51,7 @@ public:
 private:
     void change_screen(const Game& game);
     void draw_entities(const Game& game);
+    void draw_tombstones(const Game& game, int pan = 0);
     void draw_hud(const Game& game, const ViewState& view);
     void draw_menu(const Game& game, const ViewState& view);
     void draw_title(const ViewState& view);
@@ -103,6 +104,7 @@ private:
     bn::optional<bn::sprite_ptr> _reward_shadow;
     std::array<bn::optional<bn::sprite_ptr>, rows * columns> _plants;
     std::array<bn::optional<bn::sprite_ptr>, zombie_capacity> _zombies;
+    std::array<bn::optional<bn::sprite_ptr>, tombstone_capacity> _tombstones;
     std::array<bn::optional<bn::sprite_palette_ptr>, 3> _frost_palettes;
     bn::optional<bn::sprite_palette_ptr> _hit_palette;
     std::array<bn::optional<bn::sprite_ptr>, shot_capacity> _shots;

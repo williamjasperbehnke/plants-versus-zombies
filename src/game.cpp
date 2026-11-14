@@ -13,6 +13,11 @@ template<class Pool> auto* free_slot(Pool& pool)
     return static_cast<typename Pool::value_type*>(nullptr);
 }
 int absolute(int value) { return value < 0 ? -value : value; }
+bool shot_reaches(int target_x, int previous_x, int next_x)
+{
+    constexpr int hit_radius = 7 * scale;
+    return target_x + hit_radius >= previous_x && target_x - hit_radius <= next_x;
+}
 bool valid_cell(int row, int column)
 {
     return row >= 0 && row < rows && column >= 0 && column < columns;
@@ -29,6 +34,10 @@ bool Game::start(int level)
     _level = level;
     _progress = progress;
     _phase = Phase::playing;
+    // Keep the house side open; later levels add stones in distinct lanes.
+    constexpr int positions[tombstone_capacity][2] = {{0, 6}, {3, 7}, {1, 7}};
+    for(int i = 0; i < level_spec().tombstones; ++i)
+    { _tombstones[i] = {positions[i][0], positions[i][1], tombstone_health}; }
     return true;
 }
 
@@ -100,7 +109,7 @@ PlantResult Game::plant(int row, int column, PlantType type)
         return PlantResult::inactive;
     }
     auto& target = _plants[cell_index(row, column)];
-    if(target.active) { return PlantResult::occupied; }
+    if(target.active || tombstone_at(row, column)) { return PlantResult::occupied; }
     if(cooldown(type)) { return PlantResult::cooling_down; }
     const auto& definition = spec(type);
     if(_sun < definition.cost) { return PlantResult::insufficient_sun; }
@@ -108,6 +117,13 @@ PlantResult Game::plant(int row, int column, PlantType type)
     _sun -= definition.cost;
     _cooldowns[static_cast<int>(type)] = definition.recharge;
     return PlantResult::planted;
+}
+
+bool Game::tombstone_at(int row, int column) const
+{
+    for(const auto& tombstone : _tombstones)
+    { if(tombstone.active() && tombstone.row == row && tombstone.column == column) { return true; } }
+    return false;
 }
 
 bool Game::shovel(int row, int column)
@@ -149,13 +165,26 @@ void Game::tick()
         return;
     }
     if(_phase == Phase::won)
-    { if(_reward_frames < reward_ready_frame) { ++_reward_frames; } return; }
+    {
+        if(victory_settling())
+        {
+            // Finish effects already in flight without advancing the economy or combat.
+            for(auto& plant : _plants)
+            {
+                plant.advance_explosion();
+            }
+            update_mowers();
+        }
+        else if(_reward_frames < reward_ready_frame) { ++_reward_frames; }
+        return;
+    }
     if(_phase == Phase::lost)
     { if(_loss_frames < defeat_audio::ready_frame) { ++_loss_frames; } return; }
     if(_phase != Phase::playing) { return; }
     ++_frame;
     for(auto& zombie : _zombies) { if(zombie.active) { advance_zombie_status(zombie); } }
     for(auto& cooldown : _cooldowns) { if(cooldown > 0) { --cooldown; } }
+    for(auto& tombstone : _tombstones) { if(tombstone.flash > 0) { --tombstone.flash; } }
     update_suns();
     update_waves();
     if(_phase != Phase::playing) { return; }
@@ -163,6 +192,17 @@ void Game::tick()
     update_shots();
     update_mowers();
     update_zombies();
+}
+
+bool Game::victory_settling() const
+{
+    if(_phase != Phase::won) { return false; }
+    for(const auto& plant : _plants)
+    {
+        if(plant.exploding()) { return true; }
+    }
+    for(const auto& mower : _mowers) { if(mower.moving) { return true; } }
+    return false;
 }
 
 uint32_t Game::random()
@@ -183,6 +223,7 @@ int Game::enemies_left() const
 {
     int count = _remaining;
     for(const auto& pending : _pending_groups) { count += pending.remaining; }
+    for(const auto& tombstone : _tombstones) { count += tombstone.pending; }
     for(const auto& zombie : _zombies) { if(zombie.active) { ++count; } }
     return count;
 }
@@ -224,6 +265,7 @@ void Game::retain_group_spawns()
 bool Game::pending_spawns() const
 {
     for(const auto& pending : _pending_groups) { if(pending.remaining > 0) { return true; } }
+    for(const auto& tombstone : _tombstones) { if(tombstone.pending > 0) { return true; } }
     return false;
 }
 
@@ -299,26 +341,48 @@ void Game::update_waves()
         --_remaining;
         _spawn_timer = spawn_delay(_wave, _horde);
     }
+    update_tombstone_spawns();
 }
 
 bool Game::spawn_zombie(int wave, bool horde, int remaining, int group)
 {
-    auto* zombie = free_slot(_zombies);
-    if(! zombie) { return false; }
     const int row = (_spawn_number * 3 + wave) % rows;
     const auto& definition = level_spec();
     int size = horde ? definition.wave_size(wave) : definition.normal_size(wave);
     ZombieType type = scheduled_zombie(definition, wave, horde, size - remaining);
-    *zombie = {true, type, row, 240 * scale, spec(type).health, 40, 0};
-    zombie->shield_health = spec(type).shield_health;
-    zombie->group = group;
+    if(! spawn_zombie_at(type, row, 240 * scale, group)) { return false; }
     if(type == ZombieType::flag)
     {
         _hordes_entered[wave - 1] = true;
         _events.horde_started = true;
+        for(auto& tombstone : _tombstones) { if(tombstone.active()) { ++tombstone.pending; } }
     }
     ++_spawn_number;
     return true;
+}
+
+Zombie* Game::spawn_zombie_at(ZombieType type, int row, int x, int group)
+{
+    auto* zombie = free_slot(_zombies);
+    if(! zombie) { return nullptr; }
+    *zombie = {true, type, row, x, spec(type).health, 40, 0};
+    zombie->shield_health = spec(type).shield_health;
+    zombie->group = group;
+    return zombie;
+}
+
+void Game::update_tombstone_spawns()
+{
+    for(auto& tombstone : _tombstones)
+    {
+        if(tombstone.pending <= 0) { continue; }
+        if(auto* zombie = spawn_zombie_at(ZombieType::normal, tombstone.row, cell_x(tombstone.column) * scale, 0))
+        {
+            zombie->emergence_frames = emergence_duration;
+            --tombstone.pending;
+            ++_events.tombstone_spawns;
+        }
+    }
 }
 
 bool Game::spawn_sun(int x, int y, int target_y)
@@ -362,6 +426,8 @@ bool Game::lane_has_target(int row, int x) const
     {
         if(zombie.active && zombie.row == row && zombie.x > x) { return true; }
     }
+    for(const auto& tombstone : _tombstones)
+    { if(tombstone.active() && tombstone.row == row && cell_x(tombstone.column) * scale > x) { return true; } }
     return false;
 }
 
@@ -388,9 +454,23 @@ void Game::damage(Zombie& zombie, int amount, DamageType type)
     }
 }
 
+void Game::damage(Tombstone& tombstone, int amount)
+{
+    tombstone.health -= amount;
+    if(tombstone.health < 0) { tombstone.health = 0; }
+    tombstone.flash = 6;
+    _events.hit = true;
+}
+
 void Game::explode(int row, int column)
 {
     _events.explosion = true;
+    for(auto& tombstone : _tombstones)
+    {
+        if(tombstone.active() && absolute(tombstone.row - row) <= 1 &&
+           absolute(cell_x(tombstone.column) - cell_x(column)) <= 37)
+        { damage(tombstone, 100); }
+    }
     for(auto& zombie : _zombies)
     {
         if(zombie.active && absolute(zombie.row - row) <= 1 &&
@@ -410,6 +490,7 @@ void Game::update_plants()
             auto& plant = _plants[cell_index(row, column)];
             if(! plant.active) { continue; }
             if(plant.flash > 0) { --plant.flash; }
+            if(plant.exploding()) { plant.advance_explosion(); continue; }
             if(plant.timer > 0) { --plant.timer; }
             if(plant.timer > 0) { continue; }
             const int x = cell_x(column) * scale;
@@ -426,11 +507,9 @@ void Game::update_plants()
                 break;
             case PlantType::cherry:
                 // Keep an explosion sprite alive for 18 frames, then remove it.
-                if(plant.health > 0) { explode(row, column); plant.health = 0; plant.timer = 18; }
-                else { plant.active = false; }
+                explode(row, column); plant.health = 0; plant.timer = 18;
                 break;
             case PlantType::potato_mine:
-                if(plant.health == 0) { plant.active = false; break; }
                 for(auto& zombie : _zombies)
                 {
                     if(zombie.active && zombie.row == row && absolute(zombie.x - x) <= 8 * scale)
@@ -440,6 +519,12 @@ void Game::update_plants()
                         {
                             if(nearby.active && nearby.row == row && absolute(nearby.x - x) <= 18 * scale)
                             { damage(nearby, 100, DamageType::blast); }
+                        }
+                        for(auto& tombstone : _tombstones)
+                        {
+                            if(tombstone.active() && tombstone.row == row &&
+                               absolute(cell_x(tombstone.column) * scale - x) <= 18 * scale)
+                            { damage(tombstone, 100); }
                         }
                         plant.health = 0;
                         plant.timer = 18;
@@ -463,11 +548,21 @@ void Game::update_shots()
         Zombie* closest = nullptr;
         for(auto& zombie : _zombies)
         {
-            if(zombie.active && zombie.row == shot.row && zombie.x + 7 * scale >= previous_x &&
-               zombie.x - 7 * scale <= shot.x && (! closest || zombie.x < closest->x))
+            if(zombie.active && zombie.row == shot.row && shot_reaches(zombie.x, previous_x, shot.x) &&
+               (! closest || zombie.x < closest->x))
             { closest = &zombie; }
         }
-        if(closest) { damage(*closest, 1, shot.frozen ? DamageType::frost : DamageType::projectile); shot.active = false; }
+        Tombstone* obstacle = nullptr;
+        for(auto& tombstone : _tombstones)
+        {
+            int x = cell_x(tombstone.column) * scale;
+            if(tombstone.active() && tombstone.row == shot.row && shot_reaches(x, previous_x, shot.x) &&
+               (! obstacle || x < cell_x(obstacle->column) * scale))
+            { obstacle = &tombstone; }
+        }
+        if(obstacle && (! closest || cell_x(obstacle->column) * scale <= closest->x))
+        { damage(*obstacle, 1); shot.active = false; }
+        else if(closest) { damage(*closest, 1, shot.frozen ? DamageType::frost : DamageType::projectile); shot.active = false; }
         else if(shot.x > 245 * scale) { shot.active = false; }
     }
 }
@@ -479,6 +574,11 @@ void Game::update_mowers()
         auto& mower = _mowers[row];
         if(! mower.moving) { continue; }
         mower.x += 3 * scale;
+        for(auto& tombstone : _tombstones)
+        {
+            if(tombstone.active() && tombstone.row == row && cell_x(tombstone.column) * scale <= mower.x + 12 * scale)
+            { damage(tombstone, 100); }
+        }
         for(auto& zombie : _zombies)
         {
             if(zombie.active && zombie.row == row && zombie.x <= mower.x + 12 * scale)
@@ -516,6 +616,12 @@ void Game::update_zombies()
         auto& zombie = _zombies[i];
         if(! zombie.active) { continue; }
         if(zombie.flash > 0) { --zombie.flash; }
+        if(zombie.emergence_frames > 0)
+        {
+            --zombie.emergence_frames;
+            zombie.eating = false;
+            continue;
+        }
         Plant* target = nullptr;
         for(int column = columns - 1; column >= 0; --column)
         {
