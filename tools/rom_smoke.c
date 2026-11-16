@@ -1,3 +1,4 @@
+#include "../include/save_layout.h"
 // Optional headless ROM integration check. Requires libmgba development headers.
 // Build: cc tools/rom_smoke.c -I/usr/local/include -L/usr/local/lib -lmgba -o build/rom_smoke
 #include "../include/defeat_audio.h"
@@ -103,14 +104,14 @@ static int save_slot(struct mCore* core, int offset)
     bool valid[2] = {false, false};
     for(int slot = 0; slot < 2; ++slot)
     {
-        uint8_t data[48];
+        uint8_t data[PVZ_SAVE_SIZE];
         uint32_t hash = 2166136261u;
-        for(int i = 0; i < 48; ++i)
-        { data[i] = core->busRead8(core, 0x0e000000 + offset + slot * 48 + i); }
-        for(int i = 0; i < 44; ++i) { hash = (hash ^ data[i]) * 16777619u; }
-        uint32_t stored = (uint32_t)data[44] | (uint32_t)data[45] << 8 |
-                          (uint32_t)data[46] << 16 | (uint32_t)data[47] << 24;
-        valid[slot] = data[0] == 'P' && data[1] == 'V' && data[2] == 'Z' && data[3] == '2' && hash == stored;
+        for(int i = 0; i < PVZ_SAVE_SIZE; ++i)
+        { data[i] = core->busRead8(core, 0x0e000000 + offset + slot * PVZ_SAVE_SIZE + i); }
+        for(int i = 0; i < PVZ_SAVE_CHECKSUM; ++i) { hash = (hash ^ data[i]) * 16777619u; }
+        uint32_t stored = (uint32_t)data[48] | (uint32_t)data[49] << 8 |
+                          (uint32_t)data[50] << 16 | (uint32_t)data[51] << 24;
+        valid[slot] = data[0] == 'P' && data[1] == 'V' && data[2] == 'Z' && data[3] == '3' && hash == stored;
         sequences[slot] = (uint32_t)data[12] | (uint32_t)data[13] << 8 |
                           (uint32_t)data[14] << 16 | (uint32_t)data[15] << 24;
     }
@@ -119,11 +120,11 @@ static int save_slot(struct mCore* core, int offset)
 }
 
 static int saved_byte(struct mCore* core, int offset, int field)
-{ return core->busRead8(core, 0x0e000000 + offset + save_slot(core, offset) * 48 + field); }
+{ return core->busRead8(core, 0x0e000000 + offset + save_slot(core, offset) * PVZ_SAVE_SIZE + field); }
 
 static uint32_t saved_kills(struct mCore* core, int offset, int type)
 {
-    int field = 20 + type * 4;
+    int field = PVZ_SAVE_KILL_OFFSET(type);
     return (uint32_t)saved_byte(core, offset, field) | (uint32_t)saved_byte(core, offset, field + 1) << 8 |
            (uint32_t)saved_byte(core, offset, field + 2) << 16 | (uint32_t)saved_byte(core, offset, field + 3) << 24;
 }
@@ -135,6 +136,20 @@ static void legacy_save(struct mCore* core)
     for(int i = 0; i < 20; ++i) { hash = (hash ^ data[i]) * 16777619u; }
     for(int i = 0; i < 4; ++i) { data[20 + i] = hash >> (i * 8); }
     for(int i = 0; i < 24; ++i) { core->busWrite8(core, 0x0e000000 + i, data[i]); }
+}
+
+static void v2_save(struct mCore* core)
+{
+    uint8_t data[48] = {'P', 'V', 'Z', '2', 2, 8, 6, 0, 63, 0, 0, 0, 9};
+    for(int type = 0; type < 7; ++type)
+    {
+        int at = PVZ_SAVE_KILL_OFFSET(type);
+        data[at] = (uint8_t)(10 + type);
+    }
+    uint32_t hash = 2166136261u;
+    for(int i = 0; i < 44; ++i) { hash = (hash ^ data[i]) * 16777619u; }
+    for(int i = 0; i < 4; ++i) { data[44 + i] = hash >> (i * 8); }
+    for(int i = 0; i < 48; ++i) { core->busWrite8(core, 0x0e000000 + PVZ_SAVE_V2_NORMAL_OFFSET + i, data[i]); }
 }
 
 static void reset_cartridge(struct mCore* core)
@@ -193,35 +208,44 @@ static bool peashooter_visible(int row, int column)
 static void clear_first_level(struct mCore* core)
 {
     struct DefenseCursor c = {2, 0, 0};
-    const int flower_rows[] = {0, 1, 2, 3, 4};
-    const int defense_rows[] = {1, 4, 2, 0, 3};
-    for(int i = 0; i < 5; ++i) { plant_at(core, &c, flower_rows[i], 0, 0); collect_wait(core, 240); }
+    bool action_captured = false;
     for(int pass = 0; pass < 180 && first_level_active(core); ++pass)
     {
         bool covered = true;
-        for(int i = 0; i < 5 && first_level_active(core); ++i)
+        for(int column = 2; column <= 4 && first_level_active(core); ++column)
         {
-            int row = defense_rows[i];
-            if(! peashooter_visible(row, 2))
-            { covered = false; plant_at(core, &c, row, 2, 1); collect_wait(core, 30); }
+            if(! peashooter_visible(2, column))
+            { covered = false; plant_at(core, &c, 2, column, 0); collect_wait(core, 30); }
         }
-        if(covered)
+        if(covered && ! action_captured)
         {
-            for(int col = 3; col <= 4 && first_level_active(core); ++col)
+            for(int frame = 0; frame < 12; ++frame)
             {
-                for(int i = 0; i < 5 && first_level_active(core); ++i)
-                {
-                    int row = defense_rows[i];
-                    if(! peashooter_visible(row, col))
-                    { plant_at(core, &c, row, col, 1); collect_wait(core, 30); }
-                }
+                char path[80];
+                frames(core, 1 << 1, 6);
+                assert(first_level_active(core));
+                snprintf(path, sizeof(path), "build/gameplay_action_%02d.ppm", frame);
+                screenshot(path);
             }
+            action_captured = true;
         }
-        collect_wait(core, 60);
+        if(pass % 10 == 0 && first_level_active(core)) { screenshot("build/developed_lawn.ppm"); }
+        collect_wait(core, 120);
     }
+    assert(action_captured);
     collect_wait(core, 24000);
-    assert(saved_byte(core, 256, 8) & 1);
+    assert(saved_byte(core, PVZ_SAVE_NORMAL_OFFSET, 8) & 1);
 }
+static int seed_bank_scenario = 0;
+static bool debug_seed_bank = false;
+
+static void choose_seed(struct mCore* core, int* cursor, int target)
+{
+    while(*cursor != target) { press(core, 1 << 4); *cursor = (*cursor + 1) % 10; }
+    press(core, 1 << 0);
+}
+
+
 static void start_round(struct mCore* core, const char* preview_path)
 {
     press(core, 1 << 0);
@@ -230,8 +254,19 @@ static void start_round(struct mCore* core, const char* preview_path)
         for(int x = 0; x < 60; ++x) { assert((pixels[y * 240 + x] & 0x00ffffff) == 0); }
     }
     screenshot("build/preview_pan_start.ppm");
+    if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
+    { screenshot("build/scouting_pan_start.ppm"); }
     press(core, 1 << 0); // The initial pan cannot be skipped by an early press.
-    frames(core, 0, 50);
+    for(int frame = 0; frame < 5; ++frame)
+    {
+        frames(core, 0, 10);
+        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
+        {
+            char path[80];
+            snprintf(path, sizeof(path), "build/scouting_pan_%d.ppm", frame);
+            screenshot(path);
+        }
+    }
     int level_ink = 0;
     for(int y = 6; y < 14; ++y)
     {
@@ -251,6 +286,54 @@ static void start_round(struct mCore* core, const char* preview_path)
     frames(core, 0, 15);
     assert(region_hash(0, 0, 240, 55) == header);
     press(core, 1 << 0);
+    int level = saved_byte(core, debug_seed_bank ? PVZ_SAVE_DEBUG_OFFSET : PVZ_SAVE_NORMAL_OFFSET, 6);
+    if(level >= 6)
+    {
+        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
+        {
+            for(int frame = 0; frame < 12; ++frame)
+            {
+                char path[80]; snprintf(path, sizeof(path), "build/seed_bank_flight_%02d.ppm", frame);
+                screenshot(path); frames(core, 0, 3);
+            }
+        }
+        else { frames(core, 0, 32); }
+        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) { screenshot("build/seed_selection_all.ppm"); }
+        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
+        {
+            uint32_t heading = region_hash(8, 42, 150, 14);
+            int cursor = 0; choose_seed(core, &cursor, 0);
+            press(core, 1 << 3); // A five-card bank must stay on the picker with a visible error.
+            assert(! on_lawn());
+            int red = 0;
+            for(int y = 44; y < 55; ++y)
+            {
+                for(int x = 48; x < 116; ++x)
+                {
+                    uint32_t pixel = pixels[y * 240 + x];
+                    red += (pixel & 255) > 220 && (pixel >> 8 & 255) < 120 && (pixel >> 16 & 255) < 100;
+                }
+            }
+            assert(red > 10 && region_hash(8, 42, 150, 14) != heading);
+            screenshot("build/seed_selection_error.ppm");
+            press(core, 1 << 0); // Restoring the sixth card clears the warning.
+            frames(core, 0, 32); // Let the returning card clear the heading before comparing text.
+            assert(region_hash(8, 42, 150, 14) == heading);
+        }
+        if(debug_seed_bank)
+        {
+            int cursor = 0;
+            // Reorder through ordinary selection input so existing scenarios use named, stable slots.
+            for(int i = 0; i < 6; ++i) { choose_seed(core, &cursor, i); }
+            const int regular[] = {1, 0, 2, 3, 4, 5};
+            const int custom[] = {1, 2, 3, 4, 6, 8};
+            const int chomper[] = {1, 0, 4, 6, 7, 9};
+            for(int i = 0; i < 6; ++i) { choose_seed(core, &cursor, seed_bank_scenario == 2 ? chomper[i] : (seed_bank_scenario == 1 ? custom[i] : regular[i])); }
+            if(seed_bank_scenario == 1) { frames(core, 0, 32); screenshot("build/seed_selection_custom.ppm"); }
+        }
+        screenshot("build/seed_selection.ppm");
+        press(core, 1 << 3); // Confirm the selected seed bank before returning to the lawn.
+    }
     frames(core, 0, 53);
     screenshot("build/scouting_return.ppm");
     // Exclude the planting cursor that appears on the first lawn column at level start.
@@ -288,7 +371,12 @@ static void tombstone_test(struct mCore* core)
     frames(core, 1 << 1, 300);
     screenshot("build/tombstone_cracked.ppm");
     assert(region_hash(170, 58, 15, 16) != intact);
-    frames(core, 1 << 1, 300);
+    frames(core, 1 << 1, 150);
+    for(int frame = 0; frame < 50; ++frame)
+    {
+        char path[80]; frames(core, 1 << 1, 3);
+        snprintf(path, sizeof(path), "build/tombstone_crumble_%02d.ppm", frame); screenshot(path);
+    }
     screenshot("build/tombstone_destroyed.ppm");
     // Every remaining pixel in the old stone's top edge is grass, rather than gray stone.
     int gray = 0;
@@ -417,16 +505,23 @@ static void browse_almanac(struct mCore* core)
     assert(region_hash(27, 43, 54, 3) != first_cell);
     press(core, 1 << 6);
     assert(region_hash(27, 43, 54, 3) == first_cell);
+    uint32_t first_page = region_hash(70, 31, 100, 8);
+    for(int i = 0; i < 6; ++i) { press(core, 1 << 4); }
+    assert(region_hash(70, 31, 100, 8) == first_page);
+    assert(region_hash(27, 43, 54, 3) == first_cell); // Right wraps inside page one.
+    press(core, 1 << 5);
+    assert(region_hash(70, 31, 100, 8) == first_page); // Left cannot open the last page.
+    press(core, 1 << 4);
     for(int tab = 0; tab < 2; ++tab)
     {
-        uint32_t grid_heading = region_hash(70, 31, 100, 8);
         uint32_t previous_name = 0;
-        for(int i = 0; i < 6; ++i)
+        int entries = tab ? 8 : 10;
+        for(int i = 0; i < entries; ++i)
         {
-            // Plant page starts at 0; the zombie page retains slot 5 across the tab change.
-            int selected = tab == 0 ? i : (i + 5) % 6;
-            int x = 27 + selected % 3 * 66;
-            int y = 43 + selected / 3 * 46;
+            uint32_t grid_heading = region_hash(70, 31, 100, 8);
+            int selected = i;
+            int x = 27 + selected % 6 % 3 * 66;
+            int y = 43 + selected % 6 / 3 * 46;
             uint32_t cell = region_hash(x, y, 54, 3);
             press(core, 1 << 0);
             check_portrait_pixels();
@@ -443,7 +538,15 @@ static void browse_almanac(struct mCore* core)
             press(core, 1 << 1);
             assert(region_hash(70, 31, 100, 8) == grid_heading);
             assert(region_hash(x, y, 54, 3) == cell);
-            if(i < 5) { press(core, 1 << 4); }
+            if(i == entries - 1)
+            {
+                press(core, 1 << 4);
+                assert(region_hash(70, 31, 100, 8) == grid_heading);
+                press(core, 1 << 5);
+                assert(region_hash(70, 31, 100, 8) == grid_heading);
+                assert(region_hash(x, y, 54, 3) == cell);
+            }
+            if(i < entries - 1) { press(core, 1 << (i == 5 ? 8 : 4)); }
         }
         if(tab == 0)
         {
@@ -460,12 +563,17 @@ static void browse_almanac(struct mCore* core)
     press(core, 1 << 6);
 }
 
+#include "rom_gallery.h"
+
 int main(int argc, char** argv)
 {
+    bool v2 = argc > 2 && strcmp(argv[2], "v2") == 0;
     bool legacy = argc > 2 && strcmp(argv[2], "legacy") == 0;
     bool loss = argc > 2 && strcmp(argv[2], "loss") == 0;
-    bool debug = argc > 2 && strcmp(argv[2], "debug") == 0;
-    int offset = debug ? 512 : 256;
+    bool gallery = argc > 2 && strcmp(argv[2], "gallery") == 0;
+    bool debug = gallery || (argc > 2 && strcmp(argv[2], "debug") == 0);
+    debug_seed_bank = debug;
+    int offset = debug ? PVZ_SAVE_DEBUG_OFFSET : PVZ_SAVE_NORMAL_OFFSET;
     struct mLogger logger = {.log = log_message, .filter = NULL};
     mLogSetDefaultLogger(&logger);
     struct mCore* core = mCoreFind(argc > 1 ? argv[1] : "plants_vs_zombies.gba");
@@ -475,8 +583,19 @@ int main(int argc, char** argv)
     assert(mCoreLoadFile(core, argc > 1 ? argv[1] : "plants_vs_zombies.gba"));
     core->reset(core);
     if(legacy) { legacy_save(core); }
+    if(v2) { v2_save(core); }
     frames(core, 0, 120);
-    assert(saved_byte(core, offset, 5) == (legacy ? 3 : (debug ? 10 : 1)));
+    assert(saved_byte(core, offset, 5) == (v2 ? 8 : (legacy ? 3 : (debug ? 10 : 1))));
+    if(v2)
+    {
+        assert(saved_byte(core, offset, 6) == 6 && saved_byte(core, offset, 8) == 63);
+        for(int type = 0; type < 8; ++type) { assert(saved_kills(core, offset, type) == (type < 7 ? (uint32_t)(10 + type) : 0)); }
+        assert(core->busRead8(core, 0x0e000000 + PVZ_SAVE_V2_NORMAL_OFFSET + 3) == '2');
+        reset_cartridge(core);
+        for(int type = 0; type < 8; ++type) { assert(saved_kills(core, offset, type) == (type < 7 ? (uint32_t)(10 + type) : 0)); }
+        puts("PASS PVZ2 SRAM migration preserves all seven existing counters and progression across reload");
+        mCoreConfigDeinit(&core->config); core->deinit(core); return 0;
+    }
     if(legacy)
     {
         assert(saved_byte(core, offset, 6) == 1 && saved_byte(core, offset, 8) == 1);
@@ -488,6 +607,16 @@ int main(int argc, char** argv)
     }
     assert(measure_audio(core, 60) > 1000);
     screenshot(debug ? "build/debug_title.ppm" : "build/title.ppm");
+    if(! debug && ! loss)
+    {
+        for(int frame = 0; frame < 12; ++frame)
+        {
+            char path[80];
+            snprintf(path, sizeof(path), "build/title_animation_%02d.ppm", frame);
+            screenshot(path);
+            frames(core, 0, 12);
+        }
+    }
     browse_almanac(core);
     press(core, 1 << 0);
     assert(! on_lawn());
@@ -506,7 +635,13 @@ int main(int argc, char** argv)
         assert(! first_level_active(core));
         frames(core, 0, 8); // Let the recorded scratch finish before checking the voice.
         assert(measure_audio(core, 12) > 1000); // Scream follows the scratch.
-        frames(core, 0, 60);
+        for(int frame = 0; frame < 10; ++frame)
+        {
+            char path[80];
+            frames(core, 0, 6);
+            snprintf(path, sizeof(path), "build/loss_sequence_%02d.ppm", frame);
+            screenshot(path);
+        }
         screenshot("build/loss_animation.ppm");
         assert(image_hash() != before);
         frames(core, 0, PVZ_DEFEAT_READY_FRAME);
@@ -596,14 +731,14 @@ int main(int argc, char** argv)
         uint32_t selected_edge = pixels[24 * 240 + 55];
         assert((selected_edge & 255) > 220 && (selected_edge >> 8 & 255) > 180 && (selected_edge >> 16 & 255) < 130);
         press(core, 1 << 8);
-        selected_edge = pixels[24 * 240 + 83];
+        selected_edge = pixels[24 * 240 + 55];
         assert((selected_edge & 255) > 220 && (selected_edge >> 8 & 255) > 180 && (selected_edge >> 16 & 255) < 130);
         press(core, 1 << 9);
         press(core, 1 << 3);
         screenshot("build/paused.ppm");
         press(core, 1 << 1);
         assert(on_lawn());
-        press(core, 1 << 0); // Plant a sunflower, then try an empty cell during its cooldown.
+        press(core, 1 << 0); // Plant a Peashooter, then try an empty cell during its cooldown.
         press(core, 1 << 4);
         press(core, 1 << 0);
         screenshot("build/cooldown_cell.ppm");
@@ -623,26 +758,26 @@ int main(int argc, char** argv)
         assert(on_lawn());
         clear_first_level(core);
         assert(saved_byte(core, offset, 5) == 2 && (saved_byte(core, offset, 8) & 1));
-        assert(saved_kills(core, offset, 0) == 35 && saved_kills(core, offset, 3) == 3);
+        assert(saved_kills(core, offset, 0) == 28 && saved_kills(core, offset, 3) == 3);
         screenshot("build/level_1_clear.ppm");
         uint32_t reward_start = image_hash();
-        uint32_t reward_lawn = region_hash(0, 80, 30, 70);
+        uint32_t reward_lawn = region_hash(0, 58, 30, 28);
         press(core, 1 << 0); // Early input cannot skip the reveal.
         assert(saved_byte(core, offset, 6) == 0);
-        for(int i = 0; i < 36; ++i)
+        for(int i = 0; i < 56; ++i)
         {
             char path[80];
             frames(core, 0, 6);
             snprintf(path, sizeof(path), "build/reward_%02d.ppm", i);
             screenshot(path);
-            if(i == 4)
+            if(i == 18)
             {
                 screenshot("build/plant_reward_mid.ppm");
                 assert(image_hash() != reward_start);
             }
         }
         screenshot("build/plant_reward.ppm");
-        assert(region_hash(0, 80, 30, 70) == reward_lawn); // Lawn and mowers survive the overlay.
+        assert(region_hash(0, 58, 30, 28) == reward_lawn); // The lawn edge remains visible behind the reward.
         assert(on_lawn()); // The sun bank, wave track and packets remain visible through the reward.
         press(core, 1 << 8); // A shoulder button dismisses the unlock to level selection.
         assert(! on_lawn());
@@ -650,15 +785,16 @@ int main(int argc, char** argv)
         screenshot("build/levels_progress.ppm");
         start_round(core, NULL);
         assert(on_lawn() && saved_byte(core, offset, 6) == 1);
+        screenshot("build/lawn_three_lanes.ppm");
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 2 && saved_byte(core, offset, 6) == 1);
-        assert(saved_kills(core, offset, 0) == 35 && saved_kills(core, offset, 3) == 3);
+        assert(saved_kills(core, offset, 0) == 28 && saved_kills(core, offset, 3) == 3);
         press(core, 1 << 0);
         screenshot("build/levels_reloaded.ppm");
         assert(region_hash(76, 70, 13, 11) != second_badge);
         int newest = save_slot(core, offset);
-        core->busWrite8(core, 0x0e000000 + offset + newest * 48 + 44,
-                       core->busRead8(core, 0x0e000000 + offset + newest * 48 + 44) ^ 1);
+        core->busWrite8(core, 0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM,
+                       core->busRead8(core, 0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM) ^ 1);
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 2); // Backup retains completion and unlock.
         press(core, 1 << 0);
@@ -667,11 +803,11 @@ int main(int argc, char** argv)
         assert(first_level_active(core));
         clear_first_level(core);
         assert(! first_level_active(core));
-        frames(core, 0, 72);
+        frames(core, 0, 120);
         screenshot("build/trophy_bounce.ppm");
-        frames(core, 0, 150);
+        frames(core, 0, 210);
         screenshot("build/trophy_reward.ppm");
-        assert(saved_kills(core, offset, 0) == 70 && saved_kills(core, offset, 3) == 6);
+        assert(saved_kills(core, offset, 0) == 56 && saved_kills(core, offset, 3) == 6);
         assert(image_hash() != reward_start);
         press(core, 1 << 1); // B also dismisses a repeat-clear trophy to levels, rather than title.
         assert(! on_lawn());
@@ -685,10 +821,11 @@ int main(int argc, char** argv)
         press(core, 1 << 8);
         press(core, 1 << 0);
         screenshot("build/almanac_lifetime_kills.ppm");
-        assert(saved_kills(core, offset, 0) == 70 && saved_kills(core, offset, 3) == 6);
+        assert(saved_kills(core, offset, 0) == 56 && saved_kills(core, offset, 3) == 6);
         reset_cartridge(core);
-        assert(saved_kills(core, offset, 0) == 70 && saved_kills(core, offset, 3) == 6);
+        assert(saved_kills(core, offset, 0) == 56 && saved_kills(core, offset, 3) == 6);
     }
+    if(gallery) { capture_gallery(core); }
     printf("PASS %s selection, locks, SRAM progress, reload, and save isolation\n", loss ? "loss animation and retry" : (debug ? "debug" : "normal"));
     mCoreConfigDeinit(&core->config);
     core->deinit(core);

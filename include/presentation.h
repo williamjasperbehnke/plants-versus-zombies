@@ -40,6 +40,8 @@ struct ViewState
     bool almanac_zombies = false;
     bool almanac_details = false;
     int almanac_entry = 0;
+    int seed_choice = 0;
+    int seed_error_frames = 0;
 };
 
 class Presentation
@@ -52,10 +54,14 @@ private:
     void change_screen(const Game& game);
     void draw_entities(const Game& game);
     void draw_tombstones(const Game& game, int pan = 0);
+    void draw_zombie_effects(const Game& game);
     void draw_hud(const Game& game, const ViewState& view);
     void draw_menu(const Game& game, const ViewState& view);
     void draw_title(const ViewState& view);
     void draw_preview(const Game& game);
+    void draw_road(const Game& game, int pan, bool labels);
+    void draw_seed_select(const Game& game, const ViewState& view);
+    void draw_seed_bank(const Game& game);
     void draw_almanac(const Game& game, const ViewState& view);
     void put_entities_behind_overlay();
     void draw_loss(const Game& game);
@@ -66,7 +72,7 @@ private:
     void clear_entities();
     void flash_red(bn::sprite_ptr& sprite);
     static void actor(bn::optional<bn::sprite_ptr>& sprite, bool active,
-                      int x, int y, int frame, int depth = 0);
+                      int x, int y, int frame, int depth = 0, bool wounded = false);
 
     Phase _screen = Phase::title;
     bn::regular_bg_ptr _background;
@@ -95,7 +101,11 @@ private:
     bn::optional<bn::sprite_ptr> _gallery_cursor;
     int _last_entry = -1;
     int _title_frame = 0;
-    bn::vector<bn::sprite_ptr, 12> _preview_text;
+    bn::vector<bn::sprite_ptr, 16> _preview_text;
+    std::array<bn::optional<bn::sprite_ptr>, 2> _preview_heading;
+    std::array<bn::optional<bn::sprite_ptr>, plant_count> _bank_packets;
+    struct PacketPosition { int x = 0; int y = 0; };
+    std::array<PacketPosition, plant_count> _packet_positions{};
     int _preview_pan = 0;
     int _loss_notice_stage = 0;
     int _seed_page = -1;
@@ -104,6 +114,7 @@ private:
     bn::optional<bn::sprite_ptr> _reward_shadow;
     std::array<bn::optional<bn::sprite_ptr>, rows * columns> _plants;
     std::array<bn::optional<bn::sprite_ptr>, zombie_capacity> _zombies;
+    std::array<bn::optional<bn::sprite_ptr>, zombie_effect_capacity> _zombie_effects;
     std::array<bn::optional<bn::sprite_ptr>, tombstone_capacity> _tombstones;
     std::array<bn::optional<bn::sprite_palette_ptr>, 3> _frost_palettes;
     bn::optional<bn::sprite_palette_ptr> _hit_palette;

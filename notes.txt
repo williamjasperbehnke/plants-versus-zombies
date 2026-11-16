@@ -1,20 +1,52 @@
 Plants vs. Zombies — project notes
 
-Current scope
-- Backyard world: ten levels on a five-lane lawn, with persistent completion and unlocks.
-- Level-specific plant availability: Sunflower and Peashooter, then Wall-nut,
-  Potato Mine, Snow Pea, and Cherry Bomb.
-- Normal, Conehead, Newspaper, Flag, Buckethead, and Screen Door zombies.
-- Flag-led hordes, nearby buffs, overlapping groups, and larger final hordes.
-- HUD-free road scouting with exact planned enemy counts.
-- Bouncing plant unlocks/trophies and an animated loss sequence.
-- Animated plant/zombie Almanac with stats and saved lifetime kill counts.
-- Graveyard menus, custom 3x5 menu font, music and three volume controls.
-- Separate normal/debug ROMs, backup save records, and legacy-save migration.
+Implemented
+- Ten Backyard levels with one, then three, then five active lanes, with saved unlocks/completion.
+- Early dirt beds have clods, pebbles and soft turf edges shared with scouting.
+- Level-specific seed selection: Peashooter, then Sunflower, Wall-nut, Potato Mine,
+  Snow Pea, Cherry Bomb, Squash, Tall-nut, Repeater and Chomper. Earlier replays retain their roster.
+- Skip seed selection when a level offers up to six plants and bring the full roster.
+- Larger rosters require exactly six packets; incomplete START shows a red error.
+- Squash crouch/leap/crush and Repeater paired projectiles with per-shot recoil.
+- Chomper waits open-mouthed, pulls armored ground enemies into its jaws, then
+  chews for fifteen seconds with limbs hanging out. No corpse drops from a swallow.
+- Chomper has a stem-and-jaw idle loop and four chewing poses; Tall-nut uses a smooth shell.
+- Animated six-slot seed tray above a five-by-two plant grid, with grey slot backgrounds
+  matching the packet border dimensions and consistent red unaffordable prices.
+- Normal, Conehead, Newspaper, Flag, Buckethead, Screen Door, Football and Pole Vaulter zombies.
+- Skull jerseys for athletes; vaulters jump the first ordinary plant and drop their pole.
+- Tall-nut blocks vaults. Counter plants unlock before their matching new enemy.
+- Incoming zombies form a staggered crowd near the yard and keep that layout when the seed menu opens.
+- Later levels vary enemy mixes; only the final yard includes every zombie type.
+- Silent wave clears; incoming horde cues remain.
+- Flag-led hordes, nearby speed/bite buffs, overlapping groups and larger final hordes.
+- Road zombies spawn offscreen and walk in; flag cues wait for visible entry.
+- HUD-free road scouting with planned road counts; conditional grave spawns are extra.
+- Later-level tombstones, damage cracks, crumbling removal and animated zombie emergence.
+- Small falling arms and exposed bone stubs, falling protection, grounded corpses
+  and fades, plus a flag drop and separate backward death for flag zombies.
+- Bouncing seed/trophy rewards with the HUD visible, a raised wooden caption,
+  no floating heading or button prompt, and any-button return to level selection.
+- Final explosions, mowers and zombie effects finish before the reward begins.
+- Football charges and helmets in later hordes; a second zombie Almanac page and
+  saved Football and Pole Vaulter kills with PVZ2/SVS1 migration into PVZ3.
+- Animated defeat sequence, record scratch, original scream and retry controls.
+- Almanac grids/details, combined durability stats and saved lifetime kill counts.
+- Graveyard menus, custom 3x5 font, music and Master/Music/Effects volume controls.
+- Separate normal/debug ROMs and SRAM regions, backup records and legacy migration.
+- Current screenshot/animation gallery and one-command build/test/capture refresh.
 
-Possible next work (not implemented)
-- Night and Pool worlds; each world should have ten levels.
-- Check performance, mixer levels, and readability on physical GBA hardware.
+Known issue deferred
+- On a real Game Boy, the user reports a silent freeze after new-seed rewards on
+  levels 1-4 and 1-6. The cause is not confirmed and no crash fix has been applied.
+- Emulator checks of all reward reveals with populated lawns and complete rendered
+  levels 1-4 / 1-6 did not reproduce it. Diagnostic sources are archived in
+  build/deferred_reward_investigation for a later investigation.
 
-README.md documents current play/build commands. docs/README.md links the refreshed
-screenshots; docs/DEVELOPMENT.md explains runtime boundaries and asset/save formats.
+Possible future work (not implemented)
+- Night and Pool worlds, with ten levels per world.
+- Performance, mixer and readability checks on physical GBA hardware.
+
+Play/build: README.md
+Screenshots, animations and refresh commands: docs/README.md
+Runtime, asset pipeline, save format and verification: docs/DEVELOPMENT.md

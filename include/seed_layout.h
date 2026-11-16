@@ -12,10 +12,10 @@ inline constexpr int slots = 6;
 inline constexpr int recharge_steps = 29;
 inline constexpr int frames_per_plant = (recharge_steps + 1) * 2;
 constexpr int center(int slot) { return left + width / 2 + slot * pitch; }
-constexpr int frame(int plant, int remaining, int recharge, bool affordable)
+constexpr int frame(int remaining, int recharge, bool affordable)
 {
     int revealed = (recharge - remaining) * recharge_steps / recharge;
-    return plant * frames_per_plant + (affordable ? 0 : recharge_steps + 1) + revealed;
+    return (affordable ? 0 : recharge_steps + 1) + revealed;
 }
 }
 #endif

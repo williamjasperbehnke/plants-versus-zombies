@@ -1,0 +1,1171 @@
+{
+  "roms": {
+    "plants_vs_zombies.gba": "2636c6d22e16296c128e37d343bb083725a1c90817f930c89b62ae47945c41a1",
+    "plants_vs_zombies_debug.gba": "a1a90daa35385dce9156a68c488fedf23f6b3de678679ba063f7516bb1aca1a5"
+  },
+  "screenshots": {
+    "title.png": {
+      "source": "title.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "seed_selection.png": {
+      "source": "seed_selection_all.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "seed_selection_custom.png": {
+      "source": "seed_selection_custom.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "seed_selection_error.png": {
+      "source": "seed_selection_error.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "chomper_chewing.png": {
+      "source": "chomper_chewing.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "repeater_pair.png": {
+      "source": "repeater_pair.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "squash_landing.png": {
+      "source": "squash_leap_08.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "gameplay.png": {
+      "source": "developed_lawn.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "lawn_start.png": {
+      "source": "playing.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "lawn_three_lanes.png": {
+      "source": "lawn_three_lanes.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "paused.png": {
+      "source": "paused.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "levels_locked.png": {
+      "source": "levels_locked.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "levels_progress.png": {
+      "source": "levels_progress.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "levels_debug.png": {
+      "source": "levels_debug.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "levels_reloaded.png": {
+      "source": "levels_reloaded.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "preview_level_1.png": {
+      "source": "preview_level_1.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "preview_level_10.png": {
+      "source": "preview_level_10.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plants.png": {
+      "source": "almanac_plants.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombies.png": {
+      "source": "almanac_zombies.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_lifetime_kills.png": {
+      "source": "almanac_lifetime_kills.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "plant_reward.png": {
+      "source": "plant_reward.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "plant_reward_mid.png": {
+      "source": "plant_reward_mid.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "trophy_reward.png": {
+      "source": "trophy_reward.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "loss_animation.png": {
+      "source": "loss_animation.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "loss_prompt.png": {
+      "source": "loss_prompt.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "snow_pea_gameplay.png": {
+      "source": "snow_pea_gameplay.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "plant_red_flash.png": {
+      "source": "plant_red_flash.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "zombie_damage_flash.png": {
+      "source": "zombie_damage_flash.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "tombstones_lawn.png": {
+      "source": "tombstones_lawn.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "tombstone_cracked.png": {
+      "source": "tombstone_cracked.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "tombstone_crumble.png": {
+      "source": "tombstone_crumble_31.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "tombstone_destroyed.png": {
+      "source": "tombstone_destroyed.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "explosion_above_plants.png": {
+      "source": "explosion_above_plants.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "grave_emergence.png": {
+      "source": "grave_emergence_2.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "armored_horde.png": {
+      "source": "armored_horde.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "placement_check.png": {
+      "source": "placement_check.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "placement_occupied.png": {
+      "source": "placement_occupied.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "placement_cooldown.png": {
+      "source": "placement_cooldown.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "placement_unaffordable.png": {
+      "source": "placement_unaffordable.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "shovel_selected.png": {
+      "source": "shovel_selected.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "shovel_removed.png": {
+      "source": "shovel_removed.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mixer_master_muted.png": {
+      "source": "mixer_master_muted.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mixer_music_muted.png": {
+      "source": "mixer_music_muted.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mixer_effects_muted.png": {
+      "source": "mixer_effects_muted.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mower_active.png": {
+      "source": "mower_active.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "zombie_arm_drop.png": {
+      "source": "zombie_combat_034.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "zombie_missing_arm.png": {
+      "source": "zombie_combat_055.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "zombie_death.png": {
+      "source": "zombie_combat_080.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "flag_death.png": {
+      "source": "flag_death_03.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "road_entry.png": {
+      "source": "road_entry_12.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "sun_before.png": {
+      "source": "sun_before.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "sun_start.png": {
+      "source": "sun_start.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "sun_mid.png": {
+      "source": "sun_mid.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "sun_arrived.png": {
+      "source": "sun_arrived.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mine_arming.png": {
+      "source": "mine_arming.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mine_armed.png": {
+      "source": "mine_armed.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mine_burst.png": {
+      "source": "mine_burst.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "mine_spent.png": {
+      "source": "mine_spent.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "wallnut_healthy.png": {
+      "source": "wallnut_healthy.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "wallnut_damaged.png": {
+      "source": "wallnut_damaged.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "wallnut_worn.png": {
+      "source": "wallnut_worn.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_peashooter.png": {
+      "source": "almanac_plant_0.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_sunflower.png": {
+      "source": "almanac_plant_1.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_wallnut.png": {
+      "source": "almanac_plant_2.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_potato_mine.png": {
+      "source": "almanac_plant_3.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_snow_pea.png": {
+      "source": "almanac_plant_4.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_cherry_bomb.png": {
+      "source": "almanac_plant_5.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_squash.png": {
+      "source": "almanac_plant_6.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_tallnut.png": {
+      "source": "almanac_plant_7.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_repeater.png": {
+      "source": "almanac_plant_8.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_plant_chomper.png": {
+      "source": "almanac_plant_9.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_normal.png": {
+      "source": "almanac_zombie_0.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_conehead.png": {
+      "source": "almanac_zombie_1.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_newspaper.png": {
+      "source": "almanac_zombie_2.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_flag.png": {
+      "source": "almanac_zombie_3.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_buckethead.png": {
+      "source": "almanac_zombie_4.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_screen_door.png": {
+      "source": "almanac_zombie_5.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_football.png": {
+      "source": "almanac_zombie_6.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "almanac_zombie_pole_vaulter.png": {
+      "source": "almanac_zombie_7.ppm",
+      "debug": true,
+      "scale": 3
+    }
+  },
+  "animations": {
+    "seed_bank_flight.gif": {
+      "sources": [
+        "seed_bank_flight_00.ppm",
+        "seed_bank_flight_01.ppm",
+        "seed_bank_flight_02.ppm",
+        "seed_bank_flight_03.ppm",
+        "seed_bank_flight_04.ppm",
+        "seed_bank_flight_05.ppm",
+        "seed_bank_flight_06.ppm",
+        "seed_bank_flight_07.ppm",
+        "seed_bank_flight_08.ppm",
+        "seed_bank_flight_09.ppm",
+        "seed_bank_flight_10.ppm",
+        "seed_bank_flight_11.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        700
+      ]
+    },
+    "repeater_burst.gif": {
+      "sources": [
+        "repeater_burst_00.ppm",
+        "repeater_burst_01.ppm",
+        "repeater_burst_02.ppm",
+        "repeater_burst_03.ppm",
+        "repeater_burst_04.ppm",
+        "repeater_burst_05.ppm",
+        "repeater_burst_06.ppm",
+        "repeater_burst_07.ppm",
+        "repeater_burst_08.ppm",
+        "repeater_burst_09.ppm",
+        "repeater_burst_10.ppm",
+        "repeater_burst_11.ppm",
+        "repeater_burst_12.ppm",
+        "repeater_burst_13.ppm",
+        "repeater_burst_14.ppm",
+        "repeater_burst_15.ppm",
+        "repeater_burst_16.ppm",
+        "repeater_burst_17.ppm",
+        "repeater_burst_18.ppm",
+        "repeater_burst_19.ppm",
+        "repeater_burst_20.ppm",
+        "repeater_burst_21.ppm",
+        "repeater_burst_22.ppm",
+        "repeater_burst_23.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        65,
+        700
+      ]
+    },
+    "chomper_bite.gif": {
+      "sources": [
+        "chomper_bite_00.ppm",
+        "chomper_bite_01.ppm",
+        "chomper_bite_02.ppm",
+        "chomper_bite_03.ppm",
+        "chomper_bite_04.ppm",
+        "chomper_bite_05.ppm",
+        "chomper_bite_06.ppm",
+        "chomper_bite_07.ppm",
+        "chomper_bite_08.ppm",
+        "chomper_bite_09.ppm",
+        "chomper_bite_10.ppm",
+        "chomper_bite_11.ppm",
+        "chomper_bite_12.ppm",
+        "chomper_bite_13.ppm",
+        "chomper_bite_14.ppm",
+        "chomper_bite_15.ppm",
+        "chomper_bite_16.ppm",
+        "chomper_bite_17.ppm",
+        "chomper_bite_18.ppm",
+        "chomper_bite_19.ppm",
+        "chomper_bite_20.ppm",
+        "chomper_bite_21.ppm",
+        "chomper_bite_22.ppm",
+        "chomper_bite_23.ppm",
+        "chomper_bite_24.ppm",
+        "chomper_bite_25.ppm",
+        "chomper_bite_26.ppm",
+        "chomper_bite_27.ppm",
+        "chomper_bite_28.ppm",
+        "chomper_bite_29.ppm",
+        "chomper_bite_30.ppm",
+        "chomper_bite_31.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        75,
+        700
+      ]
+    },
+    "squash_leap.gif": {
+      "sources": [
+        "squash_leap_00.ppm",
+        "squash_leap_01.ppm",
+        "squash_leap_02.ppm",
+        "squash_leap_03.ppm",
+        "squash_leap_04.ppm",
+        "squash_leap_05.ppm",
+        "squash_leap_06.ppm",
+        "squash_leap_07.ppm",
+        "squash_leap_08.ppm",
+        "squash_leap_09.ppm",
+        "squash_leap_10.ppm",
+        "squash_leap_11.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        85,
+        85,
+        85,
+        85,
+        85,
+        85,
+        85,
+        85,
+        85,
+        85,
+        85,
+        700
+      ]
+    },
+    "tombstone_crumble.gif": {
+      "sources": [
+        "tombstone_crumble_00.ppm",
+        "tombstone_crumble_01.ppm",
+        "tombstone_crumble_02.ppm",
+        "tombstone_crumble_03.ppm",
+        "tombstone_crumble_04.ppm",
+        "tombstone_crumble_05.ppm",
+        "tombstone_crumble_06.ppm",
+        "tombstone_crumble_07.ppm",
+        "tombstone_crumble_08.ppm",
+        "tombstone_crumble_09.ppm",
+        "tombstone_crumble_10.ppm",
+        "tombstone_crumble_11.ppm",
+        "tombstone_crumble_12.ppm",
+        "tombstone_crumble_13.ppm",
+        "tombstone_crumble_14.ppm",
+        "tombstone_crumble_15.ppm",
+        "tombstone_crumble_16.ppm",
+        "tombstone_crumble_17.ppm",
+        "tombstone_crumble_18.ppm",
+        "tombstone_crumble_19.ppm",
+        "tombstone_crumble_20.ppm",
+        "tombstone_crumble_21.ppm",
+        "tombstone_crumble_22.ppm",
+        "tombstone_crumble_23.ppm",
+        "tombstone_crumble_24.ppm",
+        "tombstone_crumble_25.ppm",
+        "tombstone_crumble_26.ppm",
+        "tombstone_crumble_27.ppm",
+        "tombstone_crumble_28.ppm",
+        "tombstone_crumble_29.ppm",
+        "tombstone_crumble_30.ppm",
+        "tombstone_crumble_31.ppm",
+        "tombstone_crumble_32.ppm",
+        "tombstone_crumble_33.ppm",
+        "tombstone_crumble_34.ppm",
+        "tombstone_crumble_35.ppm",
+        "tombstone_crumble_36.ppm",
+        "tombstone_crumble_37.ppm",
+        "tombstone_crumble_38.ppm",
+        "tombstone_crumble_39.ppm",
+        "tombstone_crumble_40.ppm",
+        "tombstone_crumble_41.ppm",
+        "tombstone_crumble_42.ppm",
+        "tombstone_crumble_43.ppm",
+        "tombstone_crumble_44.ppm",
+        "tombstone_crumble_45.ppm",
+        "tombstone_crumble_46.ppm",
+        "tombstone_crumble_47.ppm",
+        "tombstone_crumble_48.ppm",
+        "tombstone_crumble_49.ppm"
+      ],
+      "debug": true,
+      "duration_ms": 50
+    },
+    "road_entry.gif": {
+      "sources": [
+        "road_entry_00.ppm",
+        "road_entry_01.ppm",
+        "road_entry_02.ppm",
+        "road_entry_03.ppm",
+        "road_entry_04.ppm",
+        "road_entry_05.ppm",
+        "road_entry_06.ppm",
+        "road_entry_07.ppm",
+        "road_entry_08.ppm",
+        "road_entry_09.ppm",
+        "road_entry_10.ppm",
+        "road_entry_11.ppm",
+        "road_entry_12.ppm",
+        "road_entry_13.ppm",
+        "road_entry_14.ppm",
+        "road_entry_15.ppm",
+        "road_entry_16.ppm",
+        "road_entry_17.ppm",
+        "road_entry_18.ppm",
+        "road_entry_19.ppm",
+        "road_entry_20.ppm",
+        "road_entry_21.ppm",
+        "road_entry_22.ppm",
+        "road_entry_23.ppm",
+        "road_entry_24.ppm",
+        "road_entry_25.ppm",
+        "road_entry_26.ppm",
+        "road_entry_27.ppm",
+        "road_entry_28.ppm",
+        "road_entry_29.ppm",
+        "road_entry_30.ppm",
+        "road_entry_31.ppm",
+        "road_entry_32.ppm",
+        "road_entry_33.ppm",
+        "road_entry_34.ppm",
+        "road_entry_35.ppm",
+        "road_entry_36.ppm",
+        "road_entry_37.ppm",
+        "road_entry_38.ppm",
+        "road_entry_39.ppm",
+        "road_entry_40.ppm",
+        "road_entry_41.ppm",
+        "road_entry_42.ppm",
+        "road_entry_43.ppm",
+        "road_entry_44.ppm",
+        "road_entry_45.ppm",
+        "road_entry_46.ppm",
+        "road_entry_47.ppm"
+      ],
+      "debug": true,
+      "duration_ms": 100
+    },
+    "gameplay.gif": {
+      "sources": [
+        "gameplay_action_00.ppm",
+        "gameplay_action_01.ppm",
+        "gameplay_action_02.ppm",
+        "gameplay_action_03.ppm",
+        "gameplay_action_04.ppm",
+        "gameplay_action_05.ppm",
+        "gameplay_action_06.ppm",
+        "gameplay_action_07.ppm",
+        "gameplay_action_08.ppm",
+        "gameplay_action_09.ppm",
+        "gameplay_action_10.ppm",
+        "gameplay_action_11.ppm"
+      ],
+      "debug": false,
+      "duration_ms": 100
+    },
+    "flag_death.gif": {
+      "sources": [
+        "flag_death_00.ppm",
+        "flag_death_01.ppm",
+        "flag_death_02.ppm",
+        "flag_death_03.ppm",
+        "flag_death_04.ppm",
+        "flag_death_05.ppm",
+        "flag_death_06.ppm",
+        "flag_death_07.ppm",
+        "flag_death_08.ppm",
+        "flag_death_09.ppm",
+        "flag_death_10.ppm",
+        "flag_death_11.ppm",
+        "flag_death_12.ppm",
+        "flag_death_13.ppm",
+        "flag_death_14.ppm",
+        "flag_death_15.ppm",
+        "flag_death_16.ppm",
+        "flag_death_17.ppm",
+        "flag_death_18.ppm",
+        "flag_death_19.ppm",
+        "flag_death_20.ppm",
+        "flag_death_21.ppm",
+        "flag_death_22.ppm",
+        "flag_death_23.ppm"
+      ],
+      "debug": true,
+      "duration_ms": 100
+    },
+    "zombie_combat.gif": {
+      "sources": [
+        "zombie_combat_000.ppm",
+        "zombie_combat_001.ppm",
+        "zombie_combat_002.ppm",
+        "zombie_combat_003.ppm",
+        "zombie_combat_004.ppm",
+        "zombie_combat_005.ppm",
+        "zombie_combat_006.ppm",
+        "zombie_combat_007.ppm",
+        "zombie_combat_008.ppm",
+        "zombie_combat_009.ppm",
+        "zombie_combat_010.ppm",
+        "zombie_combat_011.ppm",
+        "zombie_combat_012.ppm",
+        "zombie_combat_013.ppm",
+        "zombie_combat_014.ppm",
+        "zombie_combat_015.ppm",
+        "zombie_combat_016.ppm",
+        "zombie_combat_017.ppm",
+        "zombie_combat_018.ppm",
+        "zombie_combat_019.ppm",
+        "zombie_combat_020.ppm",
+        "zombie_combat_021.ppm",
+        "zombie_combat_022.ppm",
+        "zombie_combat_023.ppm",
+        "zombie_combat_024.ppm",
+        "zombie_combat_025.ppm",
+        "zombie_combat_026.ppm",
+        "zombie_combat_027.ppm",
+        "zombie_combat_028.ppm",
+        "zombie_combat_029.ppm",
+        "zombie_combat_030.ppm",
+        "zombie_combat_031.ppm",
+        "zombie_combat_032.ppm",
+        "zombie_combat_033.ppm",
+        "zombie_combat_034.ppm",
+        "zombie_combat_035.ppm",
+        "zombie_combat_036.ppm",
+        "zombie_combat_037.ppm",
+        "zombie_combat_038.ppm",
+        "zombie_combat_039.ppm",
+        "zombie_combat_040.ppm",
+        "zombie_combat_041.ppm",
+        "zombie_combat_042.ppm",
+        "zombie_combat_043.ppm",
+        "zombie_combat_044.ppm",
+        "zombie_combat_045.ppm",
+        "zombie_combat_046.ppm",
+        "zombie_combat_047.ppm",
+        "zombie_combat_048.ppm",
+        "zombie_combat_049.ppm",
+        "zombie_combat_050.ppm",
+        "zombie_combat_051.ppm",
+        "zombie_combat_052.ppm",
+        "zombie_combat_053.ppm",
+        "zombie_combat_054.ppm",
+        "zombie_combat_055.ppm",
+        "zombie_combat_056.ppm",
+        "zombie_combat_057.ppm",
+        "zombie_combat_058.ppm",
+        "zombie_combat_059.ppm",
+        "zombie_combat_060.ppm",
+        "zombie_combat_061.ppm",
+        "zombie_combat_062.ppm",
+        "zombie_combat_063.ppm",
+        "zombie_combat_064.ppm",
+        "zombie_combat_065.ppm",
+        "zombie_combat_066.ppm",
+        "zombie_combat_067.ppm",
+        "zombie_combat_068.ppm",
+        "zombie_combat_069.ppm",
+        "zombie_combat_070.ppm",
+        "zombie_combat_071.ppm",
+        "zombie_combat_072.ppm",
+        "zombie_combat_073.ppm",
+        "zombie_combat_074.ppm",
+        "zombie_combat_075.ppm",
+        "zombie_combat_076.ppm",
+        "zombie_combat_077.ppm",
+        "zombie_combat_078.ppm",
+        "zombie_combat_079.ppm",
+        "zombie_combat_080.ppm",
+        "zombie_combat_081.ppm",
+        "zombie_combat_082.ppm",
+        "zombie_combat_083.ppm",
+        "zombie_combat_084.ppm",
+        "zombie_combat_085.ppm",
+        "zombie_combat_086.ppm",
+        "zombie_combat_087.ppm",
+        "zombie_combat_088.ppm",
+        "zombie_combat_089.ppm",
+        "zombie_combat_090.ppm",
+        "zombie_combat_091.ppm",
+        "zombie_combat_092.ppm",
+        "zombie_combat_093.ppm",
+        "zombie_combat_094.ppm",
+        "zombie_combat_095.ppm",
+        "zombie_combat_096.ppm",
+        "zombie_combat_097.ppm",
+        "zombie_combat_098.ppm",
+        "zombie_combat_099.ppm",
+        "zombie_combat_100.ppm",
+        "zombie_combat_101.ppm",
+        "zombie_combat_102.ppm",
+        "zombie_combat_103.ppm",
+        "zombie_combat_104.ppm",
+        "zombie_combat_105.ppm",
+        "zombie_combat_106.ppm",
+        "zombie_combat_107.ppm",
+        "zombie_combat_108.ppm",
+        "zombie_combat_109.ppm",
+        "zombie_combat_110.ppm",
+        "zombie_combat_111.ppm",
+        "zombie_combat_112.ppm",
+        "zombie_combat_113.ppm",
+        "zombie_combat_114.ppm",
+        "zombie_combat_115.ppm",
+        "zombie_combat_116.ppm",
+        "zombie_combat_117.ppm",
+        "zombie_combat_118.ppm",
+        "zombie_combat_119.ppm"
+      ],
+      "debug": true,
+      "duration_ms": 100
+    },
+    "title.gif": {
+      "sources": [
+        "title_animation_00.ppm",
+        "title_animation_01.ppm",
+        "title_animation_02.ppm",
+        "title_animation_03.ppm",
+        "title_animation_04.ppm",
+        "title_animation_05.ppm",
+        "title_animation_06.ppm",
+        "title_animation_07.ppm",
+        "title_animation_08.ppm",
+        "title_animation_09.ppm",
+        "title_animation_10.ppm",
+        "title_animation_11.ppm"
+      ],
+      "debug": false,
+      "duration_ms": 200
+    },
+    "plant_reward.gif": {
+      "sources": [
+        "reward_00.ppm",
+        "reward_01.ppm",
+        "reward_02.ppm",
+        "reward_03.ppm",
+        "reward_04.ppm",
+        "reward_05.ppm",
+        "reward_06.ppm",
+        "reward_07.ppm",
+        "reward_08.ppm",
+        "reward_09.ppm",
+        "reward_10.ppm",
+        "reward_11.ppm",
+        "reward_12.ppm",
+        "reward_13.ppm",
+        "reward_14.ppm",
+        "reward_15.ppm",
+        "reward_16.ppm",
+        "reward_17.ppm",
+        "reward_18.ppm",
+        "reward_19.ppm",
+        "reward_20.ppm",
+        "reward_21.ppm",
+        "reward_22.ppm",
+        "reward_23.ppm",
+        "reward_24.ppm",
+        "reward_25.ppm",
+        "reward_26.ppm",
+        "reward_27.ppm",
+        "reward_28.ppm",
+        "reward_29.ppm",
+        "reward_30.ppm",
+        "reward_31.ppm",
+        "reward_32.ppm",
+        "reward_33.ppm",
+        "reward_34.ppm",
+        "reward_35.ppm",
+        "reward_36.ppm",
+        "reward_37.ppm",
+        "reward_38.ppm",
+        "reward_39.ppm",
+        "reward_40.ppm",
+        "reward_41.ppm",
+        "reward_42.ppm",
+        "reward_43.ppm",
+        "reward_44.ppm",
+        "reward_45.ppm",
+        "reward_46.ppm",
+        "reward_47.ppm",
+        "reward_48.ppm",
+        "reward_49.ppm",
+        "reward_50.ppm",
+        "reward_51.ppm",
+        "reward_52.ppm",
+        "reward_53.ppm",
+        "reward_54.ppm",
+        "reward_55.ppm"
+      ],
+      "debug": false,
+      "duration_ms": 100
+    },
+    "grave_emergence.gif": {
+      "sources": [
+        "grave_emergence_0.ppm",
+        "grave_emergence_1.ppm",
+        "grave_emergence_2.ppm",
+        "grave_emergence_3.ppm",
+        "grave_emergence_4.ppm",
+        "grave_emergence_5.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        130,
+        130,
+        130,
+        130,
+        130,
+        600
+      ]
+    },
+    "sun_collection.gif": {
+      "sources": [
+        "sun_before.ppm",
+        "sun_start.ppm",
+        "sun_mid.ppm",
+        "sun_arrived.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        400,
+        50,
+        180,
+        600
+      ]
+    },
+    "scouting.gif": {
+      "sources": [
+        "scouting_pan_start.ppm",
+        "scouting_pan_0.ppm",
+        "scouting_pan_1.ppm",
+        "scouting_pan_2.ppm",
+        "scouting_pan_3.ppm",
+        "scouting_pan_4.ppm",
+        "preview_level_10.ppm"
+      ],
+      "debug": true,
+      "duration_ms": [
+        260,
+        170,
+        170,
+        170,
+        170,
+        170,
+        700
+      ]
+    },
+    "defeat.gif": {
+      "sources": [
+        "loss_sequence_00.ppm",
+        "loss_sequence_01.ppm",
+        "loss_sequence_02.ppm",
+        "loss_sequence_03.ppm",
+        "loss_sequence_04.ppm",
+        "loss_sequence_05.ppm",
+        "loss_sequence_06.ppm",
+        "loss_sequence_07.ppm",
+        "loss_sequence_08.ppm",
+        "loss_sequence_09.ppm",
+        "loss_prompt.ppm"
+      ],
+      "debug": false,
+      "duration_ms": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        700
+      ]
+    }
+  },
+  "studies": [
+    "zombie_deaths_study.gif",
+    "newspaper_deaths_study.gif",
+    "falling_equipment_study.gif",
+    "flag_deaths_study.gif",
+    "football_deaths_study.gif",
+    "football_charge_study.gif",
+    "pole_vaulter_study.gif",
+    "screen_door_bite_study.gif"
+  ],
+  "files": [
+    "almanac_lifetime_kills.png",
+    "almanac_plant_cherry_bomb.png",
+    "almanac_plant_chomper.png",
+    "almanac_plant_entries.png",
+    "almanac_plant_peashooter.png",
+    "almanac_plant_potato_mine.png",
+    "almanac_plant_repeater.png",
+    "almanac_plant_snow_pea.png",
+    "almanac_plant_squash.png",
+    "almanac_plant_sunflower.png",
+    "almanac_plant_tallnut.png",
+    "almanac_plant_wallnut.png",
+    "almanac_plants.png",
+    "almanac_zombie_buckethead.png",
+    "almanac_zombie_conehead.png",
+    "almanac_zombie_entries.png",
+    "almanac_zombie_flag.png",
+    "almanac_zombie_football.png",
+    "almanac_zombie_newspaper.png",
+    "almanac_zombie_normal.png",
+    "almanac_zombie_pole_vaulter.png",
+    "almanac_zombie_screen_door.png",
+    "almanac_zombies.png",
+    "armored_horde.png",
+    "chomper_bite.gif",
+    "chomper_chewing.png",
+    "defeat.gif",
+    "explosion_above_plants.png",
+    "falling_equipment_study.gif",
+    "final_flag.png",
+    "flag_death.gif",
+    "flag_death.png",
+    "flag_deaths_study.gif",
+    "football_charge_study.gif",
+    "football_deaths_study.gif",
+    "gameplay.gif",
+    "gameplay.png",
+    "grave_emergence.gif",
+    "grave_emergence.png",
+    "lawn_edge.png",
+    "lawn_start.png",
+    "lawn_three_lanes.png",
+    "levels_debug.png",
+    "levels_locked.png",
+    "levels_progress.png",
+    "levels_reloaded.png",
+    "loss_animation.png",
+    "loss_prompt.png",
+    "menus.png",
+    "mine.png",
+    "mine_armed.png",
+    "mine_arming.png",
+    "mine_burst.png",
+    "mine_spent.png",
+    "mixer.png",
+    "mixer_effects_muted.png",
+    "mixer_master_muted.png",
+    "mixer_music_muted.png",
+    "mower_active.png",
+    "mower_closeup.png",
+    "newspaper_deaths_study.gif",
+    "overview.png",
+    "paused.png",
+    "placement.png",
+    "placement_check.png",
+    "placement_cooldown.png",
+    "placement_occupied.png",
+    "placement_unaffordable.png",
+    "plant_red_flash.png",
+    "plant_reward.gif",
+    "plant_reward.png",
+    "plant_reward_mid.png",
+    "pole_vaulter_study.gif",
+    "preview_level_1.png",
+    "preview_level_10.png",
+    "repeater_burst.gif",
+    "repeater_pair.png",
+    "road_entry.gif",
+    "road_entry.png",
+    "scouting.gif",
+    "screen_door_bite_study.gif",
+    "seed_bank_flight.gif",
+    "seed_packets.png",
+    "seed_selection.png",
+    "seed_selection_custom.png",
+    "seed_selection_error.png",
+    "shovel_removed.png",
+    "shovel_selected.png",
+    "snow_pea_gameplay.png",
+    "squash_landing.png",
+    "squash_leap.gif",
+    "sun_arrived.png",
+    "sun_before.png",
+    "sun_collection.gif",
+    "sun_collection.png",
+    "sun_mid.png",
+    "sun_start.png",
+    "title.gif",
+    "title.png",
+    "tombstone_cracked.png",
+    "tombstone_crumble.gif",
+    "tombstone_crumble.png",
+    "tombstone_destroyed.png",
+    "tombstones_lawn.png",
+    "trophy_reward.png",
+    "wallnut.png",
+    "wallnut_damaged.png",
+    "wallnut_healthy.png",
+    "wallnut_worn.png",
+    "wave_track_3.png",
+    "wave_track_5.png",
+    "zombie_arm_drop.png",
+    "zombie_combat.gif",
+    "zombie_damage_death.gif",
+    "zombie_damage_flash.png",
+    "zombie_death.png",
+    "zombie_deaths_study.gif",
+    "zombie_missing_arm.png"
+  ]
+}

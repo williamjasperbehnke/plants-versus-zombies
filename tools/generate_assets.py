@@ -8,10 +8,12 @@ import math
 import struct
 import wave
 from PIL import Image, ImageDraw
-from pixel_art import actor, character_layers, draw_garden, draw_sidewalk, seed_icon, shovel_icon, zombie_head
+from pixel_art import character_layers, draw_garden, draw_sidewalk, seed_icon, shovel_icon, zombie_head
 from generate_music import generate_music
 from audio_config import OUTPUT_GAIN
 from menu_art import graveyard, tombstone, wooden_sign
+from zombie_effect_art import generate_zombie_effects
+from asset_layout import asset_path
 
 ROOT = Path(__file__).resolve().parents[1]
 WAVE_BOUNDARIES = [56 + i * 168 // 5 for i in range(6)]
@@ -127,20 +129,15 @@ def small_sprite(frame):
     return image
 
 
-def sprite(frame):
-    if frame < 6 or frame >= 10:
-        return actor(frame, canvas)
-    image = canvas(32, 32)
-    image.paste(small_sprite(frame), (8, 8))
-    return image
-
-
 def save(image, name, metadata):
-    image.save(ROOT / 'graphics' / f'{name}.bmp')
-    (ROOT / 'graphics' / f'{name}.json').write_text(json.dumps(metadata) + '\n')
+    path = asset_path(name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path)
+    path.with_suffix('.json').write_text(json.dumps(metadata) + '\n')
 
 
-SEED_COSTS = ['50', '100', '50', '150', '25', '175']
+SEED_NAMES = ('sunflower', 'peashooter', 'walnut', 'cherry', 'potato_mine', 'snow_pea', 'squash', 'repeater', 'tallnut', 'chomper')
+SEED_COSTS = ['50', '100', '50', '150', '25', '175', '50', '200', '125', '150']
 
 
 PACKET_WIDTH = 24
@@ -156,6 +153,42 @@ def snow_colors(base):
     colors = base.copy()
     colors[4:7] = [(65, 139, 189), (126, 202, 239), (214, 243, 255)]
     return colors
+
+
+def squash_colors(base):
+    colors = base.copy()
+    colors[2] = (58, 79, 32)
+    colors[4:7] = [(110, 142, 53), (161, 188, 84), (211, 226, 130)]
+    return colors
+
+
+def squash_packet_colors(base):
+    colors = squash_colors(base)
+    # Slot 2 is also the card stock: keep it identical to every other seed packet.
+    colors[2] = base[2]
+    return colors
+
+
+def chomper_colors(base):
+    colors = base.copy()
+    colors[4:7] = [(76, 37, 108), (125, 60, 158), (184, 111, 205)]
+    colors[10] = (210, 103, 148)
+    colors[14] = (34, 20, 48)
+    return colors
+
+
+def seed_colors(kind, base):
+    """Packet and reward palettes use the same plant-specific color rules."""
+    if kind == 5: return snow_colors(base)
+    if kind == 6: return squash_packet_colors(base)
+    if kind == 9: return chomper_colors(base)
+    return base
+
+
+def plant_colors(name, base):
+    if name == 'squash': return squash_colors(base)
+    if name == 'chompers': return chomper_colors(base)
+    return base
 
 
 def apply_palette(image, colors):
@@ -189,10 +222,10 @@ inline constexpr int slots = @SLOTS@;
 inline constexpr int recharge_steps = @STEPS@;
 inline constexpr int frames_per_plant = (recharge_steps + 1) * 2;
 constexpr int center(int slot) { return left + width / 2 + slot * pitch; }
-constexpr int frame(int plant, int remaining, int recharge, bool affordable)
+constexpr int frame(int remaining, int recharge, bool affordable)
 {
     int revealed = (recharge - remaining) * recharge_steps / recharge;
-    return plant * frames_per_plant + (affordable ? 0 : recharge_steps + 1) + revealed;
+    return (affordable ? 0 : recharge_steps + 1) + revealed;
 }
 }
 #endif
@@ -213,8 +246,10 @@ def reward_packet(kind):
 
 
 def rally_marker(image):
+    # Padding on the screen-door sheet leaves the body centered in its frame.
+    origin = (image.width - 32) // 2
     # Amber eyes indicate the rally buff without adding floating HUD symbols.
-    for x in (10, 17):
+    for x in (10 + origin, 17 + origin):
         for y in range(10, 15):
             for px in range(x, x + 5):
                 if image.getpixel((px, y)) == 8:
@@ -222,10 +257,58 @@ def rally_marker(image):
     return image
 
 
-def lawn(show_hud=True):
+def draw_unplanted_soil(image, lanes):
+    if lanes == 5: return
+    d = ImageDraw.Draw(image)
+    grass_top = 58 + (5 - lanes) // 2 * 19
+    grass_bottom = grass_top + lanes * 19 - 1
+    # Author continuous soil beds, avoiding seams where unused lane rows used to meet.
+    for top, bottom in ((58, grass_top - 1), (grass_bottom + 1, 152)):
+        d.rectangle((33, top, 232, bottom), fill=9)
+        d.line((33, top, 33, bottom), fill=1)
+        for y in range(top + 2, bottom - 1, 5):
+            for x in range(37, 226, 8):
+                grain = (x * 37 + y * 19 + (x * y) // 11) % 31
+                px = x + grain % 3
+                py = y + grain // 9
+                if py + 2 > bottom: continue
+                if grain < 6:
+                    # Rounded earth clods: a lit shoulder and a short recessed underside.
+                    d.polygon([(px, py + 1), (px + 2, py), (px + 4, py + 1),
+                               (px + 3, py + 2), (px + 1, py + 2)], fill=10)
+                    d.line((px + 1, py + 2, px + 3, py + 2), fill=9)
+                    if grain < 2: d.point((px + 2, py + 2), fill=1)
+                elif grain in (10, 18, 24):
+                    d.line((px, py, px + 1, py), fill=10)
+                elif grain == 30:
+                    # A few muted pebbles keep the earth from becoming a repeated dash pattern.
+                    d.line((px, py + 1, px + 2, py + 1), fill=1)
+                    d.point((px + 1, py), fill=12)
+        # Short, broken furrows add depth without a grid of obvious horizontal stripes.
+        for x in range(42, 226, 29):
+            y = top + 4 + (x * 7) % max(1, bottom - top - 7)
+            d.line((x, y + 1, x + 2, y, x + 5, y), fill=1)
+            d.line((x + 1, y + 2, x + 5, y + 1), fill=9)
+    # Irregular turf lips project into the soil; all playable cells remain grass.
+    d.line((34, grass_top - 1, 232, grass_top - 1), fill=2)
+    d.line((34, grass_bottom + 1, 232, grass_bottom + 1), fill=2)
+    for x in range(35, 230, 7):
+        depth = 1 + (x * 5) % 3
+        shade = 3 if x % 4 else 4
+        d.polygon([(x, grass_top), (x + 1, grass_top - depth - 1), (x + 3, grass_top)], fill=shade)
+        d.polygon([(x, grass_bottom), (x + 2, grass_bottom + depth), (x + 4, grass_bottom)], fill=shade)
+        if x % 3:
+            d.point((x + 1, grass_top - 1), fill=5)
+            d.point((x + 1, grass_bottom + 1), fill=5)
+
+
+def lawn(show_hud=True, lanes=5):
     image = canvas(256, 256, 1)
     lawn_colors = COLORS.copy()
     lawn_colors[2:6] = [(42, 80, 42), (64, 112, 53), (80, 130, 60), (123, 166, 65)]
+    if lanes < 5:
+        lawn_colors[9] = (121, 81, 56)
+        lawn_colors[10] = (155, 106, 70)
     image.putpalette([v for color in lawn_colors for v in color] + [0] * (768 - len(lawn_colors) * 3))
     d = ImageDraw.Draw(image)
     d.rectangle((0, 0, 239, 55), fill=0)
@@ -236,6 +319,7 @@ def lawn(show_hud=True):
         d.line((8, 21, 231, 21), fill=2)
     d.line((0, 55, 239, 55), fill=9, width=2)
     draw_garden(image)
+    draw_unplanted_soil(image, lanes)
     if show_hud:
         stamp(image, 7, 3, 24)
         text(image, 21, 26, 'SUN', color=7)
@@ -413,8 +497,8 @@ def level_select_screen():
     return image
 
 
-def yard_preview():
-    base = lawn(show_hud=False)
+def yard_road(lanes=5):
+    base = lawn(show_hud=False, lanes=lanes)
     image = canvas(512, 256, 0)
     # Share the lawn scenery and palette, with an independent scouting header.
     # Only colors absent from the lawn are repurposed for the asphalt.
@@ -456,8 +540,6 @@ def yard_preview():
         for x in (left + 4, right - 4):
             d.point((x, 64), fill=6)
             d.point((x, 68), fill=6)
-    text(image, 360, 24, 'INCOMING ZOMBIES', color=7, scale=2, centered=True)
-    text(image, 360, 44, 'A/START: BEGIN   B: BACK', color=8, centered=True)
     return image
 
 
@@ -543,16 +625,10 @@ def pause_screen():
     return image
 
 
-def reward_panel(heading):
+def reward_panel():
     image = canvas(256, 256, 0)
     # Keep the HUD and lawn visible; only the information below the packet is boxed.
-    lift = 8 if heading == 'NEW PLANT!' else 0
-    wooden_sign(image, (34, 128 - lift, 205, 159 - lift))
-    if heading != 'NEW PLANT!':
-        # Trophy results retain their floating heading.
-        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
-            text(image, 120 + dx, 56 + dy, heading, color=1, scale=2, centered=True)
-        text(image, 120, 56, heading, color=7, scale=2, centered=True)
+    wooden_sign(image, (34, 120, 205, 151))
     return image
 
 
@@ -726,7 +802,7 @@ def emerging_zombies():
 
 
 def lawn_tombstones():
-    atlas = canvas(32, 32 * 3)
+    atlas = canvas(32, 32 * 8)
     for stage in range(3):
         stone = canvas(32, 32)
         d = ImageDraw.Draw(stone)
@@ -750,6 +826,27 @@ def lawn_tombstones():
             d.line((22, 21, 20, 23, 20, 25), fill=1)
             d.point((24, 12), fill=0)
         atlas.paste(stone, (0, stage * 32))
+    cracked = atlas.crop((0, 64, 32, 96))
+    for stage in range(5):
+        rubble = canvas(32, 32)
+        rd = ImageDraw.Draw(rubble)
+        rd.ellipse((6, 25, 26, 28), fill=15)
+        if stage < 3:
+            for left, top, right, bottom in ((7, 7, 16, 16), (16, 7, 26, 17), (7, 16, 16, 26), (16, 17, 26, 26)):
+                chunk = cracked.crop((left, top, right, bottom))
+                dx = (-1 if left < 16 else 1) * stage
+                dy = min(27 - bottom, stage * 3)
+                rubble.paste(chunk, (left + dx, top + max(0, dy)), chunk.point([0] + [255] * 255, 'L'))
+            rd.line((16, 9, 14, 16, 17, 21, 15, 25), fill=1)
+        else:
+            for x, y, size in ((8, 25, 4), (14, 24, 5), (21, 25, 4)):
+                rd.polygon([(x, y + 2), (x + 1, y - 2), (x + size, y - 1), (x + size, y + 2)], fill=12, outline=1)
+                rd.point((x + 2, y - 1), fill=13)
+            if stage == 4:
+                for y in range(24, 29):
+                    for x in range(6, 27):
+                        if (x + y) % 2: rubble.putpixel((x, y), 0)
+        atlas.paste(rubble, (0, (3 + stage) * 32))
     # Match the independently colored character ground shadows.
     colors = list(COLORS)
     colors[15] = SHADOW_COLOR
@@ -806,22 +903,27 @@ def main():
         d.rounded_rectangle((thumb, y + 11, thumb + 5, y + 20), radius=1, fill=13, outline=12)
         d.line((thumb + 2, y + 13, thumb + 2, y + 17), fill=8)
     save(sliders, 'volume_slider', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
-    atlas = canvas(32, 32 * 37)
-    for index in range(29):
-        atlas.paste(sprite(index), (0, index * 32))
-    for index, frame in enumerate((4, 5, 14, 15, 16, 17, 18, 19)):
-        atlas.paste(rally_marker(actor(frame, canvas)), (0, (29 + index) * 32))
-    save(atlas, 'actors', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
-    plants = canvas(32, 32 * len(PLANT_FRAMES))
-    standard = canvas(32, 32 * len(ZOMBIE_FRAMES) * 2)
-    for index, frame in enumerate(PLANT_FRAMES):
-        plants.paste(character_sprite(frame, COLORS), (0, index * 32))
-    apply_palette(plants, character_palette(COLORS))
-    save(plants, 'plant_characters', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
-    for index in range(16):
-        standard.paste(character_sprite(ZOMBIE_FRAMES[index % 8], COLORS, 3, index >= 8), (0, index * 32))
-    apply_palette(standard, character_palette(COLORS, 3))
-    save(standard, 'standard_zombies', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    field_items = canvas(32, 32 * 3)
+    for index, frame in enumerate((6, 7, 8)):
+        field_items.paste(small_sprite(frame), (8, index * 32 + 8))
+    save(field_items, 'field_items', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    # Each sheet is one character, with an explicit pose order down its column.
+    plant_sheets = {'sunflowers': (0, 12), 'peashooters': (1, 13, 20),
+                    'wallnuts': (2, 10, 11, 21, 22, 23), 'cherries': (3, 24),
+                    'potato_mines': (25, 26, 27, 28)}
+    for name, frames in plant_sheets.items():
+        atlas = canvas(32, 32 * len(frames))
+        for index, frame in enumerate(frames):
+            atlas.paste(character_sprite(frame, COLORS), (0, index * 32))
+        apply_palette(atlas, character_palette(COLORS))
+        save(atlas, name, {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    for name, frames in (('normal_zombies', (4, 14, 16, 18)),
+                         ('cone_zombies', (5, 15, 17, 19))):
+        atlas = canvas(32, 32 * 8)
+        for index in range(8):
+            atlas.paste(character_sprite(frames[index % 4], COLORS, 3, index >= 4), (0, index * 32))
+        apply_palette(atlas, character_palette(COLORS, 3))
+        save(atlas, name, {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     # Keep the masks available as separate art layers for future shadow edits.
     for name, frames in [('plant', PLANT_FRAMES), ('zombie', ZOMBIE_FRAMES)]:
         masks = canvas(32, 32 * len(frames))
@@ -831,23 +933,67 @@ def main():
         apply_palette(masks, character_palette(COLORS))
         masks.save(ROOT / 'tools' / 'art' / (name + '_shadow_masks.png'))
     enemy_atlases = [('newspaper_zombies', 29, 8, True), ('flag_zombies', 37, 16, False),
-                     ('bucket_zombies', 69, 8, True), ('screen_door_zombies', 85, 8, True)]
+                     ('bucket_zombies', 69, 8, True), ('screen_door_zombies', 500, 12, True)]
     for name, first, count, buffed in enemy_atlases:
         colors = COLORS.copy()
         slot = 3
-        if name == 'bucket_zombies':
+        if name in ('bucket_zombies', 'screen_door_zombies'):
+            # Slot 2 is unused by the bucket artwork; reserve it for a softer
+            # mesh steel so both armored zombies can still share one palette.
+            colors[2] = (163, 180, 195)
             colors[3:7] = [(61, 72, 80), (115, 130, 143), (185, 198, 208), (226, 232, 232)]
             slot = 14
         if name == 'newspaper_zombies':
             with Image.open(Path(__file__).parent / 'art' / 'runner_base.png') as base:
                 palette = base.getpalette()
                 colors = [tuple(palette[i * 3:i * 3 + 3]) for i in range(16)]
-        enemy_atlas = canvas(32, 32 * count * (2 if buffed else 1))
+        width = 64 if name == 'screen_door_zombies' else 32
+        enemy_atlas = canvas(width, 32 * count * (2 if buffed else 1))
         for index in range(count * (2 if buffed else 1)):
             image = character_sprite(first + index % count, colors, slot, buffed and index >= count)
             enemy_atlas.paste(image, (0, index * 32))
         apply_palette(enemy_atlas, character_palette(colors, slot))
         save(enemy_atlas, name, {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    for name, first, count, buffed, slot in (('squash', 260, 5, False, None),
+                                             ('repeaters', 270, 6, False, None),
+                                             ('tallnuts', 280, 6, False, None),
+                                             ('chompers', 400, 11, False, None),
+                                             ('vaulting_zombies', 300, 12, True, 3)):
+        atlas = canvas(32, 32 * count * (2 if buffed else 1))
+        for index in range(count * (2 if buffed else 1)):
+            atlas.paste(character_sprite(first + index % count, plant_colors(name, COLORS), slot, buffed and index >= count), (0, index * 32))
+        apply_palette(atlas, character_palette(plant_colors(name, COLORS), slot))
+        save(atlas, name, {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    # A top tray holds the selected bank; the complete roster remains in the grid below.
+    selection = canvas(256, 256)
+    d = ImageDraw.Draw(selection)
+    d.rectangle((4, 1, 235, 38), fill=9, outline=1)
+    d.rectangle((6, 3, 233, 36), fill=10)
+    for slot in range(6):
+        x = 20 + slot * 31
+        left = x - PACKET_WIDTH // 2
+        top = 20 - PACKET_HEIGHT // 2
+        d.rounded_rectangle((left, top, left + PACKET_WIDTH - 1, top + PACKET_HEIGHT - 1),
+                            radius=1, fill=12, outline=13)
+    d.rectangle((6, 42, 158, 148), fill=9, outline=1)
+    d.rectangle((8, 44, 156, 146), fill=10)
+    d.line((9, 55, 155, 55), fill=9)
+    for index in range(10):
+        x = 22 + index % 5 * 30
+        y = 78 + index // 5 * 48
+        left, top = x - PACKET_WIDTH // 2, y - PACKET_HEIGHT // 2
+        d.rounded_rectangle((left, top, left + PACKET_WIDTH - 1, top + PACKET_HEIGHT - 1),
+                            radius=1, fill=12, outline=13)
+    selection_colors = COLORS.copy()
+    selection_colors[12:14] = [(76, 83, 79), (139, 146, 137)]
+    apply_palette(selection, selection_colors)
+    save(selection, 'seed_select', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    football = canvas(32, 32 * 36)
+    for index in range(36):
+        football.paste(character_sprite(200 + index % 18, COLORS, 3, index >= 18), (0, index * 32))
+    apply_palette(football, character_palette(COLORS, 3))
+    save(football, 'football_zombies', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    generate_zombie_effects(save)
     snow = canvas(32, 32 * 4)
     for i in range(4):
         snow.paste(character_sprite(101 + i, snow_colors(COLORS)), (0, i * 32))
@@ -881,28 +1027,26 @@ def main():
     packet_colors[15] = (139, 144, 138)
     grey_map = [0, 1, 12, 12, 12, 15, 13, 13, 13, 1, 15, 15, 15, 15, 15, 15]
     dark_map = {0: 0, 1: 1, 12: 1, 13: 15, 15: 12}
-    for name, kinds, colors in (('seed_packets', range(5), packet_colors),
-                                ('snow_seed_packets', [5], snow_colors(packet_colors))):
-        packets = canvas(32, 32 * len(kinds) * frames_per_plant)
-        apply_palette(packets, colors)
-        for local, kind in enumerate(kinds):
-            packet = seed_packet(kind)
-            grey = packet.point(grey_map + [0] * (256 - len(grey_map)))
-            dark = grey.point([dark_map.get(i, 12) for i in range(256)])
-            for affordable in (True, False):
-                ready = packet if affordable else grey
-                for step in range(RECHARGE_STEPS + 1):
-                    image = dark.copy()
-                    reveal = PACKET_HEIGHT * step // RECHARGE_STEPS
-                    top = PACKET_HEIGHT - reveal
-                    image.paste(ready.crop((0, top, PACKET_WIDTH, PACKET_HEIGHT)), (0, top))
-                    if not affordable:
-                        text(image, PACKET_WIDTH // 2, 22, SEED_COSTS[kind], color=11, centered=True)
-                    ImageDraw.Draw(image).rounded_rectangle((0, 0, PACKET_WIDTH - 1, PACKET_HEIGHT - 1),
-                                                            radius=1, outline=9 if affordable else 15)
-                    frame = local * frames_per_plant + (0 if affordable else RECHARGE_STEPS + 1) + step
-                    packets.paste(image, (4, frame * 32 + 2))
-        save(packets, name, {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    for kind, name in enumerate(SEED_NAMES):
+        packets = canvas(32, 32 * frames_per_plant)
+        apply_palette(packets, seed_colors(kind, packet_colors))
+        packet = seed_packet(kind)
+        grey = packet.point(grey_map + [0] * (256 - len(grey_map)))
+        dark = grey.point([dark_map.get(i, 12) for i in range(256)])
+        for affordable in (True, False):
+            ready = packet if affordable else grey
+            for step in range(RECHARGE_STEPS + 1):
+                image = dark.copy()
+                reveal = PACKET_HEIGHT * step // RECHARGE_STEPS
+                top = PACKET_HEIGHT - reveal
+                image.paste(ready.crop((0, top, PACKET_WIDTH, PACKET_HEIGHT)), (0, top))
+                if not affordable:
+                    text(image, PACKET_WIDTH // 2, 22, SEED_COSTS[kind], color=11, centered=True)
+                ImageDraw.Draw(image).rounded_rectangle((0, 0, PACKET_WIDTH - 1, PACKET_HEIGHT - 1),
+                                                        radius=1, outline=9 if affordable else 15)
+                frame = (0 if affordable else RECHARGE_STEPS + 1) + step
+                packets.paste(image, (4, frame * 32 + 2))
+        save(packets, name + '_seed_packet', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     for total, name in ((5, 'wave_bar'), (3, 'wave_bar_short')):
         widths = [168 * (i + 1) // total - 168 * i // total for i in range(total)]
         frames_per_state = 168 + total * 2
@@ -984,9 +1128,9 @@ def main():
         explosion.paste(effect, (frame * 6, frame * 64 + frame * 6))
     save(explosion, 'explosion', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
     # Reward panels preserve the lawn underneath their transparent pixels.
-    reward = reward_panel('NEW PLANT!')
-    for name, heading in [('trophy_reward', 'LEVEL CLEAR!'), ('campaign_trophy', 'YARD SAVED!')]:
-        save(reward_panel(heading), name, {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    reward = reward_panel()
+    for name in ('trophy_reward', 'campaign_trophy'):
+        save(reward, name, {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     save(completion_trophy(), 'completion_trophy', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
     for name, prompt in [('loss_message', False), ('loss_prompt', True)]:
         save(loss_notice(prompt), name, {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
@@ -1001,16 +1145,23 @@ def main():
     shadow = canvas(32, 16)
     ImageDraw.Draw(shadow).ellipse((5, 6, 26, 10), fill=2)
     save(shadow, 'reward_shadow', {'type': 'sprite', 'height': 16, 'bpp_mode': 'bpp_4'})
-    cards = canvas(64, 64 * 3)
-    for i in range(3):
-        cards.paste(reward_packet(i + 2), (0, i * 64))
-    save(cards, 'reward_packets', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
-    snow_reward = reward_packet(5)
-    apply_palette(snow_reward, snow_colors(COLORS))
-    save(snow_reward, 'snow_reward_packet', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
+    for kind, name in enumerate(SEED_NAMES):
+        card = reward_packet(kind)
+        apply_palette(card, seed_colors(kind, COLORS))
+        save(card, name + '_reward_packet', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
     base = lawn()
     save(base, 'lawn', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
-    save(yard_preview(), 'yard_preview', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    save(yard_road(), 'yard_road', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    # Two native 64×32 sprites preserve the heading without duplicating the scene.
+    heading = canvas(128, 32)
+    text(heading, 64, 8, 'INCOMING ZOMBIES', color=7, scale=2, centered=True)
+    heading_tiles = canvas(64, 64)
+    for half in range(2):
+        heading_tiles.paste(heading.crop((half * 64, 0, (half + 1) * 64, 32)), (0, half * 32))
+    save(heading_tiles, 'scouting_heading', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    for lanes in (1, 3):
+        save(lawn(lanes=lanes), f'lawn_{lanes}', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+        save(yard_road(lanes), f'yard_road_{lanes}', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     save(almanac_stats(), 'almanac_stats', {'type': 'sprite', 'height': 16, 'bpp_mode': 'bpp_4'})
     save(almanac_entry_panel(), 'almanac_entry', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     cell = canvas(64, 64)

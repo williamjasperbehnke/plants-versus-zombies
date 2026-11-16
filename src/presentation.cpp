@@ -1,8 +1,41 @@
+#include "bn_sprite_items_scouting_heading.h"
+#include "bn_sprite_items_sunflower_seed_packet.h"
+#include "bn_sprite_items_sunflower_reward_packet.h"
+#include "bn_sprite_items_peashooter_seed_packet.h"
+#include "bn_sprite_items_peashooter_reward_packet.h"
+#include "bn_sprite_items_walnut_seed_packet.h"
+#include "bn_sprite_items_walnut_reward_packet.h"
+#include "bn_sprite_items_cherry_seed_packet.h"
+#include "bn_sprite_items_cherry_reward_packet.h"
+#include "bn_sprite_items_potato_mine_seed_packet.h"
+#include "bn_sprite_items_potato_mine_reward_packet.h"
+#include "bn_sprite_items_snow_pea_seed_packet.h"
+#include "bn_sprite_items_snow_pea_reward_packet.h"
+#include "bn_sprite_items_squash_seed_packet.h"
+#include "bn_sprite_items_squash_reward_packet.h"
+#include "bn_sprite_items_repeater_seed_packet.h"
+#include "bn_sprite_items_repeater_reward_packet.h"
+#include "bn_sprite_items_tallnut_seed_packet.h"
+#include "bn_sprite_items_tallnut_reward_packet.h"
+#include "bn_sprite_items_chomper_seed_packet.h"
+#include "bn_sprite_items_chomper_reward_packet.h"
+#include "bn_sprite_items_chompers.h"
+#include "bn_regular_bg_items_lawn_1.h"
+#include "bn_regular_bg_items_lawn_3.h"
+#include "bn_regular_bg_items_yard_road_1.h"
+#include "bn_regular_bg_items_yard_road_3.h"
+#include "bn_sprite_items_tallnuts.h"
 #include "presentation.h"
 #include "almanac.h"
+#include "bn_regular_bg_items_seed_select.h"
+#include "bn_sprite_items_squash.h"
+#include "bn_sprite_items_vault_deaths.h"
+#include "bn_sprite_items_repeaters.h"
+#include "bn_sprite_items_vaulting_zombies.h"
+#include "bn_sprite_items_wounded_vaulting_zombies.h"
 #include "bn_sprite_items_tombstones.h"
 #include "menu_layout.h"
-#include "bn_regular_bg_items_yard_preview.h"
+#include "bn_regular_bg_items_yard_road.h"
 #include "bn_regular_bg_items_almanac.h"
 #include "bn_sprite_items_title_options.h"
 #include "bn_sprite_items_almanac_cell.h"
@@ -10,11 +43,15 @@
 #include "bn_regular_bg_items_almanac_entry.h"
 #include "bn_string.h"
 #include "wave_track.h"
-#include "bn_sprite_items_actors.h"
-#include "bn_sprite_items_plant_characters.h"
-#include "bn_sprite_items_standard_zombies.h"
+#include "bn_sprite_items_field_items.h"
+#include "bn_sprite_items_sunflowers.h"
+#include "bn_sprite_items_peashooters.h"
+#include "bn_sprite_items_wallnuts.h"
+#include "bn_sprite_items_cherries.h"
+#include "bn_sprite_items_potato_mines.h"
+#include "bn_sprite_items_normal_zombies.h"
+#include "bn_sprite_items_cone_zombies.h"
 #include "bn_sprite_items_damage_flash.h"
-#include "bn_sprite_items_reward_packets.h"
 #include "bn_sprite_items_reward_shadow.h"
 #include "bn_regular_bg_items_plant_reward.h"
 #include "bn_regular_bg_items_trophy_reward.h"
@@ -28,14 +65,22 @@
 #include "bn_sprite_items_screen_door_zombies.h"
 #include "bn_sprite_items_cursor.h"
 #include "bn_sprite_items_selection.h"
-#include "bn_sprite_items_seed_packets.h"
-#include "bn_sprite_items_snow_seed_packets.h"
 #include "bn_sprite_items_snow_peashooters.h"
-#include "bn_sprite_items_snow_reward_packet.h"
 #include "bn_color.h"
 #include "bn_sprite_palette_item.h"
 #include "bn_sprite_items_explosion.h"
 #include "bn_sprite_items_emerging_zombies.h"
+#include "bn_sprite_items_wounded_normal_zombies.h"
+#include "bn_sprite_items_wounded_cone_zombies.h"
+#include "bn_sprite_items_wounded_newspaper_zombies.h"
+#include "bn_sprite_items_wounded_flag_zombies.h"
+#include "bn_sprite_items_zombie_deaths.h"
+#include "bn_sprite_items_newspaper_deaths.h"
+#include "bn_sprite_items_flag_deaths.h"
+#include "bn_sprite_items_football_zombies.h"
+#include "bn_sprite_items_wounded_football_zombies.h"
+#include "bn_sprite_items_football_deaths.h"
+#include "bn_sprite_items_zombie_debris.h"
 #include "bn_sprite_items_wave_bar.h"
 #include "bn_sprite_items_hud_icons.h"
 #include "bn_sprite_items_phase_clock.h"
@@ -55,11 +100,59 @@
 namespace garden
 {
 static_assert(wave_track::boundaries.size() == wave_count + 1);
+static_assert(bn::sprite_items::screen_door_zombies.tiles_item().graphics_count() == screen_door_buff_frames * 2);
+
+namespace
+{
+struct SeedArt
+{
+    const bn::sprite_item* packet;
+    const bn::sprite_item* reward;
+};
+// Stable PlantType order: each entry has a bank sheet and a reward sheet.
+constexpr std::array<SeedArt, plant_count> seed_assets = {{
+    {&bn::sprite_items::sunflower_seed_packet, &bn::sprite_items::sunflower_reward_packet},
+    {&bn::sprite_items::peashooter_seed_packet, &bn::sprite_items::peashooter_reward_packet},
+    {&bn::sprite_items::walnut_seed_packet, &bn::sprite_items::walnut_reward_packet},
+    {&bn::sprite_items::cherry_seed_packet, &bn::sprite_items::cherry_reward_packet},
+    {&bn::sprite_items::potato_mine_seed_packet, &bn::sprite_items::potato_mine_reward_packet},
+    {&bn::sprite_items::snow_pea_seed_packet, &bn::sprite_items::snow_pea_reward_packet},
+    {&bn::sprite_items::squash_seed_packet, &bn::sprite_items::squash_reward_packet},
+    {&bn::sprite_items::repeater_seed_packet, &bn::sprite_items::repeater_reward_packet},
+    {&bn::sprite_items::tallnut_seed_packet, &bn::sprite_items::tallnut_reward_packet},
+    {&bn::sprite_items::chomper_seed_packet, &bn::sprite_items::chomper_reward_packet},
+}};
+
+const bn::sprite_item& seed_art(PlantType type)
+{
+    return *seed_assets[static_cast<int>(type)].packet;
+}
+
+const bn::sprite_item& reward_art(PlantType type)
+{
+    return type == PlantType::count ? bn::sprite_items::completion_trophy :
+                                     *seed_assets[static_cast<int>(type)].reward;
+}
+
+const bn::regular_bg_item& lawn_art(int lanes)
+{
+    if(lanes == 1) { return bn::regular_bg_items::lawn_1; }
+    if(lanes == 3) { return bn::regular_bg_items::lawn_3; }
+    return bn::regular_bg_items::lawn;
+}
+const bn::regular_bg_item& road_art(int lanes)
+{
+    if(lanes == 1) { return bn::regular_bg_items::yard_road_1; }
+    if(lanes == 3) { return bn::regular_bg_items::yard_road_3; }
+    return bn::regular_bg_items::yard_road;
+}
+
+}
 
 // Gameplay only generates the sun counter; menu text does not share these live entity pools.
 constexpr int visible_packets = plant_count < visible_seed_count ? plant_count : visible_seed_count;
 static_assert(rows * columns + zombie_capacity + shot_capacity + sun_capacity + rows +
-              visible_packets + wave_count + tombstone_capacity + 2 + 3 + 2 + 4 <= 128, "Sprite pools exceed GBA OAM capacity");
+              visible_packets + wave_count + tombstone_capacity + zombie_effect_capacity + 2 + 3 + 2 + 4 <= 128, "Sprite pools exceed GBA OAM capacity");
 
 Presentation::Presentation() :
     _background(bn::regular_bg_items::lawn.create_bg(8, 48)),
@@ -85,6 +178,8 @@ Presentation::Presentation() :
 void Presentation::change_screen(const Game& game)
 {
     Phase phase = game.phase();
+    bool same_road = (phase == Phase::preview || phase == Phase::seed_select) &&
+                     (_screen == Phase::preview || _screen == Phase::seed_select);
     _screen = phase;
     _text.set_palette_item(phase == Phase::almanac ? almanac_ink : menu_font.item().palette_item());
     if(phase != Phase::won && phase != Phase::lost) { _hud.clear(); }
@@ -99,11 +194,13 @@ void Presentation::change_screen(const Game& game)
     _entry_text.clear();
     for(auto& icon : _entry_icons) { icon.reset(); }
     _gallery_cursor.reset();
+    for(auto& sprite : _bank_packets) { sprite.reset(); }
     _last_entry = -1;
     for(auto& tile : _level_tiles) { tile.reset(); }
     _level_cursor.reset();
-    _title_frame = 0;
+    if(! same_road) { _title_frame = 0; }
     _preview_text.clear();
+    for(auto& half : _preview_heading) { half.reset(); }
     _preview_pan = 0;
     _loss_notice_stage = 0;
     _reward_packet.reset();
@@ -115,7 +212,12 @@ void Presentation::change_screen(const Game& game)
     {
     case Phase::title: _menu = bn::regular_bg_items::title.create_bg(8, 48); break;
     case Phase::playing: break;
-    case Phase::preview: _menu = bn::regular_bg_items::yard_preview.create_bg(136, 48); break;
+    case Phase::seed_select:
+        _menu = road_art(game.level_spec().lanes).create_bg(-104, 48);
+        _almanac_panel = bn::regular_bg_items::seed_select.create_bg(8, 48);
+        _almanac_panel->set_priority(1);
+        break;
+    case Phase::preview: _menu = road_art(game.level_spec().lanes).create_bg(136, 48); break;
     case Phase::almanac: _menu = bn::regular_bg_items::almanac.create_bg(8, 48); break;
     case Phase::level_select: _menu = bn::regular_bg_items::level_select.create_bg(8, 48); break;
     case Phase::paused: _menu = bn::regular_bg_items::paused.create_bg(8, 48); break;
@@ -125,8 +227,9 @@ void Presentation::change_screen(const Game& game)
     }
     bool playing = phase == Phase::playing;
     bool reward = phase == Phase::won || phase == Phase::lost;
+    if(playing) { _background.set_item(lawn_art(game.level_spec().lanes)); }
     _background.set_visible(playing || reward);
-    if(_menu) { _menu->set_priority(1); }
+    if(_menu) { _menu->set_priority(phase == Phase::seed_select ? 2 : 1); }
     _cursor.set_visible(playing);
     _selection.set_visible(playing);
     if(! playing && ! reward) { clear_entities(); }
@@ -136,6 +239,7 @@ void Presentation::clear_entities()
 {
     for(auto& sprite : _plants) { sprite.reset(); }
     for(auto& sprite : _zombies) { sprite.reset(); }
+    for(auto& sprite : _zombie_effects) { sprite.reset(); }
     for(auto& sprite : _tombstones) { sprite.reset(); }
     for(auto& palette : _frost_palettes) { palette.reset(); }
     _hit_palette.reset();
@@ -151,24 +255,55 @@ void Presentation::clear_entities()
 }
 
 void Presentation::actor(bn::optional<bn::sprite_ptr>& sprite, bool active,
-                         int x, int y, int frame, int depth)
+                         int x, int y, int frame, int depth, bool wounded)
 {
     if(! active) { sprite.reset(); return; }
-    const bn::sprite_item* item = &bn::sprite_items::actors;
-    int graphics_index = frame;
+    const bn::sprite_item* item = &bn::sprite_items::field_items;
+    int graphics_index = frame - 6;
     if(frame == 9) { item = &bn::sprite_items::explosion; graphics_index = 0; }
+    else if(frame >= screen_door_first_frame) { item = &bn::sprite_items::screen_door_zombies; graphics_index = frame - screen_door_first_frame; }
+    else if(frame >= 400) { item = &bn::sprite_items::chompers; graphics_index = frame - 400; }
+    else if(frame >= 300) { item = &bn::sprite_items::vaulting_zombies; graphics_index = frame - 300; }
+    else if(frame >= 280) { item = &bn::sprite_items::tallnuts; graphics_index = frame - 280; }
+    else if(frame >= 270) { item = &bn::sprite_items::repeaters; graphics_index = frame - 270; }
+    else if(frame >= 260) { item = &bn::sprite_items::squash; graphics_index = frame - 260; }
+    else if(frame >= 200) { item = &bn::sprite_items::football_zombies; graphics_index = frame - 200; }
     else if(frame >= 105) { item = &bn::sprite_items::emerging_zombies; graphics_index = frame - 105; }
     else if(frame >= 101) { item = &bn::sprite_items::snow_peashooters; graphics_index = frame - 101; }
-    else if(frame >= 85) { item = &bn::sprite_items::screen_door_zombies; graphics_index = frame - 85; }
     else if(frame >= 69) { item = &bn::sprite_items::bucket_zombies; graphics_index = frame - 69; }
     else if(frame >= 61) { item = &bn::sprite_items::newspaper_zombies; graphics_index = frame - 53; }
-    else if(frame >= 53) { item = &bn::sprite_items::standard_zombies; graphics_index = frame - 45; }
+    else if(frame >= 53)
+    {
+        int local = frame - 53;
+        item = local % 2 ? &bn::sprite_items::cone_zombies : &bn::sprite_items::normal_zombies;
+        graphics_index = 4 + local / 2;
+    }
     else if(frame >= 37) { item = &bn::sprite_items::flag_zombies; graphics_index = frame - 37; }
     else if(frame >= 29) { item = &bn::sprite_items::newspaper_zombies; graphics_index = frame - 29; }
     else if(frame == 4 || frame == 5 || (frame >= 14 && frame <= 19))
-    { item = &bn::sprite_items::standard_zombies; graphics_index = frame < 6 ? frame - 4 : frame - 12; }
-    else if(frame <= 3 || (frame >= 10 && frame <= 13) || frame >= 20)
-    { item = &bn::sprite_items::plant_characters; graphics_index = frame <= 3 ? frame : (frame <= 13 ? frame - 6 : frame - 12); }
+    {
+        item = frame % 2 ? &bn::sprite_items::cone_zombies : &bn::sprite_items::normal_zombies;
+        graphics_index = frame < 6 ? 0 : (frame - 12) / 2;
+    }
+    else if(frame == 0 || frame == 12)
+    { item = &bn::sprite_items::sunflowers; graphics_index = frame == 12; }
+    else if(frame == 1 || frame == 13 || frame == 20)
+    { item = &bn::sprite_items::peashooters; graphics_index = frame == 1 ? 0 : (frame == 13 ? 1 : 2); }
+    else if(frame == 2 || frame == 10 || frame == 11 || (frame >= 21 && frame <= 23))
+    { item = &bn::sprite_items::wallnuts; graphics_index = frame == 2 ? 0 : (frame < 12 ? frame - 9 : frame - 18); }
+    else if(frame == 3 || frame == 24)
+    { item = &bn::sprite_items::cherries; graphics_index = frame == 24; }
+    else if(frame >= 25 && frame <= 28)
+    { item = &bn::sprite_items::potato_mines; graphics_index = frame - 25; }
+    if(wounded)
+    {
+        if(item == &bn::sprite_items::vaulting_zombies) { item = &bn::sprite_items::wounded_vaulting_zombies; }
+        else if(item == &bn::sprite_items::football_zombies) { item = &bn::sprite_items::wounded_football_zombies; }
+        else if(item == &bn::sprite_items::normal_zombies) { item = &bn::sprite_items::wounded_normal_zombies; }
+        else if(item == &bn::sprite_items::cone_zombies) { item = &bn::sprite_items::wounded_cone_zombies; }
+        else if(item == &bn::sprite_items::newspaper_zombies) { item = &bn::sprite_items::wounded_newspaper_zombies; }
+        else if(item == &bn::sprite_items::flag_zombies) { item = &bn::sprite_items::wounded_flag_zombies; }
+    }
     if(! sprite)
     {
         sprite = item->create_sprite(x - 120, y - 80, graphics_index);
@@ -192,21 +327,67 @@ void Presentation::draw_tombstones(const Game& game, int pan)
     {
         const auto& tombstone = game.tombstones()[i];
         auto& sprite = _tombstones[i];
-        if(! tombstone.active()) { sprite.reset(); continue; }
+        if(! tombstone.active() && tombstone.crumble_frames == 0) { sprite.reset(); continue; }
         int frame = tombstone.health > tombstone_health * 2 / 3 ? 0 :
                     (tombstone.health > tombstone_health / 3 ? 1 : 2);
+        if(tombstone.crumble_frames > 0) { frame = 3 + (30 - tombstone.crumble_frames) / 6; }
         if(! sprite) { sprite = bn::sprite_items::tombstones.create_sprite(0, 0); }
         sprite->set_item(bn::sprite_items::tombstones, frame);
         sprite->set_position(cell_x(tombstone.column) - pan - 120, cell_y(tombstone.row) - 81);
         sprite->set_bg_priority(game.phase() == Phase::preview ? 0 : 2);
-        sprite->set_z_order(2 - tombstone.row * 4);
-        if(tombstone.flash > 0 && game.phase() == Phase::playing) { flash_red(*sprite); }
+        sprite->set_z_order((tombstone.active() ? 2 : 3) - tombstone.row * 4);
+        if(tombstone.active() && tombstone.flash > 0 && game.phase() == Phase::playing) { flash_red(*sprite); }
+    }
+}
+
+void Presentation::draw_zombie_effects(const Game& game)
+{
+    for(int i = 0; i < zombie_effect_capacity; ++i)
+    {
+        const auto& effect = game.zombie_effects()[i];
+        auto& sprite = _zombie_effects[i];
+        if(! effect.active) { sprite.reset(); continue; }
+        int duration = effect_duration(effect.type);
+        int age = duration - effect.remaining;
+        bool corpse = corpse_effect(effect.type);
+        int stages = effect_stages(effect.type);
+        int debris = effect.type == ZombieEffectType::pole ? 9 : (effect.type == ZombieEffectType::flag ? 6 :
+                     (effect.type == ZombieEffectType::football_arm ? 7 :
+                      (effect.type == ZombieEffectType::football_helmet ? 8 : static_cast<int>(effect.type) - 2)));
+        int frame = (corpse ? (effect.wounded ? stages : 0) : debris * stages) + age * stages / duration;
+        const auto& item = corpse ? (effect.type == ZombieEffectType::vault_death ? bn::sprite_items::vault_deaths :
+                          (effect.type == ZombieEffectType::football_death ? bn::sprite_items::football_deaths :
+                          (effect.type == ZombieEffectType::flag_death ? bn::sprite_items::flag_deaths :
+                          (effect.type == ZombieEffectType::newspaper_death ?
+                           bn::sprite_items::newspaper_deaths : bn::sprite_items::zombie_deaths)))) :
+                          bn::sprite_items::zombie_debris;
+        int x = effect.x / scale;
+        int y = cell_y(effect.row) - 2;
+        if(! corpse)
+        {
+            bool arm = effect.type == ZombieEffectType::arm || effect.type == ZombieEffectType::newspaper_arm || effect.type == ZombieEffectType::football_arm;
+            bool hat = effect.type == ZombieEffectType::cone || effect.type == ZombieEffectType::bucket || effect.type == ZombieEffectType::football_helmet;
+            bool flag = effect.type == ZombieEffectType::flag;
+            int origin = arm ? 5 : (flag ? -3 : (hat ? -13 : 3));
+            int ground = arm ? 10 : (flag ? 4 : 12);
+            x += arm ? -9 - age / 9 : (flag ? 3 : (hat ? 0 : -7)) + age / 3;
+            y += origin + (ground - origin) * age * age / (duration * duration);
+            if(! arm) { y -= 32 * age * (duration - age) / (duration * duration); }
+        }
+        if(! sprite) { sprite = item.create_sprite(0, 0, frame); }
+        sprite->set_item(item, frame);
+        if(effect.type == ZombieEffectType::newspaper_arm)
+        { sprite->set_palette(bn::sprite_items::newspaper_zombies.palette_item().create_palette()); }
+        sprite->set_position(x - 120, y - 80);
+        sprite->set_bg_priority(2);
+        sprite->set_z_order((corpse ? 1 : -3) - effect.row * 4);
     }
 }
 
 void Presentation::draw_entities(const Game& game)
 {
     draw_tombstones(game);
+    draw_zombie_effects(game);
     for(int i = 0; i < rows * columns; ++i)
     {
         const auto& plant = game.plants()[i];
@@ -223,20 +404,65 @@ void Presentation::draw_entities(const Game& game)
         else if(plant.type == PlantType::walnut && plant.health <= spec(plant.type).health * 2 / 3) { frame = 10; }
         if(plant.type == PlantType::walnut && idle_pose)
         { frame = frame == 2 ? 21 : frame + 12; }
-        bool shooter = plant.type == PlantType::peashooter || plant.type == PlantType::snow_pea;
+        if(plant.type == PlantType::tallnut)
+        {
+            int damage = plant.health <= spec(plant.type).health / 3 ? 2 :
+                         (plant.health <= spec(plant.type).health * 2 / 3 ? 1 : 0);
+            frame = 280 + damage * 2 + idle_pose;
+        }
+        bool shooter = plant.type == PlantType::peashooter || plant.type == PlantType::snow_pea || plant.type == PlantType::repeater;
         bool firing = shooter && plant.timer > spec(plant.type).action_delay - 6;
         if(plant.type == PlantType::snow_pea) { frame = firing ? 103 : (idle_pose ? 102 : 101); }
-        int recoil = firing ? 1 : 0;
+        int repeater_recoil = 0;
+        if(plant.type == PlantType::repeater)
+        {
+            int remaining = plant.shot_frames;
+            frame = remaining > 0 ? (remaining >= 5 ? 272 : (remaining >= 3 ? 273 : 275)) :
+                    (plant.burst_frames > 0 && plant.burst_frames <= 2 ? 274 : 270 + idle_pose);
+            repeater_recoil = remaining >= 5 ? 2 : (remaining >= 3 ? 1 : 0);
+        }
+        if(plant.type == PlantType::chomper)
+        {
+            int pose = chomper_idle_pose(game.elapsed() + i * 5);
+            if(plant.bite_frames > 0) { pose = plant.bite_frames > 24 ? 2 : (plant.bite_frames > 12 ? 3 : (plant.bite_frames > 6 ? 4 : 5)); }
+            else if(plant.timer > 0) { pose = plant.timer < 20 ? 7 : chomper_chew_pose(game.elapsed() + i * 5); }
+            frame = 400 + pose;
+        }
+        int plant_x = cell_x(i % columns);
+        int plant_y = cell_y(i / columns) - 1;
+        if(plant.type == PlantType::chomper && plant.bite_frames > 0)
+        {
+            plant_x += plant.bite_frames > 24 ? -1 :
+                       (plant.bite_frames > 12 ? (24 - plant.bite_frames) / 2 : plant.bite_frames / 2);
+        }
+        if(plant.type == PlantType::squash)
+        {
+            frame = 260 + idle_pose;
+            if(plant.committed())
+            {
+                int age = 30 - plant.timer;
+                frame = plant.health == 0 ? 264 : (age < 6 ? 262 : 263);
+                if(plant.health == 0) { plant_x = plant.target_x / scale; }
+                else if(age >= 6)
+                {
+                    int time = age - 6;
+                    plant_x += (plant.target_x / scale - plant_x) * time / 24;
+                    plant_y -= 120 * time * (24 - time) / (24 * 24);
+                }
+            }
+        }
+        int recoil = plant.type == PlantType::repeater ? repeater_recoil : (firing ? 1 : 0);
         actor(_plants[i], plant.active,
-              cell_x(i % columns) - recoil, cell_y(i / columns) - 1, frame, 2 - (i / columns) * 4);
+              plant_x - recoil, plant_y, frame, 2 - (i / columns) * 4);
         if(_plants[i] && frame != 9 && plant.flash > 0 && game.phase() == Phase::playing)
         { flash_red(*_plants[i]); }
         if(frame == 9 && _plants[i])
         {
             _plants[i]->set_tiles(bn::sprite_items::explosion.tiles_item(), (18 - plant.timer) / 6);
         }
+        if(plant.type == PlantType::chomper && plant.bite_frames > 0 && _plants[i]) { _plants[i]->set_z_order(-24); }
         // Blasts cross lane boundaries, so keep both bomb effects above every plant.
-        if(plant.exploding() && _plants[i]) { _plants[i]->set_z_order(-28); }
+        if((plant.exploding() || plant.committed()) && _plants[i]) { _plants[i]->set_z_order(-28); }
     }
     for(int i = 0; i < zombie_capacity; ++i)
     {
@@ -259,15 +485,31 @@ void Presentation::draw_entities(const Game& game)
         if(zombie.type == ZombieType::newspaper)
         { frame = (zombie.shield_health > 0 ? 29 : 33) + (chewing ? 2 : 0) + pose; }
         if(zombie.type == ZombieType::flag) { frame = 37 + ((clock / 8 + i) % 4) * 4 + (chewing ? 2 : 0) + pose; }
-        if(zombie.shield_health > 0 && (zombie.type == ZombieType::bucket || zombie.type == ZombieType::screen_door))
+        if(zombie.shield_health > 0 && zombie.type == ZombieType::bucket)
         {
-            int base = zombie.type == ZombieType::bucket ? 69 : 85;
             int damaged = zombie.shield_health * 2 <= spec(zombie.type).shield_health ? 4 : 0;
-            frame = base + damaged + (chewing ? 2 : 0) + pose;
+            frame = 69 + damaged + (chewing ? 2 : 0) + pose;
         }
+        if(zombie.shield_health > 0 && zombie.type == ZombieType::screen_door)
+        {
+            int damaged = zombie.shield_health * 2 <= spec(zombie.type).shield_health ? screen_door_armor_frames : 0;
+            int door_pose = chewing ? 2 + screen_door_bite_pose(zombie.bite_timer, game.bite_delay(zombie)) : pose;
+            frame = screen_door_first_frame + damaged + door_pose;
+        }
+        if(zombie.type == ZombieType::football)
+        {
+            int armor = zombie.shield_health > 20 ? 0 : (zombie.shield_health > 0 ? 6 : 12);
+            frame = 200 + armor + (chewing ? 4 + pose : clock / (6 * slow) % 4);
+        }
+        if(zombie.type == ZombieType::vaulter)
+        { frame = 300 + (zombie.vault_frames > 0 ? 8 + (36 - zombie.vault_frames) / 9 :
+                        (zombie.pole_used ? 4 : 0) + (chewing ? 2 : 0) + pose); }
         if(game.flag_buffed(zombie))
         {
-            if(frame >= 69) { frame += 8; }
+            if(frame >= screen_door_first_frame) { frame += screen_door_buff_frames; }
+            else if(frame >= 300) { frame += 12; }
+            else if(frame >= 200) { frame += 18; }
+            else if(frame >= 69) { frame += 8; }
             else if(frame >= 29) { frame += 32; }
             else { frame = frame < 6 ? frame + 49 : frame + 41; }
         }
@@ -277,18 +519,39 @@ void Presentation::draw_entities(const Game& game)
             frame = 105 + stage + (game.flag_buffed(zombie) ? emergence_stages : 0);
             bob = 0;
         }
-        actor(_zombies[i], zombie.active,
-              zombie.x / scale - (breached ? (game.loss_frames() < 90 ? game.loss_frames() : 90) * 24 / 90 : 0), cell_y(zombie.row) + bob - 2, frame, -zombie.row * 4 - (zombie.type == ZombieType::flag ? 1 : 0));
+        int draw_x = zombie.x / scale - (breached ? (game.loss_frames() < 90 ? game.loss_frames() : 90) * 24 / 90 : 0);
+        int draw_y = cell_y(zombie.row) + bob - 2 - (zombie.vault_frames > 0 ? 88 * zombie.vault_frames * (36 - zombie.vault_frames) / (36 * 36) : 0);
+        int pull = 0;
+        for(int column = 0; column < columns; ++column)
+        {
+            const auto& plant = game.plants()[cell_index(zombie.row, column)];
+            if(plant.active && plant.type == PlantType::chomper && plant.bite_target == i &&
+               plant.bite_frames <= 24 && plant.bite_frames > 12)
+            {
+                pull = 24 - plant.bite_frames;
+                draw_x += (cell_x(column) + 14 - draw_x) * pull / 12;
+                draw_y += pull / 3;
+                break;
+            }
+        }
+        actor(_zombies[i], zombie.active, draw_x, draw_y, frame,
+              pull > 0 ? -23 : (zombie.vault_frames > 0 ? -24 : -zombie.row * 4) - (zombie.type == ZombieType::flag ? 1 : 0), zombie.arm_lost);
+        if(_zombies[i])
+        {
+            if(pull > 0) { _zombies[i]->set_scale(bn::fixed(100 - pull * 5) / 100); }
+            else { _zombies[i]->remove_affine_mat(); }
+        }
         bool hit = zombie.flash > 0 && game.phase() == Phase::playing;
         if(_zombies[i] && hit) { flash_red(*_zombies[i]); }
         else if(_zombies[i] && zombie.frost_frames > 0)
         {
             int palette = zombie.type == ZombieType::newspaper ? 1 :
-                          (zombie.type == ZombieType::bucket && zombie.shield_health > 0 ? 2 : 0);
+                          ((zombie.type == ZombieType::bucket || zombie.type == ZombieType::screen_door) &&
+                           zombie.shield_health > 0 ? 2 : 0);
             if(! _frost_palettes[palette])
             {
                 const auto& item = palette == 1 ? bn::sprite_items::newspaper_zombies :
-                                   (palette == 2 ? bn::sprite_items::bucket_zombies : bn::sprite_items::standard_zombies);
+                                   (palette == 2 ? bn::sprite_items::bucket_zombies : bn::sprite_items::normal_zombies);
                 alignas(int) bn::color colors[16];
                 const auto& source = item.palette_item().colors_ref();
                 for(int color = 0; color < 16; ++color)
@@ -319,7 +582,7 @@ void Presentation::draw_entities(const Game& game)
     for(int i = 0; i < rows; ++i)
     {
         const auto& mower = game.mowers()[i];
-        actor(_mowers[i], mower.available || mower.moving, mower.x / scale, cell_y(i), 8, -1 - i * 4);
+        actor(_mowers[i], game.row_active(i) && (mower.available || mower.moving), mower.x / scale, cell_y(i), 8, -1 - i * 4);
     }
 }
 
@@ -428,11 +691,10 @@ void Presentation::draw_hud(const Game& game, const ViewState& view)
     {
         if(i >= game.available_plants() || i < _seed_page || i >= _seed_page + visible_seed_count)
         { _seed_packets[i].reset(); continue; }
-        auto type = seed_order[i];
+        auto type = game.seed_at(i);
         int remaining = game.cooldown(type);
-        bool snow = type == PlantType::snow_pea;
-        const auto& item = snow ? bn::sprite_items::snow_seed_packets : bn::sprite_items::seed_packets;
-        int frame = seed_layout::frame(snow ? 0 : static_cast<int>(type), remaining, spec(type).recharge, game.sun() >= spec(type).cost);
+        const auto& item = seed_art(type);
+        int frame = seed_layout::frame(remaining, spec(type).recharge, game.sun() >= spec(type).cost);
         auto& packet = _seed_packets[i];
         if(! packet)
         {
@@ -522,46 +784,159 @@ void Presentation::draw_preview(const Game& game)
     int remaining = time < preview_pan_frames ? preview_pan_frames - time : 0;
     int pan = 240 - 240 * remaining * remaining / (preview_pan_frames * preview_pan_frames);
     if(game.preview_returning()) { pan = 240 - pan; }
+    draw_road(game, pan, true);
+}
+
+void Presentation::draw_road(const Game& game, int pan, bool labels)
+{
     _menu->set_x(136 - pan);
     draw_tombstones(game, pan);
-    constexpr int positions[zombie_type_count][2] = {{316, 99}, {371, 128}, {431, 96},
-                                                   {330, 136}, {381, 94}, {440, 136}};
+    // Staggered, fixed road positions keep small rosters near the yard and avoid parade rows.
+    constexpr std::array<PacketPosition, zombie_type_count> crowd{{
+        {300, 94}, {318, 136}, {349, 104}, {370, 131},
+        {398, 91}, {419, 138}, {447, 103}, {463, 137}
+    }};
+    std::array<PacketPosition, zombie_type_count> positions{};
+    int slot_position = 0;
+    for(int i = 0; i < zombie_type_count; ++i)
+    {
+        if(! game.zombie_roster()[i]) { continue; }
+        positions[i] = crowd[slot_position++];
+    }
     for(int row = 0; row < rows; ++row)
     {
-        actor(_mowers[row], true, 21 - pan, cell_y(row), 8);
-        _mowers[row]->set_bg_priority(0);
+        actor(_mowers[row], game.row_active(row), 21 - pan, cell_y(row), 8);
+        if(_mowers[row]) { _mowers[row]->set_bg_priority(labels ? 0 : 2); }
     }
     int slot = 0;
     for(int i = 0; i < zombie_type_count; ++i)
     {
         if(! game.zombie_roster()[i]) { continue; }
-        actor(_gallery[slot], true, positions[i][0] - pan, positions[i][1],
-              zombie_display_frame(static_cast<ZombieType>(i), _title_frame + slot * 11));
-        _gallery[slot]->set_bg_priority(0);
+        int x = positions[i].x - pan;
+        int y = positions[i].y;
+        actor(_gallery[slot], true, x, y,
+              zombie_display_frame(static_cast<ZombieType>(i), _title_frame + slot * 11), 160 - y);
+        _gallery[slot]->set_bg_priority(labels ? 0 : 2);
         ++slot;
+    }
+    ++_title_frame;
+    if(! labels) { return; }
+    for(int half = 0; half < 2; ++half)
+    {
+        auto& sprite = _preview_heading[half];
+        if(! sprite)
+        {
+            sprite = bn::sprite_items::scouting_heading.create_sprite(0, -48, half);
+            sprite->set_bg_priority(0);
+        }
+        sprite->set_x(328 + half * 64 - pan - 120);
     }
     if(_preview_text.empty())
     {
         _text.set_center_alignment();
         _text.generate(240, -70, game.level_spec().name, _preview_text);
+        _text.generate(240, -36, game.unlocked_plants() <= visible_seed_count ?
+                       "A/START: BEGIN   B: BACK" : "A/START: SEEDS   B: BACK", _preview_text);
         for(int i = 0; i < zombie_type_count; ++i)
         {
             int count = game.zombie_roster()[i];
             if(! count) { continue; }
             bn::string<16> label("x"); label += bn::to_string<4>(count);
-            _text.generate(positions[i][0] - 120, positions[i][1] + 17 - 80, label, _preview_text);
+            _text.generate(positions[i].x - 120, positions[i].y + 17 - 80, label, _preview_text);
         }
         _text.set_left_alignment();
     }
     for(auto& label : _preview_text) { label.set_x(label.x() + _preview_pan - pan); }
     _preview_pan = pan;
-    ++_title_frame;
 
+}
+
+void Presentation::draw_seed_select(const Game& game, const ViewState& view)
+{
+    draw_road(game, 240, false);
+    bool error = view.seed_error_frames > 0;
+    int key = view.seed_choice | (error ? 1 << 20 : 0);
+    for(int i = 0; i < plant_count; ++i)
+    {
+        auto type = seed_order[i];
+        bool unlocked = game.plant_unlocked(type);
+        bool selected = game.plant_available(type);
+        if(selected) { key |= 1 << (i + 4); }
+        int x = menu_layout::seed_x(i);
+        int y = menu_layout::seed_y(i);
+        if(! unlocked) { _seed_packets[i].reset(); continue; }
+        const auto& item = seed_art(type);
+        int frame = seed_layout::frame((selected || _bank_packets[i]) ? spec(type).recharge : 0, spec(type).recharge, unlocked);
+        if(! _seed_packets[i]) { _seed_packets[i] = item.create_sprite(x - 120, y - 80, frame); }
+        _seed_packets[i]->set_item(item, frame);
+        _seed_packets[i]->set_bg_priority(0);
+
+    }
+    draw_seed_bank(game);
+    _selection.set_visible(true);
+    _selection.set_position(menu_layout::seed_x(view.seed_choice) - 120, menu_layout::seed_y(view.seed_choice) - 80);
+    _selection.set_tiles(bn::sprite_items::selection.tiles_item(), error && view.seed_error_frames / 8 % 2 ? 1 : 0);
+    if(key == _last_entry) { return; }
+    _last_entry = key;
+    _hud.clear();
+    _text.set_center_alignment();
+    bn::string<32> count; count += bn::to_string<2>(game.available_plants()); count += "/"; count += bn::to_string<2>(game.required_seeds());
+    _text.generate(95, -71, "SEEDS", _hud);
+    _text.generate(95, -59, count, _hud);
+    if(error)
+    {
+        _text.set_palette_item(menu_error_ink);
+        _text.generate(-38, -30, "SELECT 6 SEEDS", _hud);
+        _text.set_palette_item(menu_font.item().palette_item());
+    }
+    else
+    {
+        _text.generate(-38, -30, game.plant_unlocked(seed_order[view.seed_choice]) ?
+                       plant_entries[static_cast<int>(seed_order[view.seed_choice])].name : "", _hud);
+    }
+    _text.generate(0, 75, "A:PICK START:PLAY B:BACK", _hud);
+    _text.set_left_alignment();
+}
+
+void Presentation::draw_seed_bank(const Game& game)
+{
+    auto approach = [](int current, int target)
+    {
+        int delta = target - current;
+        int step = delta / 4;
+        if(! step && delta) { step = delta > 0 ? 1 : -1; }
+        return current + step;
+    };
+    for(int i = 0; i < plant_count; ++i)
+    {
+        auto type = seed_order[i];
+        bool selected = game.plant_available(type);
+        auto& packet = _bank_packets[i];
+        auto& position = _packet_positions[i];
+        if(! selected && ! packet) { continue; }
+        const auto& item = seed_art(type);
+        int frame = seed_layout::frame(0, spec(type).recharge, true);
+        if(! packet)
+        {
+            position = {menu_layout::seed_x(i), menu_layout::seed_y(i)};
+            packet = item.create_sprite(0, 0, frame);
+            packet->set_bg_priority(0);
+            packet->set_z_order(-5);
+        }
+        int x = selected ? menu_layout::bank_x(game.bank_slot(type)) : menu_layout::seed_x(i);
+        int y = selected ? menu_layout::bank_y : menu_layout::seed_y(i);
+        position = {approach(position.x, x), approach(position.y, y)};
+        packet->set_position(position.x - 120, position.y - 80);
+        if(! selected && position.x == x && position.y == y) { packet.reset(); }
+    }
 }
 
 void Presentation::draw_almanac(const Game& game, const ViewState& view)
 {
     int index = view.almanac_entry;
+    int count = view.almanac_zombies ? zombie_type_count : plant_count;
+    int page = index / 6;
+    int local = index % 6;
     int key = index + (view.almanac_zombies ? plant_count : 0) + (view.almanac_details ? 64 : 0);
     _menu->set_priority(3);
     auto draw_entry = [this, &view](auto& sprite, int entry, int x, int y, int clock)
@@ -570,9 +945,11 @@ void Presentation::draw_almanac(const Game& game, const ViewState& view)
                                           plant_display_frame(seed_order[entry], clock);
         actor(sprite, true, x, y, frame);
     };
-    for(int i = 0; i < plant_count; ++i)
+    for(int i = 0; i < 6; ++i)
     {
-        draw_entry(_gallery[i], i, 54 + i % menu_layout::almanac_columns * 66, 62 + i / menu_layout::almanac_columns * 46,
+        int entry = page * 6 + i;
+        if(entry >= count) { _gallery[i].reset(); continue; }
+        draw_entry(_gallery[i], entry, 54 + i % menu_layout::almanac_columns * 66, 62 + i / menu_layout::almanac_columns * 46,
                    (view.almanac_zombies ? _title_frame / 2 : _title_frame) + i * 7);
         _gallery[i]->set_bg_priority(2);
     }
@@ -582,7 +959,7 @@ void Presentation::draw_almanac(const Game& game, const ViewState& view)
         _gallery_cursor->set_bg_priority(2);
         _gallery_cursor->set_z_order(-10);
     }
-    _gallery_cursor->set_position(54 + index % menu_layout::almanac_columns * 66 - 120, 64 + index / menu_layout::almanac_columns * 46 - 80);
+    _gallery_cursor->set_position(54 + local % menu_layout::almanac_columns * 66 - 120, 64 + local / menu_layout::almanac_columns * 46 - 80);
     if(view.almanac_details)
     {
         if(! _almanac_panel)
@@ -609,10 +986,12 @@ void Presentation::draw_almanac(const Game& game, const ViewState& view)
     _entry_text.clear();
     _text.set_center_alignment();
     _text.set_bg_priority(2);
-    _text.generate(0, -42, view.almanac_zombies ? "ZOMBIES" : "PLANTS", _hud);
-    for(int i = 0; i < plant_count; ++i)
+    _text.generate(0, -42, view.almanac_zombies ? (page ? "ZOMBIES 2/2" : "ZOMBIES 1/2") : (page ? "PLANTS 2/2" : "PLANTS 1/2"), _hud);
+    for(int i = 0; i < 6; ++i)
     {
-        const auto& entry = view.almanac_zombies ? zombie_entries[i] : plant_entries[static_cast<int>(seed_order[i])];
+        int entry_index = page * 6 + i;
+        if(entry_index >= count) { continue; }
+        const auto& entry = view.almanac_zombies ? zombie_entries[entry_index] : plant_entries[static_cast<int>(seed_order[entry_index])];
         _text.generate(54 + i % menu_layout::almanac_columns * 66 - 120, i / menu_layout::almanac_columns * 46, entry.name, _hud);
     }
     _text.set_bg_priority(0);
@@ -657,6 +1036,7 @@ void Presentation::draw_menu(const Game& game, const ViewState& view)
 {
     if(game.phase() == Phase::title) { draw_title(view); return; }
     if(game.phase() == Phase::preview) { draw_preview(game); return; }
+    if(game.phase() == Phase::seed_select) { draw_seed_select(game, view); return; }
     if(game.phase() == Phase::almanac) { draw_almanac(game, view); return; }
     if(game.phase() == Phase::level_select) { draw_level_select(game); return; }
     if(game.phase() == Phase::won) { draw_reward(game); return; }
@@ -700,6 +1080,7 @@ void Presentation::put_entities_behind_overlay()
     behind_panel(_plants);
     behind_panel(_tombstones);
     behind_panel(_zombies);
+    behind_panel(_zombie_effects);
     behind_panel(_shots);
     behind_panel(_suns);
     behind_panel(_mowers);
@@ -739,14 +1120,11 @@ void Presentation::draw_reward(const Game& game)
     int type = static_cast<int>(game.unlocked_plant());
     if(! _reward_packet)
     {
-        const auto& item = game.unlocked_plant() == PlantType::count ? bn::sprite_items::completion_trophy :
-                           game.unlocked_plant() == PlantType::snow_pea ?
-                           bn::sprite_items::snow_reward_packet : bn::sprite_items::reward_packets;
-        _reward_packet = item.create_sprite(0, 100, (game.unlocked_plant() == PlantType::count || game.unlocked_plant() == PlantType::snow_pea) ? 0 : type - 2);
+        _reward_packet = reward_art(game.unlocked_plant()).create_sprite(0, 100);
         _reward_packet->set_bg_priority(0);
         _reward_packet->set_z_order(-20);
     }
-    int lift = game.unlocked_plant() != PlantType::count ? 8 : 0;
+    constexpr int lift = 8;
     const auto pose = reward_pose(frame, lift);
     if(frame < reward_reveal_frame)
     {
@@ -773,12 +1151,11 @@ void Presentation::draw_reward(const Game& game)
                               bn::fixed(pose.scale - pose.squash * 2) / 50);
     if(! game.reward_ready() || _last_sun != -1) { return; }
     _last_sun = game.sun();
-    constexpr const char* names[] = {"Wall-nut", "Cherry Bomb", "Potato Mine", "Snow Pea"};
-    constexpr const char* descriptions[] = {"Blocks zombies", "Blasts nearby foes", "Arms, then bursts", "Slows zombies"};
+    constexpr const char* descriptions[] = {"Makes more sun", "Fires peas", "Blocks zombies", "Blasts nearby foes", "Arms, then bursts", "Slows zombies", "Crushes nearby foes", "Fires two peas", "Stops pole vaulters", "Swallows whole zombies"};
     _text.set_center_alignment();
     // Move the information with the unlock sign, retaining its internal text margins.
-    _text.generate(0, 58 - lift, (game.unlocked_plant() == PlantType::count ? game.level_spec().name : names[type - 2]), _hud);
-    _text.generate(0, 70 - lift, (game.unlocked_plant() == PlantType::count ? "Garden defended!" : descriptions[type - 2]), _hud);
+    _text.generate(0, 58 - lift, (game.unlocked_plant() == PlantType::count ? game.level_spec().name : plant_entries[type].name), _hud);
+    _text.generate(0, 70 - lift, (game.unlocked_plant() == PlantType::count ? "Garden defended!" : descriptions[type]), _hud);
     _text.set_left_alignment();
 }
 
@@ -787,7 +1164,7 @@ void Presentation::update(const Game& game, const ViewState& view)
     if(game.phase() != _screen) { change_screen(game); }
     if(game.phase() != Phase::playing) { draw_menu(game, view); return; }
     int page = _seed_page < 0 ? 0 : _seed_page;
-    int selected = seed_slot(view.cursor.seed);
+    int selected = game.bank_slot(view.cursor.seed);
     if(selected < page) { page = selected; }
     else if(selected >= page + visible_seed_count) { page = selected - visible_seed_count + 1; }
     if(page != _seed_page)
@@ -806,7 +1183,7 @@ void Presentation::update(const Game& game, const ViewState& view)
     int tint = view.shoveling ? 2 : (blocked ? 1 : 0);
     if(on_feedback_tile && view.feedback_frames > 0 && view.feedback == Feedback::planted) { tint = 3; }
     _cursor.set_tiles(bn::sprite_items::cursor.tiles_item(), tint);
-    _selection.set_position(seed_layout::center(seed_slot(cursor.seed) - _seed_page) - 120, seed_layout::center_y - 80);
+    _selection.set_position(seed_layout::center(game.bank_slot(cursor.seed) - _seed_page) - 120, seed_layout::center_y - 80);
     draw_entities(game);
     draw_wave_bar(game);
     draw_feedback(game, view);

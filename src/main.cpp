@@ -39,6 +39,7 @@ public:
             _save.update(_game.progress());
             if(_game.phase() == garden::Phase::playing && _view.feedback_frames > 0)
             { --_view.feedback_frames; }
+            if(_view.seed_error_frames > 0) { --_view.seed_error_frames; }
             _view.shoveling = bn::keypad::select_held();
             _presentation.update(_game, _view);
             bn::core::update();
@@ -95,10 +96,10 @@ private:
             bn::sound_items::chew.play(bn::fixed(0.72));
             _bite_sound_cooldown = 12;
         }
+        if(events.chomp) { bn::sound_items::chew.play(bn::fixed(0.9)); }
         if(events.explosion) { bn::sound_items::boom.play(); }
         else if(events.mower) { bn::sound_items::mower.play(); }
         else if(events.final_wave_approaching || events.horde_started) { bn::sound_items::wave_start.play(); }
-        else if(events.wave_cleared) { bn::sound_items::wave_clear.play(); }
         else if(! _combat_sound_cooldown && (events.hit || events.shot))
         {
             if(events.hit) { bn::sound_items::hit.play(); }
@@ -150,6 +151,7 @@ private:
         {
         case Phase::almanac: handle_almanac_input(); break;
         case Phase::preview: handle_preview_input(); break;
+        case Phase::seed_select: handle_seed_select_input(); break;
         case Phase::lost: handle_lost_input(); break;
         case Phase::level_select: handle_level_select_input(); break;
         case Phase::title: handle_title_input(); break;
@@ -174,17 +176,24 @@ private:
         if(bn::keypad::a_pressed())
         { _view.almanac_details = true; _repeat = {}; bn::sound_items::navigate.play(); return; }
         if(bn::keypad::l_pressed() || bn::keypad::r_pressed())
-        { _view.almanac_zombies = ! _view.almanac_zombies; bn::sound_items::navigate.play(); }
-        int delta = 0;
-        if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
-        if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
-        if(repeat(bn::keypad::up_held(), _repeat[0])) { delta -= menu_layout::almanac_columns; }
-        if(repeat(bn::keypad::down_held(), _repeat[1])) { delta += menu_layout::almanac_columns; }
-        int count = plant_count;
-        if(_view.almanac_zombies) { count = zombie_type_count; }
-        if(delta)
         {
-            _view.almanac_entry = (_view.almanac_entry + count + delta) % count;
+            constexpr int plant_pages = (plant_count + 5) / 6;
+            constexpr int pages = plant_pages + (zombie_type_count + 5) / 6;
+            int page = (_view.almanac_zombies ? plant_pages : 0) + _view.almanac_entry / 6;
+            page = (page + pages + (bn::keypad::r_pressed() ? 1 : -1)) % pages;
+            _view.almanac_zombies = page >= plant_pages;
+            _view.almanac_entry = (page - (_view.almanac_zombies ? plant_pages : 0)) * 6;
+            bn::sound_items::navigate.play();
+        }
+        int horizontal = 0, vertical = 0;
+        if(repeat(bn::keypad::left_held(), _repeat[2])) { --horizontal; }
+        if(repeat(bn::keypad::right_held(), _repeat[3])) { ++horizontal; }
+        if(repeat(bn::keypad::up_held(), _repeat[0])) { --vertical; }
+        if(repeat(bn::keypad::down_held(), _repeat[1])) { ++vertical; }
+        if(horizontal || vertical)
+        {
+            int count = _view.almanac_zombies ? zombie_type_count : plant_count;
+            _view.almanac_entry = menu_layout::almanac_move(_view.almanac_entry, count, horizontal, vertical);
             bn::sound_items::navigate.play();
         }
     }
@@ -195,7 +204,34 @@ private:
         if(bn::keypad::b_pressed())
         { show_level_select(); }
         else if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
-        { _game.begin_level(); _repeat = {}; }
+        {
+            _game.choose_seeds();
+            if(_game.preview_returning()) { _view.cursor.seed = _game.seed_at(0); }
+            _repeat = {};
+        }
+    }
+
+    void handle_seed_select_input()
+    {
+        using namespace garden;
+        if(bn::keypad::b_pressed()) { _game.cancel_seed_selection(); _view.seed_error_frames = 0; _repeat = {}; return; }
+        int delta = 0;
+        if(repeat(bn::keypad::left_held(), _repeat[2])) { --delta; }
+        if(repeat(bn::keypad::right_held(), _repeat[3])) { ++delta; }
+        if(repeat(bn::keypad::up_held(), _repeat[0])) { delta -= menu_layout::seed_columns; }
+        if(repeat(bn::keypad::down_held(), _repeat[1])) { delta += menu_layout::seed_columns; }
+        if(delta) { _view.seed_choice = (_view.seed_choice + plant_count + delta) % plant_count; bn::sound_items::navigate.play(); }
+        if(bn::keypad::a_pressed())
+        {
+            if(_game.toggle_seed(seed_order[_view.seed_choice])) { _view.seed_error_frames = 0; bn::sound_items::navigate.play(); }
+            else { bn::sound_items::error.play(); }
+        }
+        if(bn::keypad::start_pressed())
+        {
+            _game.begin_level();
+            if(_game.phase() == Phase::preview) { _view.cursor.seed = _game.seed_at(0); _repeat = {}; }
+            else { _view.seed_error_frames = 120; bn::sound_items::error.play(); }
+        }
     }
 
     void handle_lost_input()
@@ -297,17 +333,17 @@ private:
             _repeat = {};
             return;
         }
-        if(repeat(bn::keypad::up_held(), _repeat[0]) && _view.cursor.row > 0) { --_view.cursor.row; }
-        if(repeat(bn::keypad::down_held(), _repeat[1]) && _view.cursor.row < rows - 1) { ++_view.cursor.row; }
+        if(repeat(bn::keypad::up_held(), _repeat[0]) && _view.cursor.row > _game.first_row()) { --_view.cursor.row; }
+        if(repeat(bn::keypad::down_held(), _repeat[1]) && _view.cursor.row < _game.last_row()) { ++_view.cursor.row; }
         if(repeat(bn::keypad::left_held(), _repeat[2]) && _view.cursor.column > 0) { --_view.cursor.column; }
         if(repeat(bn::keypad::right_held(), _repeat[3]) && _view.cursor.column < columns - 1) { ++_view.cursor.column; }
-        int seed = seed_slot(_view.cursor.seed);
+        int seed = _game.bank_slot(_view.cursor.seed);
         int count = _game.available_plants();
         int seed_delta = 0;
         if(repeat(bn::keypad::l_held(), _seed_repeat[0], 20, 10)) { --seed_delta; }
         if(repeat(bn::keypad::r_held(), _seed_repeat[1], 20, 10)) { ++seed_delta; }
-        _view.cursor.seed = seed_order[(seed + count + seed_delta) % count];
-        if(seed != seed_slot(_view.cursor.seed)) { bn::sound_items::navigate.play(); }
+        _view.cursor.seed = _game.seed_at((seed + count + seed_delta) % count);
+        if(seed != _game.bank_slot(_view.cursor.seed)) { bn::sound_items::navigate.play(); }
         if(bn::keypad::b_pressed() || (bn::keypad::b_held() && _game.elapsed() % 15 == 0))
         {
             int collected = _game.collect_sun();

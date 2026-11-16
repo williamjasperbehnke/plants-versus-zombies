@@ -12,7 +12,8 @@ public:
         if(! read_records<SaveRecord>(offset, decode_progress))
         {
             // Migrate the old pair without overwriting either backup until the new save exists.
-            read_records<LegacySaveRecord>(legacy_offset, decode_legacy_progress);
+            if(! read_records<V2SaveRecord>(v2_offset, decode_v2_progress))
+            { read_records<LegacySaveRecord>(legacy_offset, decode_legacy_progress); }
             _loaded = false;
         }
 #ifdef GARDEN_DEBUG_SAVE
@@ -50,10 +51,12 @@ private:
         return true;
     }
 #ifdef GARDEN_DEBUG_SAVE
-    static constexpr int offset = 512;
+    static constexpr int offset = PVZ_SAVE_DEBUG_OFFSET;
+    static constexpr int v2_offset = PVZ_SAVE_V2_DEBUG_OFFSET;
     static constexpr int legacy_offset = 128;
 #else
-    static constexpr int offset = 256;
+    static constexpr int offset = PVZ_SAVE_NORMAL_OFFSET;
+    static constexpr int v2_offset = PVZ_SAVE_V2_NORMAL_OFFSET;
     static constexpr int legacy_offset = 0;
 #endif
     Progress _last;

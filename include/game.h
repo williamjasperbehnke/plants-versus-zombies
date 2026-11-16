@@ -19,10 +19,13 @@ inline constexpr int cell_height = 19;
 inline constexpr int lawn_left = 34;
 inline constexpr int lawn_top = 58;
 inline constexpr int zombie_capacity = 16;
+inline constexpr int road_spawn_x = 256;
+inline constexpr int flag_entry_x = 253; // Leftmost flag-carrier pixels enter the 240-pixel screen here.
 inline constexpr int tombstone_capacity = 3;
 inline constexpr int tombstone_health = 6;
 inline constexpr int emergence_duration = 48;
 inline constexpr int emergence_stages = 6;
+inline constexpr int zombie_effect_capacity = 6;
 inline constexpr int shot_capacity = 18;
 inline constexpr int sun_capacity = 10;
 inline constexpr int sun_bank_x = 11;
@@ -45,6 +48,9 @@ struct LevelSpec
     bool bucketheads = false;
     bool screen_doors = false;
     int tombstones = 0;
+    int football_first_wave = 0;
+    int vault_first_wave = 0;
+    int lanes = rows;
     constexpr int normal_size(int wave) const { return wave > 0 ? wave + 2 : 0; }
     constexpr int wave_size(int wave) const
     {
@@ -52,22 +58,23 @@ struct LevelSpec
         return wave == waves ? size + (size + 1) / 2 : size;
     }
 };
+// A counter is awarded on the preceding clear, before its matching enemy appears.
 inline constexpr std::array<LevelSpec, level_count> levels{{
-    {"Backyard 1-1", 3, 3, 96, 0, 0, 0},
-    {"Backyard 1-2", 3, 3, 96, 4, 0, 0},
-    {"Backyard 1-3", 3, 5, 96, 3, 0, 0, true, false},
-    {"Backyard 1-4", 5, 3, 96, 3, 5, 3, true, false},
-    {"Backyard 1-5", 5, 3, 96, 3, 5, 2, true, true, 1},
-    {"Backyard 1-6", 5, 4, 96, 3, 5, 1, true, true, 1},
-    {"Backyard 1-7", 5, 4, 96, 3, 4, 1, true, true, 2},
-    {"Backyard 1-8", 5, 5, 96, 3, 4, 1, true, true, 2},
-    {"Backyard 1-9", 5, 5, 96, 3, 4, 1, true, true, 3},
-    {"Backyard 1-10", 5, 6, 96, 3, 4, 1, true, true, 3}
+    {"Backyard 1-1", 3, 1, 120, 0, 0, 0, false, false, 0, 0, 0, 1},
+    {"Backyard 1-2", 3, 2, 110, 0, 0, 0, false, false, 0, 0, 0, 3},
+    {"Backyard 1-3", 3, 3, 100, 4, 0, 0},
+    {"Backyard 1-4", 3, 4, 100, 4, 0, 0, true},
+    {"Backyard 1-5", 3, 5, 105, 3, 4, 2},
+    {"Backyard 1-6", 5, 3, 104, 4, 0, 0, true, true, 1},
+    {"Backyard 1-7", 5, 4, 100, 3, 4, 1, false, false, 1, 3},
+    {"Backyard 1-8", 5, 5, 96, 4, 0, 0, true, false, 2, 0, 2},
+    {"Backyard 1-9", 5, 5, 92, 0, 4, 1, false, true, 2, 3, 1},
+    {"Backyard 1-10", 5, 6, 96, 3, 4, 1, true, true, 3, 1, 1}
 }};
 
 static_assert([] {
     for(const auto& level : levels)
-    { if(level.tombstones < 0 || level.tombstones > tombstone_capacity) { return false; } }
+    { if(level.tombstones < 0 || level.tombstones > tombstone_capacity || (level.lanes != 1 && level.lanes != 3 && level.lanes != rows)) { return false; } }
     return true;
 }(), "Level tombstones exceed the fixed pool");
 
@@ -75,24 +82,24 @@ constexpr int cell_x(int column) { return lawn_left + column * cell_width + cell
 constexpr int cell_y(int row) { return lawn_top + row * cell_height + cell_height / 2; }
 constexpr int cell_index(int row, int column) { return row * columns + column; }
 
-enum class PlantType : uint8_t { sunflower, peashooter, walnut, cherry, potato_mine, snow_pea, count };
+enum class PlantType : uint8_t { sunflower, peashooter, walnut, cherry, potato_mine, snow_pea, squash, repeater, tallnut, chomper, count };
 inline constexpr int plant_count = static_cast<int>(PlantType::count);
 inline constexpr std::array<PlantType, plant_count> seed_order{{
-    PlantType::sunflower, PlantType::peashooter, PlantType::walnut,
-    PlantType::potato_mine, PlantType::snow_pea, PlantType::cherry
+    PlantType::peashooter, PlantType::sunflower, PlantType::walnut,
+    PlantType::potato_mine, PlantType::snow_pea, PlantType::cherry, PlantType::squash, PlantType::tallnut, PlantType::repeater, PlantType::chomper
 }};
 constexpr int seed_slot(PlantType type)
 {
     for(int i = 0; i < plant_count; ++i) { if(seed_order[i] == type) { return i; } }
     return plant_count;
 }
-enum class Phase : uint8_t { title, playing, paused, won, lost, level_select, preview, almanac };
+enum class Phase : uint8_t { title, playing, paused, won, lost, level_select, preview, almanac, seed_select };
 enum class PlantResult : uint8_t { planted, occupied, insufficient_sun, cooling_down, inactive };
 
 struct PlantSpec { int cost; int health; int recharge; int action_delay; };
 inline constexpr std::array<PlantSpec, plant_count> plant_specs{{
     {50, 5, 240, 540}, {100, 5, 180, 90}, {50, 45, 600, 0}, {150, 1, 1200, 65},
-    {25, 3, 900, 480}, {175, 5, 450, 90}
+    {25, 3, 900, 480}, {175, 5, 450, 90}, {50, 5, 1800, 0}, {200, 5, 180, 90}, {125, 90, 900, 0}, {150, 5, 450, 900}
 }};
 constexpr const PlantSpec& spec(PlantType type) { return plant_specs[static_cast<int>(type)]; }
 
@@ -103,12 +110,18 @@ struct Plant
     int health = 0;
     int timer = 0;
     int flash = 0;
+    int burst_frames = 0;
+    int target_x = 0;
+    int bite_frames = 0;
+    int bite_target = -1;
+    int shot_frames = 0;
+    bool committed() const { return active && type == PlantType::squash && target_x != 0; }
     bool exploding() const
-    { return active && health == 0 && (type == PlantType::cherry || type == PlantType::potato_mine); }
+    { return active && health == 0 && (type == PlantType::cherry || type == PlantType::potato_mine || type == PlantType::squash); }
     void advance_explosion()
     { if(exploding() && --timer <= 0) { active = false; } }
 };
-enum class ZombieType : uint8_t { normal, cone, newspaper, flag, bucket, screen_door };
+enum class ZombieType : uint8_t { normal, cone, newspaper, flag, bucket, screen_door, football, vaulter };
 inline constexpr int zombie_type_count = zombie_kind_count;
 constexpr bool appears_in_level(const LevelSpec& level, ZombieType type)
 {
@@ -120,6 +133,8 @@ constexpr bool appears_in_level(const LevelSpec& level, ZombieType type)
     case ZombieType::newspaper: return level.newspaper_every > 0 && level.newspaper_first_wave <= level.waves;
     case ZombieType::bucket: return level.bucketheads;
     case ZombieType::screen_door: return level.screen_doors;
+    case ZombieType::football: return level.football_first_wave > 0;
+    case ZombieType::vaulter: return level.vault_first_wave > 0;
     default: return false;
     }
 }
@@ -128,6 +143,8 @@ constexpr ZombieType scheduled_zombie(const LevelSpec& level, int wave, bool hor
 {
     if(! horde) { return ZombieType::normal; }
     if(slot == 0) { return ZombieType::flag; }
+    if(slot == 1 && level.football_first_wave > 0 && wave >= level.football_first_wave) { return ZombieType::football; }
+    if(slot == 2 && level.vault_first_wave > 0 && wave >= level.vault_first_wave) { return ZombieType::vaulter; }
     int ordinal = level.normal_size(wave) + slot;
     for(int previous = 1; previous < wave; ++previous)
     { ordinal += level.normal_size(previous) + level.wave_size(previous); }
@@ -154,10 +171,12 @@ inline constexpr auto level_rosters = [] {
 }();
 inline constexpr int preview_pan_frames = 60;
 inline constexpr int preview_ready_frame = 75;
-enum class DamageType : uint8_t { projectile, frost, blast, crush };
+enum class DamageType : uint8_t { projectile, frost, blast, crush, swallow };
 struct ZombieSpec { int health; int speed; int shield_health = 0; };
-inline constexpr std::array<ZombieSpec, 6> zombie_specs{{{6, 32}, {12, 28}, {6, 96, 16}, {6, 36}, {6, 26, 30}, {6, 28, 18}}};
+inline constexpr std::array<ZombieSpec, zombie_type_count> zombie_specs{{{6, 32}, {12, 28}, {6, 96, 16}, {6, 36}, {6, 26, 30}, {6, 28, 18}, {10, 88, 40}, {8, 52}}};
 constexpr const ZombieSpec& spec(ZombieType type) { return zombie_specs[static_cast<int>(type)]; }
+constexpr int arm_loss_health(ZombieType type)
+{ return (type == ZombieType::cone ? spec(ZombieType::normal).health : spec(type).health) / 2; }
 
 struct Zombie
 {
@@ -173,12 +192,35 @@ struct Zombie
     int group = 0;
     int frost_frames = 0;
     int emergence_frames = 0;
+    bool arm_lost = false;
+    bool pole_used = false;
+    int vault_frames = 0;
+    int vault_origin = 0;
+    int vault_target = 0;
 };
+enum class ZombieEffectType : uint8_t { death, newspaper_death, arm, newspaper_arm, cone, newspaper, bucket, door, flag_death, flag, football_death, football_arm, football_helmet, pole, vault_death, count };
+constexpr bool corpse_effect(ZombieEffectType type)
+{ return type == ZombieEffectType::death || type == ZombieEffectType::newspaper_death || type == ZombieEffectType::flag_death || type == ZombieEffectType::football_death || type == ZombieEffectType::vault_death; }
+constexpr int effect_duration(ZombieEffectType type)
+{ return type == ZombieEffectType::flag_death ? 60 : (corpse_effect(type) ? 48 : 36); }
+constexpr int effect_stages(ZombieEffectType type)
+{ return type == ZombieEffectType::flag_death ? 10 : (corpse_effect(type) ? 8 : 6); }
+struct ZombieEffect
+{
+    bool active = false;
+    ZombieEffectType type = ZombieEffectType::death;
+    int row = 0;
+    int x = 0;
+    int remaining = 0;
+    bool wounded = false;
+};
+
 inline int movement_speed(const Zombie& zombie)
 {
     if(zombie.emergence_frames > 0) { return 0; }
     int speed = zombie.type == ZombieType::newspaper && zombie.shield_health > 0 ?
-                spec(ZombieType::normal).speed : spec(zombie.type).speed;
+                spec(ZombieType::normal).speed :
+                (zombie.type == ZombieType::vaulter && zombie.pole_used ? 28 : spec(zombie.type).speed);
     return zombie.frost_frames > 0 ? speed / 2 : speed;
 }
 
@@ -191,7 +233,7 @@ inline void advance_zombie_status(Zombie& zombie)
 inline bool take_zombie_damage(Zombie& zombie, int amount, DamageType type)
 {
     bool frost_blocked = zombie.type == ZombieType::screen_door && zombie.shield_health > 0;
-    bool bypass = type == DamageType::crush ||
+    bool bypass = type == DamageType::crush || type == DamageType::swallow ||
                   (zombie.type == ZombieType::screen_door && type == DamageType::blast);
     if(zombie.shield_health > 0 && ! bypass)
     {
@@ -214,6 +256,7 @@ struct Tombstone
     int column = 0;
     int health = 0;
     int flash = 0;
+    int crumble_frames = 0;
     int pending = 0; // Triggered spawns survive pool pressure, even if the stone is destroyed.
     bool active() const { return health > 0; }
 };
@@ -231,12 +274,20 @@ struct Sun
     int origin_x = 0;
     int origin_y = 0;
 };
-struct Mower { bool available = true; bool moving = false; int x = 21 * scale; };
+struct Mower
+{
+    bool available = true;
+    bool moving = false;
+    int x = 21 * scale;
+    void advance()
+    { if(moving) { x += 3 * scale; if(x > 252 * scale) { moving = false; } } }
+};
 
 // Transient cues from one simulation update; the audio/UI decide how to use them.
 struct Events
 {
     bool shot = false;
+    bool chomp = false;
     bool hit = false;
     bool bite = false;
     bool explosion = false;
@@ -254,6 +305,9 @@ public:
     bool start(int level = -1);
     bool prepare_level();
     void begin_level();
+    void choose_seeds();
+    void cancel_seed_selection();
+    bool toggle_seed(PlantType type);
     void open_almanac();
     void close_almanac();
     int preview_frames() const { return _preview_frames; }
@@ -287,8 +341,17 @@ public:
     { return (flag_buffed(zombie) ? 35 : 40) * (zombie.frost_frames > 0 ? 2 : 1); }
     int total_waves() const { return level_spec().waves; }
     const auto& zombie_roster() const { return level_rosters[_level]; }
-    int available_plants() const { return _level + 2 < plant_count ? _level + 2 : plant_count; }
-    bool plant_available(PlantType type) const { return seed_slot(type) < available_plants(); }
+    int unlocked_plants() const { return _level + 1 < plant_count ? _level + 1 : plant_count; }
+    int first_row() const { return (rows - level_spec().lanes) / 2; }
+    int last_row() const { return first_row() + level_spec().lanes - 1; }
+    bool row_active(int row) const { return row >= first_row() && row <= last_row(); }
+    int required_seeds() const { return unlocked_plants() < visible_seed_count ? unlocked_plants() : visible_seed_count; }
+    int available_plants() const { return _seed_count; }
+    bool plant_unlocked(PlantType type) const { return garden::seed_slot(type) < unlocked_plants(); }
+    bool plant_available(PlantType type) const { return bank_slot(type) < _seed_count; }
+    PlantType seed_at(int slot) const { return _seed_bank[slot]; }
+    int bank_slot(PlantType type) const
+    { for(int i = 0; i < _seed_count; ++i) { if(_seed_bank[i] == type) { return i; } } return _seed_count; }
     PlantType unlocked_plant() const { return _unlocked_plant; }
     int reward_frames() const { return _reward_frames; }
     bool victory_settling() const;
@@ -314,6 +377,7 @@ public:
     const auto& tombstones() const { return _tombstones; }
     const auto& plants() const { return _plants; }
     const auto& zombies() const { return _zombies; }
+    const auto& zombie_effects() const { return _zombie_effects; }
     const auto& shots() const { return _shots; }
     const auto& suns() const { return _suns; }
     const auto& mowers() const { return _mowers; }
@@ -321,6 +385,8 @@ public:
 private:
     void update_waves();
     void update_plants();
+    void update_squash(Plant& plant, int row, int column);
+    void update_chomper(Plant& plant, int row, int column);
     void update_shots();
     void update_zombies();
     void update_suns();
@@ -336,6 +402,8 @@ private:
     bool spawn_zombie(int wave, bool horde, int remaining, int group);
     Zombie* spawn_zombie_at(ZombieType type, int row, int x, int group);
     void update_tombstone_spawns();
+    void update_tombstones();
+    void enter_horde(const Zombie& leader);
     void damage(Tombstone& tombstone, int amount);
     void retain_group_spawns();
     bool pending_spawns() const;
@@ -343,6 +411,8 @@ private:
     bool spawn_sun(int x, int y, int target_y);
     bool shoot(int row, int x, bool frozen);
     void damage(Zombie& zombie, int amount, DamageType type);
+    void spawn_zombie_effect(const Zombie& zombie, ZombieEffectType type);
+    void update_zombie_effects();
     void explode(int row, int column);
     bool lane_has_target(int row, int x) const;
     bool any_zombies() const;
@@ -373,10 +443,13 @@ private:
     int _breached_zombie = -1;
     Events _events;
     uint32_t _random = 0x6d2b79f5;
+    int _seed_count = 1;
+    std::array<PlantType, visible_seed_count> _seed_bank{PlantType::peashooter};
     std::array<int, plant_count> _cooldowns{};
     std::array<Tombstone, tombstone_capacity> _tombstones{};
     std::array<Plant, rows * columns> _plants{};
     std::array<Zombie, zombie_capacity> _zombies{};
+    std::array<ZombieEffect, zombie_effect_capacity> _zombie_effects{};
     std::array<Shot, shot_capacity> _shots{};
     std::array<Sun, sun_capacity> _suns{};
     std::array<Mower, rows> _mowers{};
