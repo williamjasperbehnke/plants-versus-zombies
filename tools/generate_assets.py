@@ -289,6 +289,42 @@ def draw_unplanted_soil(image, lanes):
             y = top + 4 + (x * 7) % max(1, bottom - top - 7)
             d.line((x, y + 1, x + 2, y, x + 5, y), fill=1)
             d.line((x + 1, y + 2, x + 5, y + 1), fill=9)
+    # A T. rex with a broad skull, tiny forelimbs and large folded hind legs.
+    x, y = 102, 76 if lanes == 1 else 66
+    def bone(points, width=1):
+        d.line(points, fill=13, width=width)
+    bone([(x - 31, y + 4), (x - 24, y + 3), (x - 17, y), (x - 8, y - 1),
+          (x + 7, y - 1), (x + 12, y - 4)], 2)
+    for offset in (-6, -2, 2, 6):
+        d.arc((x + offset - 3, y - 4, x + offset + 3, y + 4), 280, 100, fill=13)
+    # The weight-bearing thighs and three-toed feet distinguish it from a fish.
+    bone([(x - 7, y + 1), (x - 13, y + 5), (x - 10, y + 8), (x - 3, y + 8)], 2)
+    bone([(x - 3, y + 1), (x - 7, y + 5), (x - 4, y + 7), (x + 2, y + 7)])
+    for toe in (-3, 0, 2):
+        bone([(x + toe, y + 7), (x + toe + 1, y + 9)])
+    bone([(x + 7, y), (x + 10, y + 3), (x + 13, y + 2)])
+    d.point((x + 13, y + 3), fill=13)
+    # Deep eye socket, blunt snout, open lower jaw and a few surviving teeth.
+    d.polygon([(x + 12, y - 5), (x + 16, y - 8), (x + 27, y - 7),
+               (x + 29, y - 3), (x + 25, y - 2), (x + 18, y - 3),
+               (x + 16, y - 1), (x + 12, y - 2)], fill=13)
+    d.rectangle((x + 15, y - 6, x + 18, y - 4), fill=9)
+    d.point((x + 26, y - 5), fill=9)
+    bone([(x + 15, y - 1), (x + 20, y + 1), (x + 27, y)])
+    for tooth in (20, 23, 26):
+        d.point((x + tooth, y - 2), fill=8)
+    d.line((x + 20, y - 7, x + 25, y - 7), fill=8)
+    d.line((x - 18, y + 1, x - 15, y + 1), fill=10)
+    # A smaller, partially buried rib fossil remains in the lower dirt bed.
+    x, y = 159, 133 if lanes == 1 else 142
+    bone([(x - 15, y + 1), (x + 9, y)])
+    for offset in (-10, -5, 0, 5):
+        d.arc((x + offset - 3, y - 5, x + offset + 4, y + 6), 270, 90, fill=13)
+        d.point((x + offset + 3, y), fill=8)
+    d.polygon([(x + 10, y - 3), (x + 17, y - 3), (x + 20, y),
+               (x + 17, y + 3), (x + 11, y + 3)], fill=13)
+    d.rectangle((x + 13, y - 1, x + 14, y), fill=9)
+    d.line((x + 12, y + 3, x + 17, y + 2), fill=10)
     # Irregular turf lips project into the soil; all playable cells remain grass.
     d.line((34, grass_top - 1, 232, grass_top - 1), fill=2)
     d.line((34, grass_bottom + 1, 232, grass_bottom + 1), fill=2)
@@ -327,11 +363,7 @@ def lawn(show_hud=True, lanes=5):
 
 
 def stamp(image, frame, x, y, scale=1):
-    if frame < 6 or frame >= 10:
-        source = sprite(frame)
-        source = source.crop(source.getbbox())
-    else:
-        source = small_sprite(frame)
+    source = small_sprite(frame)
     size = 16 * scale
     fit = min(size / source.width, size / source.height)
     icon = source.resize((round(source.width * fit), round(source.height * fit)), Image.Resampling.NEAREST)
@@ -608,10 +640,9 @@ def almanac_entry_panel():
     d.rounded_rectangle((20, 20, 217, 134), radius=5, fill=9, outline=1, width=2)
     d.rounded_rectangle((23, 23, 214, 131), radius=3, fill=13, outline=8)
     d.line((31, 41, 206, 41), fill=12)
-    d.line((102, 47, 102, 103), fill=12)
     d.line((31, 109, 206, 109), fill=12)
     wooden_sign(image, (8, 141, 231, 159))
-    text(image, 120, 148, 'B: BACK', color=8, centered=True)
+    text(image, 120, 148, 'UP/DOWN: SCROLL  B: BACK', color=8, centered=True)
     return almanac_paper(image)
 
 
@@ -1129,8 +1160,6 @@ def main():
     save(explosion, 'explosion', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
     # Reward panels preserve the lawn underneath their transparent pixels.
     reward = reward_panel()
-    for name in ('trophy_reward', 'campaign_trophy'):
-        save(reward, name, {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     save(completion_trophy(), 'completion_trophy', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
     for name, prompt in [('loss_message', False), ('loss_prompt', True)]:
         save(loss_notice(prompt), name, {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
@@ -1141,7 +1170,7 @@ def main():
         glyph = char if char.upper() in FONT_ROWS else '?'
         text(font, 0, (code - 33) * 8 + 1, glyph, color=8)
     save(font, 'menu_font', {'type': 'sprite', 'height': 8, 'bpp_mode': 'bpp_4'})
-    save(reward, 'plant_reward', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    save(reward, 'reward_panel', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     shadow = canvas(32, 16)
     ImageDraw.Draw(shadow).ellipse((5, 6, 26, 10), fill=2)
     save(shadow, 'reward_shadow', {'type': 'sprite', 'height': 16, 'bpp_mode': 'bpp_4'})
@@ -1162,6 +1191,89 @@ def main():
     for lanes in (1, 3):
         save(lawn(lanes=lanes), f'lawn_{lanes}', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
         save(yard_road(lanes), f'yard_road_{lanes}', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    # Framed inset track and a shaded thumb; each size reflects visible content.
+    scrollbar = canvas(32, 64 * 4 * 25)
+    for size in range(4):
+        thumb = (10, 16, 22, 28)[size]
+        travel = 42 - thumb
+        for position in range(25):
+            d = ImageDraw.Draw(scrollbar)
+            y = (size * 25 + position) * 64
+            d.rounded_rectangle((13, y + 10, 18, y + 53), radius=1, fill=9, outline=1)
+            d.line((14, y + 11, 14, y + 52), fill=10)
+            top = y + 11 + position * travel // 24
+            d.rectangle((14, top, 17, top + thumb - 1), fill=7)
+            d.line((14, top, 17, top), fill=8)
+            d.line((17, top + 1, 17, top + thumb - 1), fill=10)
+            d.line((15, top + thumb // 2, 16, top + thumb // 2), fill=9)
+    save(scrollbar, 'almanac_scrollbar', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
+    header = canvas(256, 256)
+    ImageDraw.Draw(header).rectangle((0, 0, 239, 21), fill=15)
+    # Palette index zero is transparent; the header needs an opaque near-black.
+    palette = header.getpalette()
+    palette[45:48] = list(COLORS[0])
+    header.putpalette(palette)
+    save(header, 'tutorial_header', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
+    # Preserve every grass blade and edge pixel in each full 22x19 lawn cell.
+    # Cell frames follow Game's row-major order; the last two frame collectible sun.
+    target = canvas(32, 32 * (5 * 9 + 2))
+    native_lawn = lawn(show_hud=False)
+    for row in range(5):
+        for column in range(9):
+            x, y = 34 + column * 22, 58 + row * 19
+            tile = native_lawn.crop((x, y, x + 22, y + 19))
+            target.paste(tile, (5, (row * 9 + column) * 32 + 7))
+    for pose in range(2):
+        d = ImageDraw.Draw(target)
+        top = (5 * 9 + pose) * 32
+        color = 7 if pose else 8
+        for x, direction in ((5, 1), (26, -1)):
+            for y, vertical in ((5, 1), (26, -1)):
+                d.line((x + direction * 4, top + y, x, top + y, x, top + y + vertical * 4), fill=1, width=3)
+                d.line((x + direction * 4, top + y, x, top + y, x, top + y + vertical * 4), fill=color)
+    target_colors = COLORS.copy()
+    target_colors[2:7] = [(132, 100, 27), (184, 139, 37), (221, 177, 57),
+                          (247, 214, 109), (255, 232, 150)]
+    apply_palette(target, target_colors)
+    save(target, 'lesson_target', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
+    # Four hand-drawn poses keep the roots planted while the stalk and leaves sag.
+    wilted = canvas(32, 32 * 4)
+    for pose, (lean, droop, leaf_drop) in enumerate(((0, 0, 0), (-1, 1, 1), (-1, 2, 1), (0, 1, 0))):
+        plant = canvas(32, 32)
+        d = ImageDraw.Draw(plant)
+        d.ellipse((8, 24, 24, 26), fill=15)
+        d.line((16, 23, 17, 18, 15 + lean, 13 + droop,
+                12 + lean, 10 + droop, 9 + lean, 12 + droop), fill=1, width=3)
+        d.line((16, 22, 16, 18, 14 + lean, 13 + droop,
+                12 + lean, 11 + droop, 10 + lean, 12 + droop), fill=4)
+        d.line((16, 19, 16, 22), fill=5)
+        d.polygon([(17, 18), (21, 18), (24, 21 + leaf_drop),
+                   (24, 23 + leaf_drop), (21, 22 + leaf_drop), (18, 22)], fill=4, outline=1)
+        d.line((19, 20, 22, 21 + leaf_drop), fill=5)
+        d.polygon([(15, 21), (12, 19 + leaf_drop), (9, 20 + leaf_drop),
+                   (7, 23 + leaf_drop), (11, 23 + leaf_drop), (15, 23)], fill=4, outline=1)
+        d.line((10, 21 + leaf_drop, 13, 22), fill=5)
+        # A folded leaf-head with heavy eyelids and a small downturned mouth.
+        def point(x, y): return x + lean, y + droop
+        d.ellipse((*point(7, 11), *point(18, 21)), fill=5, outline=1)
+        d.arc((*point(8, 12), *point(17, 20)), 185, 285, fill=6)
+        d.arc((*point(9, 13), *point(17, 20)), 10, 80, fill=4)
+        if pose == 3:
+            d.line((point(9, 16), point(11, 17)), fill=1)
+            d.line((point(14, 17), point(16, 16)), fill=1)
+        else:
+            for x in (9, 14):
+                d.rectangle((*point(x, 15), *point(x + 2, 17)), fill=13)
+                d.line((point(x, 15), point(x + 2, 15)), fill=4)
+                d.point(point(x + 1, 17), fill=1)
+            d.line((point(9, 14), point(11, 13)), fill=3)
+            d.line((point(14, 13), point(16, 14)), fill=3)
+        d.line((point(11, 20), point(13, 19), point(15, 20)), fill=1)
+        wilted.paste(plant, (0, pose * 32))
+    palette = wilted.getpalette()
+    palette[45:48] = (23, 42, 32)
+    wilted.putpalette(palette)
+    save(wilted, 'wilted_plant', {'type': 'sprite', 'height': 32, 'bpp_mode': 'bpp_4'})
     save(almanac_stats(), 'almanac_stats', {'type': 'sprite', 'height': 16, 'bpp_mode': 'bpp_4'})
     save(almanac_entry_panel(), 'almanac_entry', {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     cell = canvas(64, 64)
@@ -1187,7 +1299,6 @@ def main():
     sound('hit', [(150, .025)])
     chewing_sound()
     sound('wave_start', [(262, .08), (330, .08), (392, .14)])
-    sound('wave_clear', [(659, .07), (784, .07), (1046, .13)])
     sound('mower', [(100, .06), (140, .06), (180, .12)], gain=1.5)
     sound('error', [(150, .08)])
     sound('boom', [(90, .06), (55, .12)], gain=1.5)

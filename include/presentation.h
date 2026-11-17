@@ -2,48 +2,17 @@
 #define GARDEN_PRESENTATION_H
 
 #include "game.h"
-#include "audio_settings.h"
+#include "view_state.h"
+#include "world_renderer.h"
 #include "bn_optional.h"
 #include "bn_regular_bg_ptr.h"
 #include "bn_sprite_ptr.h"
-#include "bn_sprite_palette_ptr.h"
 #include "bn_sprite_text_generator.h"
 #include "bn_string.h"
 #include "bn_vector.h"
 
 namespace garden
 {
-struct Cursor
-{
-    int row = 2;
-    int column = 0;
-    PlantType seed = PlantType::sunflower;
-};
-
-enum class TitleChoice { play, almanac, count };
-
-enum class PauseChoice { resume, restart, choose_levels, master, music, effects, count };
-enum class Feedback { none, planted, removed, occupied, insufficient_sun, cooling_down, collected };
-
-struct ViewState
-{
-    AudioSettings audio;
-    Cursor cursor;
-    Feedback feedback = Feedback::none;
-    int feedback_frames = 0;
-    int feedback_x = 0;
-    int feedback_y = 0;
-    PlantType feedback_seed = PlantType::sunflower;
-    TitleChoice title_choice = TitleChoice::play;
-    PauseChoice pause_choice = PauseChoice::resume;
-    bool shoveling = false;
-    bool almanac_zombies = false;
-    bool almanac_details = false;
-    int almanac_entry = 0;
-    int seed_choice = 0;
-    int seed_error_frames = 0;
-};
-
 class Presentation
 {
 public:
@@ -52,9 +21,7 @@ public:
 
 private:
     void change_screen(const Game& game);
-    void draw_entities(const Game& game);
-    void draw_tombstones(const Game& game, int pan = 0);
-    void draw_zombie_effects(const Game& game);
+    void draw_tutorial(const Game& game, const ViewState& view);
     void draw_hud(const Game& game, const ViewState& view);
     void draw_menu(const Game& game, const ViewState& view);
     void draw_title(const ViewState& view);
@@ -70,10 +37,11 @@ private:
     void draw_wave_bar(const Game& game);
     void draw_feedback(const Game& game, const ViewState& view);
     void clear_entities();
-    void flash_red(bn::sprite_ptr& sprite);
-    static void actor(bn::optional<bn::sprite_ptr>& sprite, bool active,
-                      int x, int y, int frame, int depth = 0, bool wounded = false);
 
+    bn::optional<bn::regular_bg_ptr> _tutorial_panel;
+    bn::optional<bn::sprite_ptr> _lesson_target;
+    bn::vector<bn::sprite_ptr, 12> _lesson_text;
+    TutorialStep _lesson_step = TutorialStep::none;
     Phase _screen = Phase::title;
     bn::regular_bg_ptr _background;
     bn::optional<bn::regular_bg_ptr> _menu;
@@ -99,6 +67,7 @@ private:
     std::array<bn::optional<bn::sprite_ptr>, 3> _entry_icons;
     bn::optional<bn::sprite_ptr> _portrait;
     bn::optional<bn::sprite_ptr> _gallery_cursor;
+    bn::optional<bn::sprite_ptr> _almanac_scrollbar;
     int _last_entry = -1;
     int _title_frame = 0;
     bn::vector<bn::sprite_ptr, 16> _preview_text;
@@ -112,15 +81,7 @@ private:
     int _bar_progress = -1;
     bn::optional<bn::sprite_ptr> _reward_packet;
     bn::optional<bn::sprite_ptr> _reward_shadow;
-    std::array<bn::optional<bn::sprite_ptr>, rows * columns> _plants;
-    std::array<bn::optional<bn::sprite_ptr>, zombie_capacity> _zombies;
-    std::array<bn::optional<bn::sprite_ptr>, zombie_effect_capacity> _zombie_effects;
-    std::array<bn::optional<bn::sprite_ptr>, tombstone_capacity> _tombstones;
-    std::array<bn::optional<bn::sprite_palette_ptr>, 3> _frost_palettes;
-    bn::optional<bn::sprite_palette_ptr> _hit_palette;
-    std::array<bn::optional<bn::sprite_ptr>, shot_capacity> _shots;
-    std::array<bn::optional<bn::sprite_ptr>, sun_capacity> _suns;
-    std::array<bn::optional<bn::sprite_ptr>, rows> _mowers;
+    WorldRenderer _world;
     int _last_sun = -1;
     int _last_pause_choice = -1;
     int _last_audio = -1;

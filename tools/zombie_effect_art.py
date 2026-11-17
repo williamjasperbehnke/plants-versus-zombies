@@ -80,7 +80,7 @@ def debris_atlas(palette):
         if kind in (0, 1, 7):
             coat = 11 if kind == 7 else (9 if kind == 0 else 3)
             draw.polygon([(11, 14), (16, 15), (17, 17), (11, 17)], fill=coat, outline=1)
-            draw.line((12, 15, 15, 16), fill=10 if kind == 0 else 3)
+            draw.line((12, 15, 15, 16), fill=11 if kind == 7 else (10 if kind == 0 else 3))
             draw.line((16, 15, 16, 17), fill=8)
             draw.rounded_rectangle((17, 15, 20, 18), radius=1, fill=12, outline=1)
             draw.line((18, 16, 19, 16), fill=13)

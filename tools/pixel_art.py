@@ -675,10 +675,10 @@ def zombie_hand(draw, left, top, width=6):
     draw.line((left + 1, top + 1, left + 2, top + 1), fill=13)
 
 
-def screen_door_mesh(draw, point, damaged, rows):
+def screen_door_mesh(draw, damaged):
     """Silver wires with explicit openings, independent of the zombie skin."""
     def wire(x1, y1, x2, y2):
-        draw.line((point(x1, y1), point(x2, y2)), fill=2)
+        draw.line((x1, y1, x2, y2), fill=2)
 
     for x in (4, 7, 10, 13):
         if damaged and x in (7, 10):
@@ -686,9 +686,8 @@ def screen_door_mesh(draw, point, damaged, rows):
             wire(x, 20, x, 22)
         else:
             wire(x, 9, x, 22)
-    for y in rows:
-        broken = y in (16, 19) or (len(rows) < 5 and 12 < y < 21)
-        if damaged and broken:
+    for y in (10, 13, 16, 19, 22):
+        if damaged and y in (16, 19):
             wire(3, y, 5, y)
             wire(11, y, 13, y)
         else:
@@ -696,18 +695,12 @@ def screen_door_mesh(draw, point, damaged, rows):
 
 
 def screen_door_zombie(image, pose, chewing, damaged, canvas):
-    # Project the door forward/down while keeping its bottom edge on the ground.
-    # The wider frame preserves the leaning edge without moving the zombie.
-    # Rest, wind-up, bite, recovery: a gentler maximum angle preserves the
-    # panel's depth and mesh instead of collapsing into a flat rectangle.
-    bend = (5, 8, 11, 7)[pose] if chewing else 0
-    lean = (0, 2, 4, 1)[pose] if chewing else 0
-    bob = 0 if chewing else pose
-    height = 21 - bend
+    # Eating moves the intact upright door aside, with a small grip-led bob.
+    slide = (0, 1, 2, 1)[pose] if chewing else 0
+    bob = (0, 0, 1, 1)[pose] if chewing else pose
 
     def door_point(x, y):
-        return (round(x - lean * (27 - y) / 21),
-                round(6 + bend + (y - 6) * height / 21) + bob)
+        return x - slide, y + bob
 
     body = canvas(32, 32)
     draw = ImageDraw.Draw(body)
@@ -716,9 +709,9 @@ def screen_door_zombie(image, pose, chewing, damaged, canvas):
     far_x, far_y = door_point(1, 22)
     draw.line((12, 19, 9, 21, far_x, far_y), fill=1, width=3)
     draw.line((12, 19, 9, 21, far_x, far_y), fill=9)
-    grip_x, grip_y = (15, (22, 23, 24, 23)[pose]) if chewing else (14, 20 + bob)
+    grip_x, grip_y = 14 - slide, 20 + bob
     # A gentle idle bend follows the grip instead of dipping below the wrist.
-    elbow_y = 21 if chewing else 19 + bob
+    elbow_y = 19 + bob
     draw.line((21, 18, 20, elbow_y, grip_x + 3, grip_y), fill=1, width=3)
     draw.line((21, 18, 20, elbow_y, grip_x + 3, grip_y), fill=9)
     image.paste(body, (16, 0))
@@ -726,38 +719,15 @@ def screen_door_zombie(image, pose, chewing, damaged, canvas):
     # Only curled fingertips are drawn over the metal after projection.
     zombie_hand(ImageDraw.Draw(image), far_x + 14, far_y - 1, width=4)
 
-    # Use the original upright texture for both walking and the lowered poses.
-    # This preserves its frame weight, pale steel, kickplate and mesh pattern.
     door = canvas(32, 32)
     draw = ImageDraw.Draw(door)
     draw.rounded_rectangle((1, 6, 15, 27), radius=1, outline=1, width=2)
     draw.rectangle((2, 7, 14, 26), outline=13)
-    if not chewing:
-        screen_door_mesh(draw, lambda x, y: (x, y), damaged, (10, 13, 16, 19, 22))
+    screen_door_mesh(draw, damaged)
     draw.line((3, 23, 13, 23), fill=13)
     draw.rectangle((3, 24, 13, 25), fill=4)
     draw.line((4, 24, 10, 24), fill=13)
-    draw.line((13, 15, 13, 18), fill=1)
-    # Invert door_point with 16px padding; nearest sampling retains the palette.
-    inverse_height = 21 / height
-    projection = (1, -lean / height, -16 + lean + lean * (6 + bend + bob) / height,
-                  0, inverse_height, 6 - (6 + bend + bob) * inverse_height)
-    door = door.transform((64, 32), Image.Transform.AFFINE, projection,
-                          resample=Image.Resampling.NEAREST, fillcolor=0)
-    if chewing:
-        # Paint the grid at native resolution instead of shrinking its wires.
-        # Keep at least one clear pixel between rows at every bend angle.
-        rows = ((10, 13, 16, 19, 22) if height >= 14 else
-                (10, 14, 18, 22) if height >= 12 else (10, 16, 22))
-        mesh = canvas(64, 32)
-        def mesh_point(x, y):
-            px, py = door_point(x, y)
-            return px + 16, py
-        screen_door_mesh(ImageDraw.Draw(mesh), mesh_point, damaged, rows)
-        # The original frame and kickplate always sit in front of the wires.
-        mesh.paste(0, (0, 0), door.point([0] + [255] * 255, 'L'))
-        door.paste(mesh, (0, 0), mesh.point([0] + [255] * 255, 'L'))
-    image.paste(door, (0, 0), door.point([0] + [255] * 255, 'L'))
+    image.paste(door, (16 - slide, bob), door.point([0] + [255] * 255, 'L'))
     # Fingers wrap around the frame; no vertical grey cuff across the sleeve.
     draw = ImageDraw.Draw(image)
     gx = grip_x + 16

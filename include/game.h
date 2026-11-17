@@ -33,6 +33,7 @@ inline constexpr int sun_bank_y = 32;
 inline constexpr int sun_collection_frames = 24;
 inline constexpr int wave_count = 5;
 inline constexpr int sky_sun_interval = 600;
+inline constexpr int sun_lifetime = 360;
 inline constexpr int frost_duration = 180;
 inline constexpr int visible_seed_count = seed_layout::slots;
 
@@ -51,16 +52,18 @@ struct LevelSpec
     int football_first_wave = 0;
     int vault_first_wave = 0;
     int lanes = rows;
-    constexpr int normal_size(int wave) const { return wave > 0 ? wave + 2 : 0; }
+    int wave_growth = 2;
+    // Zero-growth teaching levels keep the ordinary groups to a single zombie.
+    constexpr int normal_size(int wave) const { return wave > 0 ? (wave_growth ? wave + wave_growth : 1) : 0; }
     constexpr int wave_size(int wave) const
     {
-        int size = wave > 0 ? wave_base + wave * 2 : 0;
+        int size = wave > 0 ? wave_base + wave * wave_growth : 0;
         return wave == waves ? size + (size + 1) / 2 : size;
     }
 };
 // A counter is awarded on the preceding clear, before its matching enemy appears.
 inline constexpr std::array<LevelSpec, level_count> levels{{
-    {"Backyard 1-1", 3, 1, 120, 0, 0, 0, false, false, 0, 0, 0, 1},
+    {"Backyard 1-1", 3, 1, 120, 0, 0, 0, false, false, 0, 0, 0, 1, 0},
     {"Backyard 1-2", 3, 2, 110, 0, 0, 0, false, false, 0, 0, 0, 3},
     {"Backyard 1-3", 3, 3, 100, 4, 0, 0},
     {"Backyard 1-4", 3, 4, 100, 4, 0, 0, true},
@@ -82,6 +85,10 @@ constexpr int cell_x(int column) { return lawn_left + column * cell_width + cell
 constexpr int cell_y(int row) { return lawn_top + row * cell_height + cell_height / 2; }
 constexpr int cell_index(int row, int column) { return row * columns + column; }
 
+struct LawnCell { int row; int column; };
+// Ordered shovel targets, shared by level setup and tutorial guidance.
+inline constexpr std::array<LawnCell, 3> tutorial_weeds{{{2, 2}, {1, 0}, {3, 4}}};
+
 enum class PlantType : uint8_t { sunflower, peashooter, walnut, cherry, potato_mine, snow_pea, squash, repeater, tallnut, chomper, count };
 inline constexpr int plant_count = static_cast<int>(PlantType::count);
 inline constexpr std::array<PlantType, plant_count> seed_order{{
@@ -102,6 +109,7 @@ inline constexpr std::array<PlantSpec, plant_count> plant_specs{{
     {25, 3, 900, 480}, {175, 5, 450, 90}, {50, 5, 1800, 0}, {200, 5, 180, 90}, {125, 90, 900, 0}, {150, 5, 450, 900}
 }};
 constexpr const PlantSpec& spec(PlantType type) { return plant_specs[static_cast<int>(type)]; }
+static_assert(sun_lifetime < spec(PlantType::sunflower).action_delay);
 
 struct Plant
 {
@@ -115,6 +123,7 @@ struct Plant
     int bite_frames = 0;
     int bite_target = -1;
     int shot_frames = 0;
+    bool wilted = false;
     bool committed() const { return active && type == PlantType::squash && target_x != 0; }
     bool exploding() const
     { return active && health == 0 && (type == PlantType::cherry || type == PlantType::potato_mine || type == PlantType::squash); }
@@ -273,6 +282,7 @@ struct Sun
     int flight_frame = 0;
     int origin_x = 0;
     int origin_y = 0;
+    bool from_plant = false;
 };
 struct Mower
 {
@@ -318,12 +328,13 @@ public:
     void open_level_select();
     void return_to_title();
     void select_level(int delta);
-    void tick();
+    void tick(bool hold_waves = false, bool hold_sky_sun = false);
     void toggle_pause();
     PlantResult plant(int row, int column, PlantType type);
     bool shovel(int row, int column);
     bool tombstone_at(int row, int column) const;
-    int collect_sun();
+    int collect_sun(bool plants_only = false);
+    void hasten_sun(int frames, bool from_plant);
 
     Phase phase() const { return _phase; }
     int sun() const { return _sun; }
@@ -389,7 +400,7 @@ private:
     void update_chomper(Plant& plant, int row, int column);
     void update_shots();
     void update_zombies();
-    void update_suns();
+    void update_suns(bool hold_sky_sun);
     void update_mowers();
     struct PendingGroup
     {
@@ -408,7 +419,7 @@ private:
     void retain_group_spawns();
     bool pending_spawns() const;
     int spawn_delay(int wave, bool horde) const;
-    bool spawn_sun(int x, int y, int target_y);
+    bool spawn_sun(int x, int y, int target_y, bool from_plant = false);
     bool shoot(int row, int x, bool frozen);
     void damage(Zombie& zombie, int amount, DamageType type);
     void spawn_zombie_effect(const Zombie& zombie, ZombieEffectType type);

@@ -13,6 +13,8 @@ NEAREST = Image.Resampling.NEAREST
 # target: (emulator capture, debug ROM). Shared Almanac captures are last written
 # by the gallery run on the debug ROM; lifetime kills comes from the normal run.
 CAPTURES = {
+    **{name: (name, False) for name in ('tutorial_peashooter', 'tutorial_collect_sun', 'tutorial_shovel', 'tutorial_sunflower', 'tutorial_flower_sun', 'tutorial_complete')},
+    'almanac_scrolled': ('almanac_scrolled', True),
     'title': ('title', False),
     'seed_selection': ('seed_selection_all', True),
     'seed_selection_custom': ('seed_selection_custom', True),
@@ -75,6 +77,7 @@ for kind, names in (('plant', PLANTS), ('zombie', ZOMBIES)):
         CAPTURES[f'almanac_{kind}_{name}'] = (f'almanac_{kind}_{index}', True)
 
 ANIMATIONS = {
+    'wilted_tutorial': ([(f'wilted_idle_{i:02d}', False) for i in range(18)], 170),
     'seed_bank_flight': ([(f'seed_bank_flight_{i:02d}', True) for i in range(12)], [65] * 11 + [700]),
     'repeater_burst': ([(f'repeater_burst_{i:02d}', True) for i in range(24)], [65] * 23 + [700]),
     'chomper_bite': ([(f'chomper_bite_{i:02d}', True) for i in range(32)], [75] * 31 + [700]),

@@ -1,5 +1,6 @@
 #include "game.h"
 #include "almanac.h"
+#include "actor_animation.h"
 #include "menu_layout.h"
 #include "wave_track.h"
 #include "audio_settings.h"
@@ -75,13 +76,13 @@ void scouting_and_almanac()
         assert(appears_in_level(levels[0], type) == (type == ZombieType::normal || type == ZombieType::flag));
         assert(appears_in_level(levels[9], type));
         assert(zombie_entries[i].name[0] && zombie_display_frame(type, 0) >= 4);
-        for(const auto* line : zombie_entries[i].description) { assert(std::strlen(line) <= 24); }
+        assert(! AlmanacDescription(zombie_entries[i].description).truncated());
     }
     for(auto type : seed_order)
     {
         const auto& entry = plant_entries[static_cast<int>(type)];
         assert(entry.name[0]);
-        for(const auto* line : entry.description) { assert(std::strlen(line) <= 24); }
+        assert(! AlmanacDescription(entry.description).truncated());
     }
     game.open_level_select();
     game.open_almanac();
@@ -596,11 +597,11 @@ void sun_cadence()
     advance(game, 359);
     assert(tokens() == 1 && game.plants()[cell_index(2, 0)].timer == 1);
     game.tick();
-    assert(tokens() == 2);
+    assert(tokens() == 1); // The earlier sky token has just expired.
     advance(game, 239);
-    assert(tokens() == 2);
+    assert(tokens() == 1);
     game.tick();
-    assert(tokens() == 3);
+    assert(tokens() == 2);
     std::puts("PASS sky sun every ten seconds, sunflower sun every nine seconds");
 }
 
@@ -677,7 +678,7 @@ void all_collected_suns_fly_to_bank()
     auto fixture = Progress::all_unlocked(); fixture.selected = 2; game.load_progress(fixture);
     game.start();
     assert(game.plant(2, 0, PlantType::sunflower) == PlantResult::planted);
-    advance(game, 600);
+    advance(game, 800); // Recent sky and sunflower tokens overlap briefly.
     auto origins = game.suns();
     int tokens = 0;
     for(const auto& sun : origins) { tokens += sun.active; }
@@ -713,8 +714,8 @@ void all_collected_suns_fly_to_bank()
     assert(game.sun() == 175 && game.collect_sun() == 0);
 
     game.start();
-    advance(game, 839); // The first sky token is one frame away from expiring.
-    assert(game.collect_sun() == 50);
+    advance(game, 180 + sun_lifetime - 1); // Collect on the final lifetime frame.
+    assert(game.collect_sun() == 25);
     advance(game, 2);
     assert(game.suns()[0].active && game.suns()[0].collecting);
     game.start();
@@ -1126,18 +1127,11 @@ void football_and_crumbling()
     assert(game.tombstones()[0].crumble_frames == 0);
     assert(game.start(9));
     assert(game.tombstones()[0].active() && game.tombstones()[0].crumble_frames == 0);
-    // Existing version-two records have zero in the reserved football counter word.
-    V2SaveRecord old{}; put_save_word(old, 0, 0x325A5650); old[4] = 2; old[5] = 3; old[6] = 1;
-    for(int i = 0; i < 6; ++i) { put_save_word(old, 20 + i * 4, uint32_t(i + 1) * 10); }
-    put_save_word(old, 44, save_checksum(old)); Progress loaded;
-    put_save_word(old, 16, 123); put_save_word(old, 44, save_checksum(old));
-    assert(decode_v2_progress(old, loaded) && loaded.zombie_kills[6] == 123 && loaded.zombie_kills[7] == 0);
-    for(int i = 0; i < 6; ++i) { assert(loaded.zombie_kills[i] == uint32_t(i + 1) * 10); }
     Mower mower; mower.available = false; mower.moving = true;
     int steps = 0;
     while(mower.moving) { int x = mower.x; mower.advance(); assert(mower.x == x + 3 * scale); ++steps; }
     assert(steps == 78 && mower.x > 252 * scale);
-    std::puts("PASS football armor/charge/frost/blast/rosters, reserved-word save compatibility, crumbling/pause/restart and full mower travel");
+    std::puts("PASS football armor/charge/frost/blast/rosters, crumbling/pause/restart and full mower travel");
 }
 
 void explosion_lifetimes()
@@ -1334,7 +1328,7 @@ void playable_victory()
                 {
                     assert(game.final_wave_approaching());
                     assert(! game.horde_active() && game.next_wave_frames() == 0);
-                    int base = game.level_spec().wave_base + game.total_waves() * 2;
+                    int base = game.level_spec().wave_base + game.total_waves() * game.level_spec().wave_growth;
                     assert(game.level_spec().wave_size(game.wave()) >= base * 3 / 2);
                 }
                 if(game.events().horde_started)
@@ -1382,7 +1376,7 @@ void playable_victory()
             assert(game.wave() == game.total_waves() && game.kills() == expected_kills);
             assert(game.enemies_left() == 0 && game.wave_progress() == game.total_waves() * 100);
             assert(started == game.total_waves() && hordes == game.total_waves() && cleared == game.total_waves());
-            assert(overlap_seen && final_warnings == 1);
+            assert((level == 0 || overlap_seen) && final_warnings == 1);
             assert(cone_seen == appears_in_level(game.level_spec(), ZombieType::cone) && newspaper_seen == appears_in_level(game.level_spec(), ZombieType::newspaper));
             assert(bucket_seen == game.level_spec().bucketheads && door_seen == game.level_spec().screen_doors);
             assert(game.available_plants() == (level < 5 ? level + 1 : visible_seed_count));
@@ -1436,7 +1430,7 @@ void wave_feedback_and_active_pause()
     advance(game, 899);
     assert(game.next_wave_frames() == 1);
     game.tick();
-    assert(game.wave() == 1 && game.enemies_left() == 3 && game.next_wave_frames() == 0);
+    assert(game.wave() == 1 && game.enemies_left() == game.level_spec().normal_size(1) && game.next_wave_frames() == 0);
     assert(game.events().wave_started && game.wave_progress() == 0);
     int x = game.zombies()[0].x;
     int elapsed = game.elapsed();
@@ -1525,18 +1519,12 @@ int main()
         assert(game.start() && game.level() == 0);
         assert(game.progress().unlocked == unlocked);
     }
-    LegacySaveRecord legacy{};
-    put_save_word(legacy, 0, 0x31535653);
-    legacy[4] = 1; legacy[5] = 4; legacy[6] = 2;
-    put_save_word(legacy, 8, 7);
-    put_save_word(legacy, 12, 99);
-    put_save_word(legacy, 20, save_checksum(legacy));
-    Progress migrated;
-    assert(decode_legacy_progress(legacy, migrated));
-    assert(migrated.unlocked == 4 && migrated.selected == 2 && migrated.completed == 7);
-    for(auto count : migrated.zombie_kills) { assert(count == 0); }
-    Progress restored;
-    assert(decode_progress(encode_progress(migrated, 100), restored) && restored == migrated);
+    // Correct checksums cannot make an unsupported version valid.
+    auto unsupported = encode_progress(fresh, 1);
+    unsupported[4] = 2;
+    put_save_word(unsupported, save_format::checksum_offset, save_checksum(unsupported));
+    Progress untouched = Progress::all_unlocked();
+    assert(! decode_progress(unsupported, untouched) && untouched == Progress::all_unlocked());
     Game saturated;
     Progress maximum;
     maximum.zombie_kills[0] = UINT32_MAX;
@@ -1544,7 +1532,7 @@ int main()
     saturated.start();
     while(saturated.phase() == Phase::playing) { saturated.tick(); }
     assert(saturated.kills() > 0 && saturated.lifetime_kills(ZombieType::normal) == UINT32_MAX);
-    std::puts("PASS kill counter round-trips, legacy save conversion, saturation, and original zombie types");
+    std::puts("PASS kill counter round-trips, unsupported-version rejection, saturation, and original zombie types");
     Progress invalid{0, 11, 0};
     Progress loaded;
     assert(! decode_progress(encode_progress(invalid, 1), loaded));

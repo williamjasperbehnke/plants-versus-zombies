@@ -28,34 +28,28 @@ struct Progress
 namespace save_format
 {
 inline constexpr uint32_t magic = PVZ_SAVE_MAGIC; // PVZ3, little endian.
-inline constexpr uint32_t legacy_magic = 0x31535653; // SVS1.
 inline constexpr int version = PVZ_SAVE_VERSION;
-inline constexpr int legacy_version = 1;
 inline constexpr int record_size = PVZ_SAVE_SIZE;
-inline constexpr int legacy_record_size = 24;
 inline constexpr int completed_offset = 8;
 inline constexpr int sequence_offset = 12;
 inline constexpr int kills_offset = 20;
 inline constexpr int checksum_offset = record_size - 4;
-inline constexpr int legacy_checksum_offset = legacy_record_size - 4;
-// The original six counters keep their offsets. Football keeps the reserved word; Pole Vaulter extends the record.
+// Counter offsets are part of the current PVZ3 record layout.
 constexpr int kill_offset(int type) { return PVZ_SAVE_KILL_OFFSET(type); }
 static_assert(kills_offset + 7 * 4 == checksum_offset);
 }
 using SaveRecord = std::array<uint8_t, save_format::record_size>;
-using V2SaveRecord = std::array<uint8_t, 48>;
-using LegacySaveRecord = std::array<uint8_t, save_format::legacy_record_size>;
-template<std::size_t Size> inline uint32_t save_word(const std::array<uint8_t, Size>& data, int offset)
+inline uint32_t save_word(const SaveRecord& data, int offset)
 {
     return uint32_t(data[offset]) | uint32_t(data[offset + 1]) << 8 |
            uint32_t(data[offset + 2]) << 16 | uint32_t(data[offset + 3]) << 24;
 }
-template<std::size_t Size> inline void put_save_word(std::array<uint8_t, Size>& data, int offset, uint32_t value)
+inline void put_save_word(SaveRecord& data, int offset, uint32_t value)
 { for(int i = 0; i < 4; ++i) { data[offset + i] = uint8_t(value >> (i * 8)); } }
-template<std::size_t Size> inline uint32_t save_checksum(const std::array<uint8_t, Size>& data)
+inline uint32_t save_checksum(const SaveRecord& data)
 {
     uint32_t hash = 2166136261u;
-    for(int i = 0; i < int(Size) - 4; ++i) { hash = (hash ^ data[i]) * 16777619u; }
+    for(int i = 0; i < save_format::checksum_offset; ++i) { hash = (hash ^ data[i]) * 16777619u; }
     return hash;
 }
 inline SaveRecord encode_progress(const Progress& progress, uint32_t sequence)
@@ -77,23 +71,6 @@ inline bool decode_progress(const SaveRecord& data, Progress& progress)
     if(save_word(data, 0) != save_format::magic || data[4] != save_format::version ||
        save_word(data, save_format::checksum_offset) != save_checksum(data) || ! candidate.valid()) { return false; }
     for(int i = 0; i < zombie_kind_count; ++i) { candidate.zombie_kills[i] = save_word(data, save_format::kill_offset(i)); }
-    progress = candidate;
-    return true;
-}
-inline bool decode_v2_progress(const V2SaveRecord& data, Progress& progress)
-{
-    Progress candidate{save_word(data, save_format::completed_offset), data[5], data[6]};
-    if(save_word(data, 0) != 0x325A5650 || data[4] != 2 ||
-       save_word(data, 44) != save_checksum(data) || ! candidate.valid()) { return false; }
-    for(int i = 0; i < 7; ++i) { candidate.zombie_kills[i] = save_word(data, save_format::kill_offset(i)); }
-    progress = candidate;
-    return true;
-}
-inline bool decode_legacy_progress(const LegacySaveRecord& data, Progress& progress)
-{
-    Progress candidate{save_word(data, save_format::completed_offset), data[5], data[6]};
-    if(save_word(data, 0) != save_format::legacy_magic || data[4] != save_format::legacy_version ||
-       save_word(data, save_format::legacy_checksum_offset) != save_checksum(data) || ! candidate.valid()) { return false; }
     progress = candidate;
     return true;
 }

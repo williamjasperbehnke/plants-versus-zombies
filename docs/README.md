@@ -91,7 +91,7 @@ From the project root, after installing the build dependencies, Pillow and libmg
 sh tools/refresh_docs.sh
 ```
 
-This rebuilds both ROMs, runs the sanitizer suite, runs normal/debug/loss/legacy
+This rebuilds both ROMs, runs the sanitizer suite, runs normal/debug/loss
 integration checks, captures the extra gallery scenarios, and publishes the images.
 Everything runs sequentially because builds and captures share temporary files.
 No player save files are read or overwritten; each emulator check uses fresh SRAM.
@@ -104,7 +104,6 @@ cc -Wall -Wextra -Werror tools/rom_smoke.c \
 build/rom_smoke plants_vs_zombies.gba
 build/rom_smoke plants_vs_zombies_debug.gba debug
 build/rom_smoke plants_vs_zombies.gba loss
-build/rom_smoke plants_vs_zombies.gba legacy
 build/rom_smoke plants_vs_zombies_debug.gba gallery
 python3 tools/generate_previews.py
 ```
@@ -120,3 +119,7 @@ SHA-256 hashes, capture sources, animation timing and complete published file li
 The old three-level, runner-era and retired-menu images are no longer published.
 
 [Build and play guide](../README.md) · [Development guide](DEVELOPMENT.md)
+
+The early-level tutorial captures show planting, collecting sun, shoveling wilted plants, and planting Sunflower. `almanac_scrolled.png` shows the wrapped description and scroll thumb.
+
+`wilted_tutorial.gif` shows the flashing gold cell and the wilted weeds sagging, recovering and blinking in the running ROM.

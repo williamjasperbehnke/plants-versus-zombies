@@ -5,15 +5,55 @@
 | Source | Responsibility |
 | --- | --- |
 | `include/game.h`, `src/game.cpp` | Deterministic simulation, levels, spawn rosters, combat and bounded entity/effect pools |
-| `src/main.cpp` | Frame loop, screen-specific input, repeat timing, transitions, sound and saves |
-| `include/presentation.h`, `src/presentation.cpp` | Butano backgrounds, sprite ownership, layering, animations, HUD, menus and cached text |
+| `src/main.cpp`, `include/application.h`, `src/application.cpp` | Startup, keypad adapter, frame ordering and service composition |
+| `include/input_frame.h`, `include/input_controller.h`, `src/input_controller.cpp` | Portable input snapshots, repeat timing, screen interaction and view-state updates |
+| `include/view_state.h` | UI state shared by the controller and presentation, without Butano dependencies |
+| `include/audio_commands.h`, `include/audio_player.h`, `src/audio_player.cpp` | Ordered UI cues, music/mixer changes, combat throttling and defeat/reward sounds |
+| `include/presentation.h`, `src/presentation.cpp` | Screen transitions, backgrounds, menus, HUD and cached text |
+| `include/world_renderer.h`, `src/world_renderer.cpp` | World actor/effect pools, preview actors, layering and hit/frost palettes |
+| `include/sprite_catalog.h`, `src/sprite_catalog.cpp` | Central actor/packet/background routing and shared sprite placement |
 | `include/menu_layout.h` | Shared navigation/rendering grid geometry |
-| `include/almanac.h` | Catalogue copy and display poses |
+| `include/almanac.h`, `include/text_wrap.h` | Catalogue copy, automatic wrapping and scroll bounds |
+| `include/actor_animation.h` | Shared plant/zombie display poses |
+| `include/tutorial.h` | First-play tutorial guidance |
 | `include/progress.h`, `include/save_layout.h`, `include/save_store.h` | Portable encoding/validation and Butano SRAM storage |
 | `include/audio_settings.h` | Mixer limits and master/channel gains |
 | `include/reward_animation.h` | Reward timing and integer bounce/zoom geometry |
 | `include/defeat_audio.h` | Generated defeat timing shared by simulation, runtime and emulator checks |
 | `include/seed_layout.h`, `include/wave_track.h` | Generated geometry shared by artwork and rendering |
+
+`Application` composes concrete services. `InputController` owns `ViewState` and
+repeat counters; it receives one `InputFrame` per frame and never reads hardware,
+plays audio, or creates sprites. `AudioCommands` is a bounded eight-command queue
+that preserves cue order, including mixer changes between sounds. `AudioPlayer`
+consumes those commands and owns combat sound cooldowns. `Presentation` owns a
+`WorldRenderer`; menus do not manipulate its individual actor pools. Actor-sheet
+selection and placement are shared through `SpriteCatalog` and `draw_actor()`.
+Resource owners cannot be copied. These boundaries introduce no virtual dispatch
+or heap-backed entity containers.
+
+```mermaid
+flowchart LR
+    A[Application] --> C[InputController]
+    C --> G[Game]
+    C --> V[ViewState]
+    C --> Q[AudioCommands]
+    A --> S[SaveStore]
+    A --> U[AudioPlayer]
+    Q --> U
+    A --> P[Presentation]
+    V --> P
+    P --> W[WorldRenderer]
+    W --> R[SpriteCatalog]
+    P --> R
+```
+
+The frame order is deliberate: snapshot keys and handle input, consume UI audio
+commands and ensure music, tick the simulation, play simulation audio and save
+progress, advance transient view timers, render, then call `bn::core::update()`.
+Keeping that order preserves pause, feedback, defeat and reward timing. World
+resources are released at the same screen transitions as before; splitting their
+ownership does not increase actor/effect capacities or change SRAM records.
 
 `Game` has no Butano dependency and uses no heap allocation. Positions use integer
 subpixels (256 units per pixel). Pools hold 45 plants, 16 zombies, 18 projectiles,
@@ -59,7 +99,7 @@ minimal horizontal movement and no upward throw. The six-slot cosmetic pool repl
 nearest expiry when full; it never blocks spawning, changes health, or delays
 group progression. Pause freezes effect timers. Effects can finish during defeat.
 
-`Presentation::actor()` maps stable pose IDs into the relevant character atlas,
+`SpriteCatalog::actor()` maps stable pose IDs into the relevant character atlas,
 including wounded variants. `draw_zombie_effects()` uses separate corpse/debris
 sprites, with shared palettes and lane depth. Falling equipment follows an integer
 arc; source atlas rotation is baked with nearest-neighbor sampling. Arm reaches
@@ -80,7 +120,8 @@ The compile-time OAM budget includes cosmetic effects and remains below the GBA�
 HUD and overlays. Host tests cannot detect tile/palette allocation failures; run
 the ROM checks after changing atlases, effect capacity or resource ownership.
 
-`Presentation::change_screen()` owns resource transitions. Gameplay’s lawn is
+`Presentation::change_screen()` coordinates UI resource transitions and calls
+`WorldRenderer::clear()` when the world should be released. Gameplay’s lawn is
 separate from menu backgrounds. Pause clears entity sprites; reward and defeat
 retain the lawn. Scouting uses a HUD-free panorama and independently scrolling
 labels. Its returning ground pixels align with gameplay.
@@ -95,7 +136,7 @@ the reveal, `bn::keypad::any_pressed()` returns to level selection.
 
 Rendering caches should affect drawing cost only, never simulation timing.
 
-Almanac D-pad navigation wraps only among cells on its current page. Vertical
+In the Almanac grid, D-pad navigation wraps only among cells on its current page. Vertical
 movement stays in the same column and ignores missing cells on partial pages.
 Only L/R changes pages. `menu_layout::almanac_move()` shares those bounds with
 host navigation tests; emulator checks cover both full and partial pages.
@@ -111,8 +152,8 @@ first available packets for deterministic fixtures. The normal UI scouts first. 
 automatically confirms the complete bank and starts the return pan without showing
 the picker. Larger rosters use `seed_select` and require six cards before returning. Selection
 and scouting never advance sun, cooldowns, combat, or preparation time. The seed
-panel is a transparent background over the shared road scene; it uses a label-free
-road variant so preview headings never peek out around the panel. A shared staggered crowd layout serves both views, filled from the yard edge
+panel is a transparent background over the shared road scene; it uses the same
+road background with the scouting heading sprites released on entry. A shared staggered crowd layout serves both views, filled from the yard edge
 for only the present types. Uneven horizontal and vertical gaps avoid perfect rows,
 while depth sorting keeps nearer zombies in front; the pose clock carries across that transition
 to avoid teleporting or resetting the displayed zombies.
@@ -197,16 +238,13 @@ Generated graphics live in `graphics/plants/`, `graphics/zombies/`,
 `tools/asset_layout.py` is the shared path resolver for export and preview tools;
 the Makefile includes these subfolders directly. Each plant and zombie has its own
 sheet with poses stacked vertically. Most character frames are 32×32; screen-door
-frames are padded to 64×32 so the door can lean forward without clipping. The body
-remains centered; biting lowers and foreshortens the panel around its grounded
-bottom edge to expose the mouth. Four biting poses follow the actual bite timer
-(rest, wind-up, bite and recovery), including frost and flag speed changes.
+frames are padded to 64×32. The body stays centered while the upright door shifts
+sideways and bobs slightly during bites. Four bite poses follow the actual bite
+timer (rest, wind-up, bite and recovery), including frost and flag speed changes.
 Each armor state has two walking frames followed by those four biting poses;
-the second half of the sheet repeats both armor states with the flag buff.
-Walking keeps the original panel geometry and mesh pattern. Biting projects its
-original frame and kickplate, then draws wires at native resolution with enough
-space between rows to preserve holes. The frame masks the wire layer, so the
-original border and pale highlights retain their thickness. Mesh uses its own blue-grey steel in slot 2
+the second half repeats both armor states with the flag buff. The same unwarped
+panel, mesh, kickplate and pale inner rail are used throughout.
+Mesh uses its own blue-grey steel in slot 2
 and the kickplate slot 4; skin stays in slots 12/13. The door shares Buckethead's
 steel/clothing palette and frost variant, with no extra hardware palette slot.
 A compact bent elbow keeps the near grip beside
@@ -256,8 +294,9 @@ legs, and biting freezes the feet and trousers while the jaw animates.
 The newspaper sleeve outline stays steady during idle; the paper and grips bob
 independently. Newspaper bites use a planted base pose and lower the paper
 and both hands
-together to expose the animated jaw; screen doors bend forward/down with
-the bite while the feet stay planted. Squash has a
+together to expose the animated jaw; screen doors stay upright and shift aside
+while the feet stay planted. Football and Pole Vaulter arm debris uses a red
+jersey sleeve. Squash has a
 dedicated pale yellow-green palette for its actor, bank packet, and reward.
 Debris reserves unused slots for steel; paper sleeves use the paper palette.
 
@@ -292,12 +331,10 @@ harness. Normal pairs start at 768, debug pairs at 1024. Loading validates both
 records and chooses the newest valid sequence, including wraparound. Writes occur
 only on progress changes, and counters saturate at `UINT32_MAX`.
 
-If no current record is valid, the loader tries the previous 48-byte `PVZ2` pair
-at 256 (normal) or 512 (debug). Its checksum remains at 44, original six counters
-at 20..43, and Football at 16. Migration preserves those seven counts and initializes
-Pole Vaulter to zero. If that pair is also invalid, 24-byte `SVS1` records at 0
-(normal) or 128 (debug) provide legacy progression. New writes leave both older
-regions intact. Emulator checks exercise both migration paths and reloads.
+Only current PVZ3 records are read. Unsupported versions and invalid checksums
+are rejected; if neither current record is valid, progression starts fresh.
+Normal and debug saves remain isolated, and the current backup pair still
+protects against an interrupted write.
 
 ## Verification and publishing
 
@@ -307,7 +344,7 @@ be sequential because they share temporary/output files.
 
 | Check | Coverage |
 | --- | --- |
-| `sh tools/test.sh` | Sanitized simulation, all ten campaign clears, rosters, economy, combat, shields, freezing, tombstones, emergence, arms/equipment/corpses, rewards and save encoding |
+| `sh tools/test.sh` | Sanitized controller tests (repeat/input, navigation, cue order, mixer, seed selection, feedback and pause) plus simulation, all ten campaign clears, rosters, economy, combat, shields, freezing, tombstones, emergence, arms/equipment/corpses, rewards and save encoding |
 | Normal ROM smoke | Title/Almanac, locked levels, actual first-level clear and replay, reward dismissal, progress/reload, corrupt-backup recovery and lifetime kills |
 | Debug ROM smoke | Unlocked selection/save isolation, late scouting, tombstones, emergence, blast ordering, hit colors, held seed cycling, freezing and hordes |
 | Loss smoke | Record scratch/scream sequencing, input guard, music silence, retry and return to levels |
@@ -334,3 +371,50 @@ links together when adding a scene.
 ROM captures and generated sprite studies are labeled separately in the gallery.
 Do not present a sprite composite as an emulator screenshot. Physical hardware
 performance and perceived loudness remain hardware checks.
+
+## Tutorial and text layout
+
+`TutorialGuide` observes planting, shoveling and collection during the first two
+unfinished levels. `InputController` owns it and publishes a `TutorialPrompt`;
+`Presentation` draws a two-line header and a gold tint covering the full 22×19 cell. The controller
+accepts only the required planting, shoveling or collecting action during each
+step. Navigation and pause remain available. `Game::tick(hold_waves, hold_sky_sun)`
+keeps the preparation/wave clock still while plant, existing sun and cooldown
+timers run normally. Sky sun is held until the first collection lesson; level
+two holds it through the full lesson so the first collected sun comes from the
+Sunflower. The sky timer resumes without accumulating missed drops. Entering either
+collection lesson hastens its first sun to 90 frames (1.5 seconds), without
+changing later production. `sun_lifetime` is 360 frames (6 seconds), shorter
+than the 540-frame Sunflower interval; collected suns still finish their flight
+even if they were picked up just before expiry.
+The cell highlight preserves the exact native grass pattern and draws behind
+plants and the normal cursor. Each cell has a row-major sprite frame; only its
+palette changes to gold. The gold overlay flashes on for 40 frames and off for
+20, leaving the normal player cursor visible throughout. It does not use
+another cursor outline. Collection lessons frame collectible sun on the lawn,
+never the HUD counter. Sun
+remembers whether it came from a plant; the Sunflower collection lesson marks
+and collects only that sun. Level two seeds three inert, compact wilted weeds at scattered cells listed in
+`tutorial_weeds`. Setup and the ordered shovel targets share this definition.
+The Sunflower lesson requires the house-side column (row 2, column 0). Artwork uses the regular plant
+greens and one-pixel contours. Four wilted poses cycle through a slow sag,
+recovery and blink with staggered timing; roots and shadows stay fixed. Scouting
+uses the initial pose so the lawn transition remains aligned. Shoveling frees their cells; replacement plants are ordinary actors.
+Level one uses zero horde growth (seven enemies total); other levels keep their
+existing growth and final-wave multiplier.
+
+Almanac entries store one paragraph. `WrappedText<24, 32>` wraps at word boundaries
+without allocation, splits oversized tokens, and explicitly marks capacity overflow.
+The details view shows four left-aligned lines with a framed scroll track and a
+shaded thumb whose size reflects the visible fraction of the description. The
+44-pixel track has no arrow caps and sits on the right; detail content shares a
+six-pixel left offset to reserve space for it. Only the Screen Door portrait and
+grid preview compensate for their asymmetric transparent padding (4 native
+pixels, doubled for the portrait); other character positions stay unchanged;
+Up/Down scrolls with key repeat and clamps at either end. Pages change only from
+the grid using L/R. Descriptions are original summaries, not copied game text.
+Animation lookup helpers live in `actor_animation.h`, separate from Almanac copy.
+
+All reward variants share `reward_panel`; trophies sit eight pixels higher than
+seed rewards. The unused wave-clear audio and duplicate reward backgrounds have
+been removed. Source generation remains in `tools/generate_assets.py`.

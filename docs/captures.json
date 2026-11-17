@@ -1,9 +1,44 @@
 {
   "roms": {
-    "plants_vs_zombies.gba": "2636c6d22e16296c128e37d343bb083725a1c90817f930c89b62ae47945c41a1",
-    "plants_vs_zombies_debug.gba": "a1a90daa35385dce9156a68c488fedf23f6b3de678679ba063f7516bb1aca1a5"
+    "plants_vs_zombies.gba": "6d978ac66e0bf7dcf528939e7929845e6704f78d96b2cd19d3e1d5c67916ae5c",
+    "plants_vs_zombies_debug.gba": "cbeff27065ccadf265419e4757a9d551be0d115c6ab26b315f6f1b85b5f96354"
   },
   "screenshots": {
+    "tutorial_peashooter.png": {
+      "source": "tutorial_peashooter.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "tutorial_collect_sun.png": {
+      "source": "tutorial_collect_sun.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "tutorial_shovel.png": {
+      "source": "tutorial_shovel.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "tutorial_sunflower.png": {
+      "source": "tutorial_sunflower.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "tutorial_flower_sun.png": {
+      "source": "tutorial_flower_sun.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "tutorial_complete.png": {
+      "source": "tutorial_complete.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "almanac_scrolled.png": {
+      "source": "almanac_scrolled.ppm",
+      "debug": true,
+      "scale": 3
+    },
     "title.png": {
       "source": "title.ppm",
       "debug": false,
@@ -401,6 +436,30 @@
     }
   },
   "animations": {
+    "wilted_tutorial.gif": {
+      "sources": [
+        "wilted_idle_00.ppm",
+        "wilted_idle_01.ppm",
+        "wilted_idle_02.ppm",
+        "wilted_idle_03.ppm",
+        "wilted_idle_04.ppm",
+        "wilted_idle_05.ppm",
+        "wilted_idle_06.ppm",
+        "wilted_idle_07.ppm",
+        "wilted_idle_08.ppm",
+        "wilted_idle_09.ppm",
+        "wilted_idle_10.ppm",
+        "wilted_idle_11.ppm",
+        "wilted_idle_12.ppm",
+        "wilted_idle_13.ppm",
+        "wilted_idle_14.ppm",
+        "wilted_idle_15.ppm",
+        "wilted_idle_16.ppm",
+        "wilted_idle_17.ppm"
+      ],
+      "debug": false,
+      "duration_ms": 170
+    },
     "seed_bank_flight.gif": {
       "sources": [
         "seed_bank_flight_00.ppm",
@@ -1062,6 +1121,7 @@
     "almanac_plant_tallnut.png",
     "almanac_plant_wallnut.png",
     "almanac_plants.png",
+    "almanac_scrolled.png",
     "almanac_zombie_buckethead.png",
     "almanac_zombie_conehead.png",
     "almanac_zombie_entries.png",
@@ -1154,12 +1214,19 @@
     "tombstone_destroyed.png",
     "tombstones_lawn.png",
     "trophy_reward.png",
+    "tutorial_collect_sun.png",
+    "tutorial_complete.png",
+    "tutorial_flower_sun.png",
+    "tutorial_peashooter.png",
+    "tutorial_shovel.png",
+    "tutorial_sunflower.png",
     "wallnut.png",
     "wallnut_damaged.png",
     "wallnut_healthy.png",
     "wallnut_worn.png",
     "wave_track_3.png",
     "wave_track_5.png",
+    "wilted_tutorial.gif",
     "zombie_arm_drop.png",
     "zombie_combat.gif",
     "zombie_damage_death.gif",

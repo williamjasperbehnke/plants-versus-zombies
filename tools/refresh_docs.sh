@@ -12,7 +12,5 @@ sh tools/test.sh
 build/rom_smoke plants_vs_zombies.gba
 build/rom_smoke plants_vs_zombies_debug.gba debug
 build/rom_smoke plants_vs_zombies.gba loss
-build/rom_smoke plants_vs_zombies.gba legacy
-build/rom_smoke plants_vs_zombies.gba v2
 build/rom_smoke plants_vs_zombies_debug.gba gallery
 python3 tools/generate_previews.py

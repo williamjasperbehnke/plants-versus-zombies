@@ -56,13 +56,23 @@ immediately and flies to the bank; it cannot credit twice.
 ## Backyard campaign
 
 Levels unlock in order. Replaying a level uses that level’s original plant roster.
-The first level offers only Peashooter and awards Sunflower. The next clear awards
-Wall-nut. Later clears award a counter before its matching zombie first appears.
+The first level offers only Peashooter and awards Sunflower. Its seven zombies
+leave time for a planting and sun-collection tutorial. Level two starts with three
+small wilted weeds scattered across the lawn: use Select + A to shovel them,
+then plant a Sunflower and collect its sun. Each lesson requires the highlighted
+action in order; zombies wait until it is finished. Sky sun starts with the first collection lesson; the second lesson
+uses only Sunflower sun until it is finished. Completed-level replays skip the lessons. A shaded turf patch marks the required cell; a frame marks collectible sun on
+the lawn. The Sunflower lesson plants at the back, beside the house. Dinosaur fossils, including a T. rex, decorate the early levels' unplanted dirt beds.
+
+![First planting lesson](docs/tutorial_peashooter.png)
+![Shovel lesson](docs/tutorial_shovel.png)
+
+The next clear awards Wall-nut. Later clears award a counter before its matching zombie first appears.
 Once more than six plants are available, choose which six to bring.
 
 | Level | Lanes | Road zombies | New enemy | Plant earned on first clear |
 | --- | ---: | ---: | --- | --- |
-| Backyard 1-1 | 1 | 31 | Normal / Flag | Sunflower |
+| Backyard 1-1 | 1 | 7 | Normal / Flag | Sunflower |
 | Backyard 1-2 | 3 | 34 | — | Wall-nut |
 | Backyard 1-3 | 5 | 38 | Conehead | Potato Mine |
 | Backyard 1-4 | 5 | 41 | Buckethead | Snow Pea |
@@ -113,7 +123,10 @@ retries through scouting; **B** opens level selection.
 ## Plants and zombies
 
 Times assume approximately 60 simulation updates per second. Natural sun falls
-every ten seconds after the initial drop.
+every ten seconds after the initial drop. Uncollected sun expires after six
+seconds, before the same Sunflower produces again at its normal nine-second
+interval. The tutorial brings forward its first sky/flower sun to about 1.5
+seconds, then uses the normal production interval.
 
 | Plant | Cost | Recharge | Role |
 | --- | ---: | ---: | --- |
@@ -160,7 +173,7 @@ a dead zombie in combat. Explosions render above plants across lane boundaries.
 | Road scouting | A / START begins directly with up to six available plants, otherwise opens selection; B returns to levels |
 | Seed selection | D-pad selects; A toggles a packet; START confirms a full bank; B returns to scouting |
 | Almanac grid | L / R switches pages; D-pad selects within the current page; A opens details; B returns to title |
-| Almanac details | B returns to the grid |
+| Almanac details | Up / Down scrolls the description; B returns to the grid |
 | Pause | Up / Down selects; A confirms; Left / Right adjusts audio; B / START resumes |
 | Completed reward | Any button returns to levels after the reveal |
 | Defeat prompt | A / START retries; B opens levels |
@@ -175,20 +188,23 @@ Title selection uses text color. Locked levels have gray locks and completed
 levels have checks. Almanac entries animate at integer pixel scales and show
 plain descriptions, sun cost, recharge, durability, and lifetime kills by zombie
 type as applicable. Zombie durability combines body health and armor. The Almanac
-has two plant pages and two zombie pages; L / R cycles all four pages.
+wraps each description automatically; Up / Down scrolls longer entries with a visible scroll bar. Descriptions are original summaries of the adapted mechanics. The Almanac has two plant pages and two zombie pages; L / R cycles all four pages.
 
 Pause actions are Resume, Restart, and Levels. Master, Music, and Effects sliders
 adjust in 10% steps, default to 100%, and retain their settings through menu visits
 and restarts. They reset on relaunch. Master scales both channels.
 
 SRAM stores completed levels, unlocked levels, the last started level, and lifetime
-kills by zombie type. Two checksummed records provide a backup; legacy saves
-migrate automatically. Version 3 adds Pole Vaulter kills and preserves existing
-progress and all seven older kill counters. Migration leaves the old save pair intact. Normal
-and debug builds use separate save regions. Keep
+kills by zombie type. Two checksummed current-format (PVZ3) records provide a
+backup. Older save formats are no longer loaded. Normal and debug builds use
+separate save regions. Keep
 your emulator’s `.sav` file beside the matching ROM.
 
 ![Title, pause and level selection](docs/menus.png)
+
+The runtime separates simulation, input/view state, audio, world sprites, menus,
+and asset routing into composed services. See the [development guide](docs/DEVELOPMENT.md)
+for ownership, frame ordering and the controller test suite.
 
 ## Build
 

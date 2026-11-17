@@ -6,6 +6,7 @@ namespace garden::menu_layout
 // Sprite coordinates are relative to the center of the 240 x 160 screen.
 inline constexpr int level_columns = 5;
 inline constexpr int almanac_columns = 3;
+inline constexpr int almanac_detail_shift = -6;
 inline constexpr int seed_columns = 5;
 constexpr int seed_x(int index) { return 22 + index % seed_columns * 30; }
 constexpr int seed_y(int index) { return 78 + index / seed_columns * 48; }

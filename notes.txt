@@ -29,11 +29,11 @@ Implemented
   no floating heading or button prompt, and any-button return to level selection.
 - Final explosions, mowers and zombie effects finish before the reward begins.
 - Football charges and helmets in later hordes; a second zombie Almanac page and
-  saved Football and Pole Vaulter kills with PVZ2/SVS1 migration into PVZ3.
+  saved Football and Pole Vaulter kills in current PVZ3 records.
 - Animated defeat sequence, record scratch, original scream and retry controls.
 - Almanac grids/details, combined durability stats and saved lifetime kill counts.
 - Graveyard menus, custom 3x5 font, music and Master/Music/Effects volume controls.
-- Separate normal/debug ROMs and SRAM regions, backup records and legacy migration.
+- Separate normal/debug ROMs and SRAM regions, backup records; older save formats are unsupported.
 - Current screenshot/animation gallery and one-command build/test/capture refresh.
 
 Known issue deferred

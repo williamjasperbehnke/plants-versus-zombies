@@ -37,6 +37,17 @@ bool Game::start(int level)
     _seed_count = required_seeds();
     for(int i = 0; i < _seed_count; ++i) { _seed_bank[i] = seed_order[i]; }
     for(int row = 0; row < rows; ++row) { _mowers[row].available = row_active(row); }
+    if(level == 1)
+    {
+        for(const auto& cell : tutorial_weeds)
+        {
+            auto& plant = _plants[cell_index(cell.row, cell.column)];
+            plant.active = true;
+            plant.type = PlantType::peashooter;
+            plant.health = 1;
+            plant.wilted = true;
+        }
+    }
     // Keep the house side open; later levels add stones in distinct lanes.
     constexpr int positions[tombstone_capacity][2] = {{0, 6}, {3, 7}, {1, 7}};
     for(int i = 0; i < level_spec().tombstones; ++i)
@@ -168,13 +179,13 @@ bool Game::shovel(int row, int column)
     return removed;
 }
 
-int Game::collect_sun()
+int Game::collect_sun(bool plants_only)
 {
     if(_phase != Phase::playing) { return 0; }
     int collected = 0;
     for(auto& sun : _suns)
     {
-        if(sun.active && ! sun.collecting)
+        if(sun.active && ! sun.collecting && (! plants_only || sun.from_plant))
         {
             sun.collecting = true;
             sun.flight_frame = 0;
@@ -188,7 +199,22 @@ int Game::collect_sun()
     return collected;
 }
 
-void Game::tick()
+void Game::hasten_sun(int frames, bool from_plant)
+{
+    if(frames <= 0) { return; }
+    if(! from_plant)
+    {
+        if(_sky_timer > frames) { _sky_timer = frames; }
+        return;
+    }
+    for(auto& plant : _plants)
+    {
+        if(plant.active && ! plant.wilted && plant.type == PlantType::sunflower && plant.timer > frames)
+        { plant.timer = frames; }
+    }
+}
+
+void Game::tick(bool hold_waves, bool hold_sky_sun)
 {
     _events = {};
     if(_phase == Phase::preview)
@@ -226,8 +252,8 @@ void Game::tick()
     for(auto& zombie : _zombies) { if(zombie.active) { advance_zombie_status(zombie); } }
     for(auto& cooldown : _cooldowns) { if(cooldown > 0) { --cooldown; } }
     update_tombstones();
-    update_suns();
-    update_waves();
+    update_suns(hold_sky_sun);
+    if(! hold_waves) { update_waves(); }
     if(_phase != Phase::playing) { return; }
     update_plants();
     update_shots();
@@ -440,15 +466,16 @@ void Game::update_tombstone_spawns()
     }
 }
 
-bool Game::spawn_sun(int x, int y, int target_y)
+bool Game::spawn_sun(int x, int y, int target_y, bool from_plant)
 {
     auto* sun = free_slot(_suns);
     if(! sun) { return false; }
-    *sun = {true, x, y, target_y, 660};
+    *sun = {true, x, y, target_y, sun_lifetime};
+    sun->from_plant = from_plant;
     return true;
 }
 
-void Game::update_suns()
+void Game::update_suns(bool hold_sky_sun)
 {
     for(auto& sun : _suns)
     {
@@ -467,7 +494,7 @@ void Game::update_suns()
         if(sun.y < sun.target_y) { sun.y += 128; }
         if(--sun.lifetime <= 0) { sun.active = false; }
     }
-    if(--_sky_timer <= 0)
+    if(! hold_sky_sun && --_sky_timer <= 0)
     {
         spawn_sun((45 + int(random() % 174)) * scale, lawn_top * scale,
                   cell_y(first_row() + int(random() % level_spec().lanes)) * scale);
@@ -596,7 +623,7 @@ void Game::update_plants()
         for(int column = 0; column < columns; ++column)
         {
             auto& plant = _plants[cell_index(row, column)];
-            if(! plant.active) { continue; }
+            if(! plant.active || plant.wilted) { continue; }
             if(plant.flash > 0) { --plant.flash; }
             if(plant.shot_frames > 0) { --plant.shot_frames; }
             if(plant.exploding()) { plant.advance_explosion(); continue; }
@@ -613,7 +640,7 @@ void Game::update_plants()
             switch(plant.type)
             {
             case PlantType::sunflower:
-                if(spawn_sun(x, (cell_y(row) - 4) * scale, (cell_y(row) + 5) * scale))
+                if(spawn_sun(x, (cell_y(row) - 4) * scale, (cell_y(row) + 5) * scale, true))
                 { plant.timer = spec(plant.type).action_delay; }
                 break;
             case PlantType::peashooter:
