@@ -17,8 +17,13 @@ public:
     void run();
 private:
     SaveStore _save;
+#ifdef GARDEN_DEBUG_SAVE
+    SaveSlots _slots{true};
+#else
+    SaveSlots _slots;
+#endif
     Game _game;
-    InputController _controller{_game};
+    InputController _controller{_game, _slots};
     AudioPlayer _audio;
     Presentation _presentation;
 };

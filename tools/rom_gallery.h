@@ -25,7 +25,7 @@ static void gallery_plant(struct mCore* core, struct GalleryCursor* cursor, int 
 static void gallery_restart(struct mCore* core)
 {
     reset_cartridge(core);
-    press(core, 1 << 0);
+    open_levels(core);
     start_round(core, NULL); // Debug checks leave Backyard 1-10 selected.
 }
 

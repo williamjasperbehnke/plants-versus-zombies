@@ -163,7 +163,8 @@ void early_sun_and_expiry()
 
 void guided_input()
 {
-    Game game; InputController controller(game);
+    Game game; SaveSlots slots; InputController controller(game, slots);
+    press(game, controller, Button::a);
     press(game, controller, Button::a);
     press(game, controller, Button::a);
     advance(game, controller, preview_ready_frame);
@@ -195,6 +196,29 @@ void guided_input()
     std::puts("PASS guided input requires the marked cell and sun collection, blocks shoveling, and delays combat");
 }
 
+void profile_menu()
+{
+    Game game; SaveSlots slots; InputController controller(game, slots);
+    auto initial = slots.activate(0); initial.unlocked = 3; initial.completed = 3; initial.zombie_kills[0] = 19;
+    slots.update_active(initial);
+    press(game, controller, Button::a);
+    assert(game.phase() == Phase::save_select);
+    press(game, controller, Button::down); press(game, controller, Button::a);
+    assert(game.phase() == Phase::level_select && slots.active() == 1 && game.progress() == Progress());
+    press(game, controller, Button::b); press(game, controller, Button::a);
+    assert(controller.view().save_slot == 1);
+    press(game, controller, Button::right); press(game, controller, Button::a);
+    assert(controller.view().delete_confirmation && ! controller.view().delete_yes);
+    press(game, controller, Button::a); // Cancellation is selected by default.
+    assert(slots.occupied(1) && ! controller.view().delete_confirmation);
+    press(game, controller, Button::right); press(game, controller, Button::a);
+    press(game, controller, Button::right); press(game, controller, Button::a);
+    assert(! slots.occupied(1) && slots.occupied(0) && slots.active() == -1);
+    press(game, controller, Button::up); press(game, controller, Button::a);
+    assert(game.phase() == Phase::level_select && game.progress() == initial && slots.active() == 0);
+    std::puts("PASS new/continue profile selection, default-cancel deletion, confirmed deletion and independent progress");
+}
+
 void repeat_timing()
 {
     KeyRepeat repeat;
@@ -212,7 +236,7 @@ void repeat_timing()
 
 void almanac_navigation()
 {
-    Game game; InputController controller(game);
+    Game game; SaveSlots slots; InputController controller(game, slots);
     press(game, controller, Button::down);
     assert(controller.view().title_choice == TitleChoice::almanac);
     press(game, controller, Button::a);
@@ -244,7 +268,7 @@ void almanac_navigation()
 
 void pause_audio_and_restart()
 {
-    Game game; assert(game.start(0)); InputController controller(game);
+    Game game; assert(game.start(0)); SaveSlots slots; InputController controller(game, slots);
     press(game, controller, Button::start);
     assert(game.phase() == Phase::paused);
     int elapsed = game.elapsed();
@@ -265,7 +289,7 @@ void pause_audio_and_restart()
 void seed_selection_and_repeat()
 {
     Game game; game.load_progress(Progress::all_unlocked());
-    assert(game.start(9) && game.prepare_level()); InputController controller(game);
+    assert(game.start(9) && game.prepare_level()); SaveSlots slots; InputController controller(game, slots);
     advance(game, controller, preview_ready_frame);
     press(game, controller, Button::a); assert(game.phase() == Phase::seed_select);
     press(game, controller, Button::a); assert(game.available_plants() == 5);
@@ -289,7 +313,7 @@ void seed_selection_and_repeat()
 
 void placement_feedback()
 {
-    Game game; assert(game.start(0)); InputController controller(game);
+    Game game; assert(game.start(0)); SaveSlots slots; InputController controller(game, slots);
     press(game, controller, Button::a);
     assert(game.plants()[cell_index(2, 0)].active && game.sun() == 75);
     assert(controller.view().feedback == Feedback::planted && controller.view().feedback_frames == 29);
@@ -311,6 +335,7 @@ int main()
     tutorial_sun_timing();
     early_sun_and_expiry();
     guided_input();
+    profile_menu();
     repeat_timing();
     almanac_navigation();
     pause_audio_and_restart();

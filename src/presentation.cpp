@@ -23,6 +23,8 @@
 #include "bn_regular_bg_items_paused.h"
 #include "bn_regular_bg_items_seed_select.h"
 #include "bn_regular_bg_items_title.h"
+#include "bn_regular_bg_items_save_select.h"
+#include "bn_regular_bg_items_save_delete.h"
 #include "bn_sprite_items_almanac_cell.h"
 #include "bn_sprite_items_almanac_stats.h"
 #include "bn_sprite_items_cursor.h"
@@ -110,6 +112,7 @@ void Presentation::change_screen(const Game& game)
     // and independent artwork, with no copied lawn, seed bar, or gameplay HUD.
     switch(phase)
     {
+    case Phase::save_select: _menu = bn::regular_bg_items::save_select.create_bg(8, 48); break;
     case Phase::title: _menu = bn::regular_bg_items::title.create_bg(8, 48); break;
     case Phase::playing: break;
     case Phase::seed_select:
@@ -305,6 +308,65 @@ void Presentation::draw_title(const ViewState& view)
     _title_frame = (_title_frame + 1) % 144;
 }
 
+void Presentation::draw_saves(const ViewState& view)
+{
+    int key = view.save_slot + view.save_delete * 4 + view.delete_confirmation * 8 + view.delete_yes * 16;
+    for(const auto& save : view.saves) { key = key * 256 + save.occupied * 121 + save.unlocked * 11 + save.cleared; }
+    if(_last_entry == key) { return; }
+    _last_entry = key;
+    _hud.clear();
+    _text.set_left_alignment();
+    _text.set_bg_priority(0);
+    if(view.delete_confirmation)
+    {
+        // A full panel replaces the list so confirmation has an unambiguous focus.
+        _menu->set_item(bn::regular_bg_items::save_delete);
+        _text.set_center_alignment();
+        _text.set_palette_item(almanac_ink);
+        _text.generate(0, -26, bn::string<20>("SAVE ") + bn::to_string<2>(view.save_slot + 1), _hud);
+        bn::string<32> summary = bn::to_string<2>(view.saves[view.save_slot].cleared);
+        summary += "/10 LEVELS CLEARED";
+        _text.generate(0, -10, summary, _hud);
+        _text.generate(0, 11, "THIS SAVE WILL BE ERASED", _hud);
+        for(int i = 0; i < 2; ++i)
+        {
+            _text.set_palette_item(view.delete_yes == bool(i) ? menu_gold_ink : almanac_ink);
+            _text.generate(i ? 34 : -34, 30, i ? "DELETE" : "CANCEL", _hud);
+        }
+        _text.set_palette_item(menu_font.item().palette_item());
+        _text.set_center_alignment();
+        _text.generate(0, 61, "LEFT/RIGHT: SELECT", _hud);
+        _text.generate(0, 71, "A: CONFIRM   B: CANCEL", _hud);
+    }
+    else
+    {
+        _menu->set_item(bn::regular_bg_items::save_select);
+        for(int i = 0; i < save_slot_count; ++i)
+        {
+            bool selected = i == view.save_slot;
+            const auto& save = view.saves[i];
+            int y = -38 + i * 34;
+            _text.set_palette_item(selected ? menu_gold_ink : almanac_ink);
+            _text.generate(-102, y, bn::string<16>("SAVE ") + bn::to_string<2>(i + 1), _hud);
+            _text.set_palette_item(almanac_ink);
+            bn::string<32> summary = "EMPTY SLOT";
+            if(save.occupied)
+            {
+                summary = bn::to_string<2>(save.cleared); summary += "/10 CLEARED  1-";
+                summary += bn::to_string<2>(save.unlocked);
+            }
+            _text.generate(-102, y + 11, summary, _hud);
+            for(int action = 0; action < (save.occupied ? 2 : 1); ++action)
+            {
+                _text.set_palette_item(selected && view.save_delete == bool(action) ? menu_gold_ink : almanac_ink);
+                _text.generate(action ? 68 : 0, y + 5, action ? "DELETE" : (save.occupied ? "CONTINUE" : "NEW GAME"), _hud);
+            }
+        }
+    }
+    _text.set_palette_item(menu_font.item().palette_item());
+    _text.set_left_alignment();
+}
+
 void Presentation::draw_level_select(const Game& game)
 {
     for(int i = 0; i < levels_per_world; ++i)
@@ -494,12 +556,12 @@ void Presentation::draw_almanac(const Game& game, const ViewState& view)
     int local = index % 6;
     int key = index + (view.almanac_zombies ? plant_count : 0) + (view.almanac_details ? 64 : 0) + view.almanac_scroll * 128;
     _menu->set_priority(3);
-    auto draw_entry = [this, &view](auto& sprite, int entry, int x, int y, int clock, int scale = 1)
+    auto draw_entry = [this, &view](auto& sprite, int entry, int x, int y, int clock, int portrait_scale = 1)
     {
         int frame = view.almanac_zombies ? zombie_display_frame(static_cast<ZombieType>(entry), clock) :
                                           plant_display_frame(seed_order[entry], clock);
         // The door's visible bounds center at x=28 in a padded 64px frame.
-        if(view.almanac_zombies && entry == static_cast<int>(ZombieType::screen_door)) { x += 4 * scale; }
+        if(view.almanac_zombies && entry == static_cast<int>(ZombieType::screen_door)) { x += 4 * portrait_scale; }
         draw_actor(sprite, true, x, y, frame);
     };
     for(int i = 0; i < 6; ++i)
@@ -603,6 +665,7 @@ void Presentation::draw_almanac(const Game& game, const ViewState& view)
 
 void Presentation::draw_menu(const Game& game, const ViewState& view)
 {
+    if(game.phase() == Phase::save_select) { draw_saves(view); return; }
     if(game.phase() == Phase::title) { draw_title(view); return; }
     if(game.phase() == Phase::preview) { draw_preview(game); return; }
     if(game.phase() == Phase::seed_select) { draw_seed_select(game, view); return; }

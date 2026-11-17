@@ -1,9 +1,39 @@
 {
   "roms": {
-    "plants_vs_zombies.gba": "6d978ac66e0bf7dcf528939e7929845e6704f78d96b2cd19d3e1d5c67916ae5c",
-    "plants_vs_zombies_debug.gba": "cbeff27065ccadf265419e4757a9d551be0d115c6ab26b315f6f1b85b5f96354"
+    "plants_vs_zombies.gba": "3d5030671f5e13089485e2749093c453bdf586f75412041a535ca1c4c604c0be",
+    "plants_vs_zombies_debug.gba": "111d3761070dba45c872c0e708c767cae202c6f3f16936ed1ca226b28af00cd8"
   },
   "screenshots": {
+    "save_slots_empty.png": {
+      "source": "save_slots_empty.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "save_slots_progress.png": {
+      "source": "save_slots_progress.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "save_slots_full.png": {
+      "source": "save_slots_full.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "save_slots_deleted.png": {
+      "source": "save_slots_deleted.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "save_slots_reloaded.png": {
+      "source": "save_slots_reloaded.ppm",
+      "debug": false,
+      "scale": 3
+    },
+    "save_delete_confirmation.png": {
+      "source": "save_delete_confirmation.ppm",
+      "debug": false,
+      "scale": 3
+    },
     "tutorial_peashooter.png": {
       "source": "tutorial_peashooter.ppm",
       "debug": false,
@@ -1188,6 +1218,13 @@
     "repeater_pair.png",
     "road_entry.gif",
     "road_entry.png",
+    "save_delete_confirmation.png",
+    "save_slots.png",
+    "save_slots_deleted.png",
+    "save_slots_empty.png",
+    "save_slots_full.png",
+    "save_slots_progress.png",
+    "save_slots_reloaded.png",
     "scouting.gif",
     "screen_door_bite_study.gif",
     "seed_bank_flight.gif",

@@ -22,8 +22,8 @@ InputFrame read_input()
 
 void Application::run()
 {
-    _game.load_progress(_save.load());
-    _save.update(_game.progress());
+    _save.load(_slots);
+    _save.update(_slots);
     _audio.start(_controller.view().audio);
     while(true)
     {
@@ -33,7 +33,8 @@ void Application::run()
         Phase previous_phase = _game.phase();
         _game.tick(_controller.holding_waves(), _controller.holding_sky_sun());
         _audio.update(_game, previous_phase);
-        _save.update(_game.progress());
+        _slots.update_active(_game.progress());
+        _save.update(_slots);
         _controller.finish_frame();
         _presentation.update(_game, _controller.view());
         bn::core::update();

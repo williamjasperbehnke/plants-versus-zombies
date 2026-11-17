@@ -13,6 +13,7 @@ NEAREST = Image.Resampling.NEAREST
 # target: (emulator capture, debug ROM). Shared Almanac captures are last written
 # by the gallery run on the debug ROM; lifetime kills comes from the normal run.
 CAPTURES = {
+    **{name: (name, False) for name in ('save_slots_empty', 'save_slots_progress', 'save_slots_full', 'save_slots_deleted', 'save_slots_reloaded', 'save_delete_confirmation')},
     **{name: (name, False) for name in ('tutorial_peashooter', 'tutorial_collect_sun', 'tutorial_shovel', 'tutorial_sunflower', 'tutorial_flower_sun', 'tutorial_complete')},
     'almanac_scrolled': ('almanac_scrolled', True),
     'title': ('title', False),
@@ -149,6 +150,9 @@ def main():
 
     for name, image in images.items():
         publish(name + '.png', enlarged(image))
+    sheet('save_slots', ('save_slots_empty', 'save_slots_progress', 'save_slots_full',
+                         'save_delete_confirmation', 'save_slots_deleted', 'save_slots_reloaded'),
+          ('New game', 'Continue progress', 'Three profiles', 'Delete confirmation', 'Slot deleted', 'After relaunch'))
     sheet('menus', ('title', 'paused', 'levels_locked'), ('Title', 'Pause / audio', 'Backyard levels'))
     sheet('overview', ('gameplay', 'preview_level_10', 'armored_horde', 'almanac_plants',
           'plant_reward', 'tombstones_lawn', 'snow_pea_gameplay', 'mower_active', 'loss_prompt'),

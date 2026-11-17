@@ -11,3 +11,8 @@ build/game_test
     -fsanitize=address,undefined -fno-omit-frame-pointer \
     -Iinclude src/game.cpp src/input_controller.cpp tests/controller_test.cpp -o build/controller_test
 build/controller_test
+
+"${CXX:-clang++}" -std=c++17 -Wall -Wextra -Werror -g \
+    -fsanitize=address,undefined -fno-omit-frame-pointer \
+    -Iinclude tests/save_slots_test.cpp -o build/save_slots_test
+build/save_slots_test

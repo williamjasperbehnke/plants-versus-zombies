@@ -10,6 +10,7 @@ void InputController::update(const InputFrame& input)
     _collected = false;
     _commands.clear();
     handle_input();
+    refresh_saves();
 }
 
 void InputController::finish_frame()
@@ -73,6 +74,7 @@ void InputController::handle_input()
     if(_game.phase() != Phase::playing) { _seed_repeat = {}; }
     switch(_game.phase())
     {
+    case Phase::save_select: handle_save_input(); break;
     case Phase::almanac: handle_almanac_input(); break;
     case Phase::preview: handle_preview_input(); break;
     case Phase::seed_select: handle_seed_select_input(); break;
@@ -200,7 +202,51 @@ void InputController::handle_title_input()
     if(_input.pressed(Button::a) || _input.pressed(Button::start))
     {
         if(_view.title_choice == TitleChoice::almanac) { _game.open_almanac(); }
-        else { show_level_select(); }
+        else { _game.open_save_select(); _view.save_slot = _slots.active() >= 0 ? _slots.active() : 0; }
+        _repeat = {};
+    }
+}
+
+void InputController::refresh_saves()
+{
+    for(int i = 0; i < save_slot_count; ++i)
+    {
+        int cleared = 0;
+        auto mask = _slots.progress(i).completed;
+        while(mask) { cleared += mask & 1; mask >>= 1; }
+        _view.saves[i] = {_slots.occupied(i), _slots.progress(i).unlocked, cleared};
+    }
+}
+
+void InputController::handle_save_input()
+{
+    if(_view.delete_confirmation)
+    {
+        if(_input.pressed(Button::b)) { _view.delete_confirmation = false; return; }
+        if(_input.pressed(Button::left) || _input.pressed(Button::right)) { _view.delete_yes = ! _view.delete_yes; }
+        if(_input.pressed(Button::a) || _input.pressed(Button::start))
+        {
+            if(_view.delete_yes)
+            {
+                _slots.erase(_view.save_slot);
+                if(_slots.active() < 0) { _game.load_progress(Progress()); }
+            }
+            _view.delete_confirmation = false; _view.save_delete = false; _repeat = {};
+        }
+        return;
+    }
+    if(_input.pressed(Button::b)) { show_title(); return; }
+    int delta = 0;
+    if(_repeat[0].update(_input.held(Button::up))) { --delta; }
+    if(_repeat[1].update(_input.held(Button::down))) { ++delta; }
+    if(delta) { _view.save_slot = (_view.save_slot + save_slot_count + delta) % save_slot_count; _view.save_delete = false; _commands.push(AudioCommand::navigate); }
+    if((_input.pressed(Button::left) || _input.pressed(Button::right)) && _slots.occupied(_view.save_slot))
+    { _view.save_delete = ! _view.save_delete; _commands.push(AudioCommand::navigate); }
+    if(_input.pressed(Button::a) || _input.pressed(Button::start))
+    {
+        if(_view.save_delete && _slots.occupied(_view.save_slot))
+        { _view.delete_confirmation = true; _view.delete_yes = false; }
+        else { _game.load_progress(_slots.activate(_view.save_slot)); show_level_select(); }
         _repeat = {};
     }
 }

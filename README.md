@@ -169,6 +169,8 @@ a dead zombie in combat. Explosions render above plants across lane boundaries.
 | Screen | Controls |
 | --- | --- |
 | Title | Up / Down selects Play or Almanac; A / START opens it |
+| Save slots | Up / Down chooses a slot; Left / Right chooses Continue or Delete; A confirms; B returns |
+| Delete confirmation | Left / Right chooses Cancel or Delete; A confirms; B cancels |
 | Level selection | D-pad selects; A / START opens scouting; B returns to title |
 | Road scouting | A / START begins directly with up to six available plants, otherwise opens selection; B returns to levels |
 | Seed selection | D-pad selects; A toggles a packet; START confirms a full bank; B returns to scouting |
@@ -194,11 +196,22 @@ Pause actions are Resume, Restart, and Levels. Master, Music, and Effects slider
 adjust in 10% steps, default to 100%, and retain their settings through menu visits
 and restarts. They reset on relaunch. Master scales both channels.
 
-SRAM stores completed levels, unlocked levels, the last started level, and lifetime
-kills by zombie type. Two checksummed current-format (PVZ3) records provide a
-backup. Older save formats are no longer loaded. Normal and debug builds use
-separate save regions. Keep
-your emulator’s `.sav` file beside the matching ROM.
+Three save slots independently store completed levels, unlocked levels, the last
+started level, and lifetime zombie kills. Choose **Play**, select a slot, then
+choose **New Game** or **Continue** to open its levels. **Delete** opens a
+confirmation with **Cancel** selected by default. Deleting one slot leaves the
+others untouched. Your existing current-format save appears in slot 1.
+
+Each slot has two checksummed PVZ3 records. A confirmed deletion writes a newer
+empty record so an older backup cannot revive deleted progress. Normal and debug
+builds use separate save regions; every new debug slot starts with all ten levels
+unlocked. Older save formats are unsupported. Keep your emulator's `.sav` file
+beside the matching ROM.
+
+![Three save slots and deletion](docs/save_slots.png)
+
+The title shows the animated Sunflower and Peashooter. Title, save selection and
+delete confirmation use larger wooden control panels with room for both lines.
 
 ![Title, pause and level selection](docs/menus.png)
 

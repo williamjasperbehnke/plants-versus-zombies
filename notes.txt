@@ -50,3 +50,6 @@ Possible future work (not implemented)
 Play/build: README.md
 Screenshots, animations and refresh commands: docs/README.md
 Runtime, asset pipeline, save format and verification: docs/DEVELOPMENT.md
+
+- Three independent save slots with continue, confirmed deletion and per-slot backup journals.
+- Title retains animated plants; title/save/delete control panels have extra room.

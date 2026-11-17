@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLANTS = {'sunflowers', 'peashooters', 'wallnuts', 'cherries', 'potato_mines',
           'snow_peashooters', 'squash', 'repeaters', 'tallnuts', 'chompers', 'wilted_plant'}
-BACKGROUNDS = {'title', 'paused', 'level_select', 'almanac', 'seed_select',
+BACKGROUNDS = {'title', 'save_select', 'save_delete', 'paused', 'level_select', 'almanac', 'seed_select',
                'reward_panel', 'tutorial_header',
                'yard_road', 'yard_road_1', 'yard_road_3', 'lawn', 'lawn_1', 'lawn_3'}
 

@@ -99,6 +99,9 @@ void Game::begin_level()
     _preview_frames = 0;
 }
 
+void Game::open_save_select()
+{ if(_phase == Phase::title) { _phase = Phase::save_select; } }
+
 void Game::open_almanac()
 {
     if(_phase == Phase::title) { _phase = Phase::almanac; }

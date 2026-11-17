@@ -16,7 +16,7 @@
 | `include/almanac.h`, `include/text_wrap.h` | Catalogue copy, automatic wrapping and scroll bounds |
 | `include/actor_animation.h` | Shared plant/zombie display poses |
 | `include/tutorial.h` | First-play tutorial guidance |
-| `include/progress.h`, `include/save_layout.h`, `include/save_store.h` | Portable encoding/validation and Butano SRAM storage |
+| `include/progress.h`, `include/save_layout.h`, `include/save_slots.h`, `include/save_store.h` | Portable encoding, three-slot journals, active profile and SRAM I/O |
 | `include/audio_settings.h` | Mixer limits and master/channel gains |
 | `include/reward_animation.h` | Reward timing and integer bounce/zoom geometry |
 | `include/defeat_audio.h` | Generated defeat timing shared by simulation, runtime and emulator checks |
@@ -39,6 +39,9 @@ flowchart LR
     C --> V[ViewState]
     C --> Q[AudioCommands]
     A --> S[SaveStore]
+    A --> B[SaveSlots]
+    C --> B
+    S --> B
     A --> U[AudioPlayer]
     Q --> U
     A --> P[Presentation]
@@ -53,7 +56,7 @@ commands and ensure music, tick the simulation, play simulation audio and save
 progress, advance transient view timers, render, then call `bn::core::update()`.
 Keeping that order preserves pause, feedback, defeat and reward timing. World
 resources are released at the same screen transitions as before; splitting their
-ownership does not increase actor/effect capacities or change SRAM records.
+ownership keeps actor/effect capacities bounded. Save encoding remains explicit.
 
 `Game` has no Butano dependency and uses no heap allocation. Positions use integer
 subpixels (256 units per pixel). Pools hold 45 plants, 16 zombies, 18 projectiles,
@@ -308,7 +311,7 @@ Audio regeneration is offline. Preserve licensing in `credits.json`.
 lengths. Shared output gain is 1.5×, with a further 1.5× for boom and mower sounds;
 the resulting PCM stays within 16-bit range. Mixer sliders attenuate that output.
 
-## Save compatibility
+## Three-slot persistence
 
 `save_format` in `progress.h` names the byte layout. Records are encoded explicitly
 in little endian; they are not a dump of a C++ struct.
@@ -319,6 +322,7 @@ in little endian; they are not a dump of a C++ struct.
 | 4 | Version 3 |
 | 5 | Unlocked level count |
 | 6 | Last started level index |
+| 7 | Slot state: 0 occupied, 1 deleted |
 | 8 | Completed-level mask, 32 bits |
 | 12 | Sequence number, 32 bits |
 | 16 | Football lifetime kills, using the previously reserved word |
@@ -326,15 +330,36 @@ in little endian; they are not a dump of a C++ struct.
 | 44 | Pole Vaulter lifetime kills |
 | 48 | Checksum over preceding bytes |
 
-`save_layout.h` shares the current size and SRAM addresses with the C emulator
-harness. Normal pairs start at 768, debug pairs at 1024. Loading validates both
-records and chooses the newest valid sequence, including wraparound. Writes occur
-only on progress changes, and counters saturate at `UINT32_MAX`.
+`SaveSlots` owns the portable state for three independent profiles. The controller
+activates a slot before entering levels; `Application` syncs only that profile's
+progress and `SaveStore` writes dirty journal entries. Empty slots stay empty at
+boot. New debug slots use all-unlocked progression; normal slots start at 1-1.
 
-Only current PVZ3 records are read. Unsupported versions and invalid checksums
-are rejected; if neither current record is valid, progression starts fresh.
-Normal and debug saves remain isolated, and the current backup pair still
-protects against an interrupted write.
+`save_layout.h` shares addresses with the emulator harness. Slot pairs use a
+4096-byte stride: normal bases are 768, 4864 and 8960; debug bases are 1024, 5120
+and 9216. Each pair occupies 104 bytes. Slot one's existing addresses and occupied
+record encoding remain unchanged, so current progress is available there without
+a migration path. The regions fit within 32 KiB SRAM and are checked at compile time.
+
+Loading validates both records and selects the newest sequence, including wrap.
+Creation, changed progress and deletion mark only that profile dirty. Deletion
+writes a checksummed empty record with a newer sequence instead of clearing one
+copy and accidentally reviving its backup. Recreating a deleted slot continues its
+journal sequence with fresh progress. Unsupported versions and invalid checksums
+are rejected; a pair with no valid record is an empty slot. Counters saturate at
+`UINT32_MAX`.
+
+The profile screen offers New Game on empty slots and Continue/Delete on occupied
+slots. Confirmation starts on Cancel. Returning to title preserves the active
+profile for the Almanac; choosing another profile loads its own kill counts.
+
+The title uses its animated Sunflower/Peashooter sheet again. Title and save
+selection have taller wooden control panels. Save rows start two pixels higher;
+the 28-pixel footer centers both control lines. Slot text uses dark stone-menu
+ink with gold selections. The delete screen shows the selected
+save and its cleared-level count, with distinct warning/action rows and the warning centered between its dividers. Its two
+control lines are centered in a separate, taller wooden footer. Cancel remains
+the default selection.
 
 ## Verification and publishing
 
@@ -344,11 +369,10 @@ be sequential because they share temporary/output files.
 
 | Check | Coverage |
 | --- | --- |
-| `sh tools/test.sh` | Sanitized controller tests (repeat/input, navigation, cue order, mixer, seed selection, feedback and pause) plus simulation, all ten campaign clears, rosters, economy, combat, shields, freezing, tombstones, emergence, arms/equipment/corpses, rewards and save encoding |
-| Normal ROM smoke | Title/Almanac, locked levels, actual first-level clear and replay, reward dismissal, progress/reload, corrupt-backup recovery and lifetime kills |
+| `sh tools/test.sh` | Sanitized controller tests (repeat/input, navigation, cue order, mixer, seed selection, feedback and pause) plus three-profile journal/delete/reload tests, simulation, all ten campaign clears, rosters, economy, combat, shields, freezing, tombstones, emergence, arms/equipment/corpses, rewards and save encoding |
+| Normal ROM smoke | Title/Almanac, locked levels, actual first-level clear and replay, reward dismissal, progress/reload, corrupt-backup recovery, lifetime kills, all three profiles and deletion/recreation |
 | Debug ROM smoke | Unlocked selection/save isolation, late scouting, tombstones, emergence, blast ordering, hit colors, held seed cycling, freezing and hordes |
 | Loss smoke | Record scratch/scream sequencing, input guard, music silence, retry and return to levels |
-| Legacy smoke | Existing progress migration into current SRAM records |
 | Gallery mode | Additional button-driven placement, sun, shovel, mixer, mine, Wall-nut, mower and zombie-combat scenes |
 
 The tests use fresh emulator SRAM and do not touch player `.sav` files. Gallery

@@ -487,9 +487,41 @@ def title_screen():
     text(image, 176, 62, 'BACKYARD', color=1, centered=True)
     text(image, 176, 72, '10 LEVELS', color=2, centered=True)
     # Plants, the level label, and start prompt are independent runtime sprites.
-    wooden_sign(image, (8, 132, 232, 155))
+    wooden_sign(image, (4, 128, 235, 159))
     text(image, 120, 136, 'UP/DOWN: SELECT   A/START: OPEN', centered=True)
-    text(image, 120, 146, 'D-PAD: MOVE   A: PLANT   B: SUN', centered=True)
+    text(image, 120, 148, 'D-PAD: MOVE   A: PLANT   B: SUN', centered=True)
+    return image
+
+
+def save_select_screen():
+    image = canvas(256, 256, 1)
+    graveyard(image)
+    wooden_sign(image, (22, 4, 217, 27))
+    text(image, 120, 11, 'CHOOSE A SAVE', color=7, scale=2, centered=True)
+    d = ImageDraw.Draw(image)
+    for y in (34, 68, 102):
+        d.rounded_rectangle((8, y, 231, y + 28), radius=4, fill=1)
+        d.rounded_rectangle((9, y, 230, y + 26), radius=4, fill=12, outline=13)
+        d.line((14, y + 2, 225, y + 2), fill=8)
+        d.line((111, y + 5, 111, y + 22), fill=2)
+    wooden_sign(image, (4, 132, 235, 159))
+    text(image, 120, 138, 'UP/DOWN: SLOT  LEFT/RIGHT: ACTION', color=8, centered=True)
+    text(image, 120, 148, 'A: SELECT   B: BACK', color=8, centered=True)
+    return image
+
+
+def save_delete_screen():
+    image = canvas(256, 256, 1)
+    graveyard(image)
+    tombstone(image, (24, 34, 215, 128), crown_radius=35)
+    wooden_sign(image, (23, 5, 216, 29))
+    text(image, 120, 13, 'DELETE SAVE?', color=7, scale=2, centered=True)
+    d = ImageDraw.Draw(image)
+    d.line((53, 81, 186, 81), fill=2)
+    d.line((53, 82, 186, 82), fill=13)
+    d.line((53, 98, 186, 98), fill=2)
+    d.line((53, 99, 186, 99), fill=13)
+    wooden_sign(image, (4, 132, 235, 159))
     return image
 
 
@@ -1289,7 +1321,7 @@ def main():
             text(options, 32, selected * 64 + top, label,
                  color=7 if selected == choice else 1, scale=2, centered=True)
     save(options, 'title_options', {'type': 'sprite', 'height': 64, 'bpp_mode': 'bpp_4'})
-    screens = {'title': title_screen(), 'level_select': level_select_screen(), 'paused': pause_screen()}
+    screens = {'title': title_screen(), 'level_select': level_select_screen(), 'paused': pause_screen(), 'save_select': save_select_screen(), 'save_delete': save_delete_screen()}
     for name, image in screens.items():
         save(image, name, {'type': 'regular_bg', 'bpp_mode': 'bpp_4'})
     sound('plant', [(280, .04), (420, .055)])

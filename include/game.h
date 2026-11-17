@@ -100,7 +100,7 @@ constexpr int seed_slot(PlantType type)
     for(int i = 0; i < plant_count; ++i) { if(seed_order[i] == type) { return i; } }
     return plant_count;
 }
-enum class Phase : uint8_t { title, playing, paused, won, lost, level_select, preview, almanac, seed_select };
+enum class Phase : uint8_t { title, playing, paused, won, lost, level_select, preview, almanac, seed_select, save_select };
 enum class PlantResult : uint8_t { planted, occupied, insufficient_sun, cooling_down, inactive };
 
 struct PlantSpec { int cost; int health; int recharge; int action_delay; };
@@ -327,6 +327,7 @@ public:
     const Progress& progress() const { return _progress; }
     void open_level_select();
     void return_to_title();
+    void open_save_select();
     void select_level(int delta);
     void tick(bool hold_waves = false, bool hold_sky_sun = false);
     void toggle_pause();

@@ -30,6 +30,13 @@ alignas(int) inline constexpr auto menu_error_colors = [] {
 }();
 inline const bn::sprite_palette_item menu_error_ink(
     bn::span<const bn::color>(menu_error_colors.data(), menu_error_colors.size()), bn::bpp_mode::BPP_4);
+alignas(int) inline constexpr auto menu_gold_colors = [] {
+    std::array<bn::color, 16> colors{};
+    colors[8] = bn::color(31, 26, 10);
+    return colors;
+}();
+inline const bn::sprite_palette_item menu_gold_ink(
+    bn::span<const bn::color>(menu_gold_colors.data(), menu_gold_colors.size()), bn::bpp_mode::BPP_4);
 inline constexpr bn::sprite_font menu_font(
     bn::sprite_items::menu_font, bn::utf8_characters_map_ref(),
     bn::span<const int8_t>(menu_font_widths.data(), menu_font_widths.size()));

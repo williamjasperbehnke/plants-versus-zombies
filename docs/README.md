@@ -10,7 +10,8 @@ captured frames, sometimes holding the first or last frame for readability.
 
 | Feature | Captures |
 | --- | --- |
-| Title | [Screen](title.png), [animation](title.gif) |
+| Title | [Screen](title.png), [animation](title.gif); animated Sunflower and Peashooter |
+| Three save slots | [Overview](save_slots.png), [empty](save_slots_empty.png), [continue](save_slots_progress.png), [delete confirmation](save_delete_confirmation.png), [deleted and reloaded](save_slots_reloaded.png) |
 | Pause and audio | [Default mixer](paused.png), [channel comparison](mixer.png), [master muted](mixer_master_muted.png), [music muted](mixer_music_muted.png), [effects muted](mixer_effects_muted.png) |
 | Level progression | [Locks](levels_locked.png), [completion and next unlock](levels_progress.png), [progress after relaunch](levels_reloaded.png), [all levels unlocked in debug](levels_debug.png) |
 | Scouting | [Backyard 1-1](preview_level_1.png), [Backyard 1-10](preview_level_10.png), [camera pan](scouting.gif) |

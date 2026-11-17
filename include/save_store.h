@@ -1,64 +1,41 @@
 #ifndef GARDEN_SAVE_STORE_H
 #define GARDEN_SAVE_STORE_H
-#include "progress.h"
+#include "save_slots.h"
 #include "bn_sram.h"
 namespace garden
 {
 class SaveStore
 {
 public:
-    Progress load()
+    void load(SaveSlots& slots)
     {
-        if(! read_records())
+        for(int index = 0; index < save_slot_count; ++index)
         {
-            _last = {};
-            _sequence = 0;
-            _slot = 0;
-            _loaded = false;
+            std::array<SaveRecord, 2> records;
+            for(int copy = 0; copy < 2; ++copy)
+            { bn::sram::read_offset(records[copy], offset(index) + copy * int(sizeof(SaveRecord))); }
+            slots.restore(index, records);
         }
-#ifdef GARDEN_DEBUG_SAVE
-        if(_last.unlocked != level_count) { _loaded = false; _last.unlocked = level_count; }
-#endif
-        return _last;
     }
-    void update(const Progress& progress)
+    void update(SaveSlots& slots)
     {
-        if(_loaded && progress == _last) { return; }
-        _slot = 1 - _slot;
-        auto record = encode_progress(progress, ++_sequence);
-        bn::sram::write_offset(record, offset + _slot * int(sizeof(SaveRecord)));
-        _last = progress;
-        _loaded = true;
+        for(int index = 0; index < save_slot_count; ++index)
+        {
+            if(! slots.dirty(index)) { continue; }
+            auto record = slots.pending_record(index);
+            bn::sram::write_offset(record, offset(index) + slots.next_copy(index) * int(sizeof(SaveRecord)));
+            slots.written(index);
+        }
     }
 private:
-    bool read_records()
+    static constexpr int offset(int index)
     {
-        SaveRecord records[2];
-        Progress values[2];
-        bool valid[2];
-        for(int i = 0; i < 2; ++i)
-        {
-            bn::sram::read_offset(records[i], offset + i * int(sizeof(SaveRecord)));
-            valid[i] = decode_progress(records[i], values[i]);
-        }
-        if(! valid[0] && ! valid[1]) { return false; }
-        uint32_t distance = save_word(records[1], save_format::sequence_offset) - save_word(records[0], save_format::sequence_offset);
-        bool second_newer = valid[1] && (! valid[0] || distance < 0x80000000u);
-        _slot = second_newer ? 1 : 0;
-        _sequence = save_word(records[_slot], save_format::sequence_offset);
-        _last = values[_slot];
-        _loaded = true;
-        return true;
-    }
 #ifdef GARDEN_DEBUG_SAVE
-    static constexpr int offset = PVZ_SAVE_DEBUG_OFFSET;
+        return PVZ_SAVE_DEBUG_OFFSET + index * PVZ_SAVE_SLOT_STRIDE;
 #else
-    static constexpr int offset = PVZ_SAVE_NORMAL_OFFSET;
+        return PVZ_SAVE_NORMAL_OFFSET + index * PVZ_SAVE_SLOT_STRIDE;
 #endif
-    Progress _last;
-    uint32_t _sequence = 0;
-    int _slot = 0;
-    bool _loaded = false;
+    }
 };
 }
 #endif

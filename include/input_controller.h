@@ -12,7 +12,7 @@ class InputController
 public:
     InputController(const InputController&) = delete;
     InputController& operator=(const InputController&) = delete;
-    explicit InputController(Game& game) : _game(game) {}
+    InputController(Game& game, SaveSlots& slots) : _game(game), _slots(slots) {}
     void update(const InputFrame& input);
     void finish_frame();
     bool holding_sky_sun() const { return _tutorial.holds_sky_sun(); }
@@ -21,6 +21,8 @@ public:
     const AudioCommands& audio_commands() const { return _commands; }
 private:
     void reset_view();
+    void handle_save_input();
+    void refresh_saves();
     void start_game();
     void show_title();
     void show_level_select();
@@ -38,6 +40,7 @@ private:
     TutorialGuide _tutorial;
     bool _collected = false;
     Game& _game;
+    SaveSlots& _slots;
     ViewState _view;
     InputFrame _input;
     AudioCommands _commands;

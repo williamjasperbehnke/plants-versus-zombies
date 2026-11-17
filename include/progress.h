@@ -30,6 +30,7 @@ namespace save_format
 inline constexpr uint32_t magic = PVZ_SAVE_MAGIC; // PVZ3, little endian.
 inline constexpr int version = PVZ_SAVE_VERSION;
 inline constexpr int record_size = PVZ_SAVE_SIZE;
+inline constexpr int state_offset = 7; // 0: occupied, 1: deleted journal entry.
 inline constexpr int completed_offset = 8;
 inline constexpr int sequence_offset = 12;
 inline constexpr int kills_offset = 20;
@@ -52,13 +53,14 @@ inline uint32_t save_checksum(const SaveRecord& data)
     for(int i = 0; i < save_format::checksum_offset; ++i) { hash = (hash ^ data[i]) * 16777619u; }
     return hash;
 }
-inline SaveRecord encode_progress(const Progress& progress, uint32_t sequence)
+inline SaveRecord encode_progress(const Progress& progress, uint32_t sequence, bool occupied = true)
 {
     SaveRecord data{};
     put_save_word(data, 0, save_format::magic);
     data[4] = save_format::version;
     data[5] = uint8_t(progress.unlocked);
     data[6] = uint8_t(progress.selected);
+    data[save_format::state_offset] = occupied ? 0 : 1;
     put_save_word(data, save_format::completed_offset, progress.completed);
     put_save_word(data, save_format::sequence_offset, sequence);
     for(int i = 0; i < zombie_kind_count; ++i) { put_save_word(data, save_format::kill_offset(i), progress.zombie_kills[i]); }
@@ -68,7 +70,7 @@ inline SaveRecord encode_progress(const Progress& progress, uint32_t sequence)
 inline bool decode_progress(const SaveRecord& data, Progress& progress)
 {
     Progress candidate{save_word(data, save_format::completed_offset), data[5], data[6]};
-    if(save_word(data, 0) != save_format::magic || data[4] != save_format::version ||
+    if(save_word(data, 0) != save_format::magic || data[4] != save_format::version || data[save_format::state_offset] > 1 ||
        save_word(data, save_format::checksum_offset) != save_checksum(data) || ! candidate.valid()) { return false; }
     for(int i = 0; i < zombie_kind_count; ++i) { candidate.zombie_kills[i] = save_word(data, save_format::kill_offset(i)); }
     progress = candidate;

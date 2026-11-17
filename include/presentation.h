@@ -24,6 +24,7 @@ private:
     void draw_tutorial(const Game& game, const ViewState& view);
     void draw_hud(const Game& game, const ViewState& view);
     void draw_menu(const Game& game, const ViewState& view);
+    void draw_saves(const ViewState& view);
     void draw_title(const ViewState& view);
     void draw_preview(const Game& game);
     void draw_road(const Game& game, int pan, bool labels);

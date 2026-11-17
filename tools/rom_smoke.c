@@ -92,6 +92,12 @@ static void screenshot(const char* path)
 }
 
 
+static void open_levels(struct mCore* core)
+{
+    press(core, 1 << 0); // Title -> profiles.
+    press(core, 1 << 0); // Continue/create slot one -> levels.
+}
+
 static bool on_lawn(void)
 {
     uint32_t label = pixels[26 * 240 + 22];
@@ -379,7 +385,7 @@ static void tombstone_test(struct mCore* core)
     }
     assert(gray == 0 && on_lawn());
     reset_cartridge(core);
-    press(core, 1 << 0);
+    open_levels(core);
     start_round(core, NULL);
 }
 
@@ -414,7 +420,7 @@ static void grave_emergence_test(struct mCore* core)
         previous = image;
     }
     reset_cartridge(core);
-    press(core, 1 << 0);
+    open_levels(core);
     start_round(core, NULL);
 }
 
@@ -439,7 +445,7 @@ static void explosion_layer_test(struct mCore* core)
     assert(covered && on_lawn());
     screenshot("build/explosion_above_plants.ppm");
     reset_cartridge(core);
-    press(core, 1 << 0);
+    open_levels(core);
     start_round(core, NULL);
 }
 
@@ -475,7 +481,7 @@ static void plant_damage_test(struct mCore* core)
     }
     assert(flashed);
     reset_cartridge(core);
-    press(core, 1 << 0);
+    open_levels(core);
     start_round(core, NULL);
 }
 
@@ -559,6 +565,42 @@ static void browse_almanac(struct mCore* core)
     press(core, 1 << 6);
 }
 
+static void profile_slots_test(struct mCore* core, int offset)
+{
+    uint32_t original_kills = saved_kills(core, offset, 0);
+    int unlocked = saved_byte(core, offset, 5);
+    int second = offset + PVZ_SAVE_SLOT_STRIDE;
+    int third = offset + 2 * PVZ_SAVE_SLOT_STRIDE;
+    press(core, 1 << 0);
+    screenshot("build/save_slots_progress.ppm");
+    press(core, 1 << 7); press(core, 1 << 0); // Create slot two.
+    assert(saved_byte(core, second, 5) == 1 && saved_kills(core, second, 0) == 0);
+    press(core, 1 << 1); press(core, 1 << 0);
+    press(core, 1 << 7); press(core, 1 << 0); // Create slot three.
+    assert(saved_byte(core, third, 5) == 1 && saved_kills(core, third, 0) == 0);
+    press(core, 1 << 1); press(core, 1 << 0);
+    screenshot("build/save_slots_full.ppm");
+    press(core, 1 << 6); press(core, 1 << 4); press(core, 1 << 0);
+    screenshot("build/save_delete_confirmation.ppm");
+    press(core, 1 << 0); // Default cancel cannot delete a profile.
+    assert(saved_byte(core, second, 7) == 0);
+    press(core, 1 << 4); press(core, 1 << 0);
+    press(core, 1 << 4); press(core, 1 << 0); // Explicitly select and confirm delete.
+    assert(saved_byte(core, second, 7) == 1);
+    screenshot("build/save_slots_deleted.ppm");
+    reset_cartridge(core);
+    press(core, 1 << 0);
+    screenshot("build/save_slots_reloaded.ppm");
+    assert(saved_byte(core, second, 7) == 1 && saved_byte(core, third, 7) == 0);
+    press(core, 1 << 7); press(core, 1 << 0); // Recreate the deleted slot.
+    assert(saved_byte(core, second, 7) == 0 && saved_kills(core, second, 0) == 0);
+    press(core, 1 << 1); press(core, 1 << 0);
+    press(core, 1 << 6); press(core, 1 << 0); // Continue the original profile.
+    assert(saved_byte(core, offset, 5) == unlocked && saved_kills(core, offset, 0) == original_kills);
+    assert(saved_byte(core, third, 5) == 1);
+    puts("PASS three SRAM profiles, continue, cancel/confirm delete, tombstone reload, recreate and slot isolation");
+}
+
 #include "rom_gallery.h"
 
 int main(int argc, char** argv)
@@ -577,7 +619,7 @@ int main(int argc, char** argv)
     assert(mCoreLoadFile(core, argc > 1 ? argv[1] : "plants_vs_zombies.gba"));
     core->reset(core);
     frames(core, 0, 120);
-    assert(saved_byte(core, offset, 5) == (debug ? 10 : 1));
+    assert(core->busRead8(core, 0x0e000000 + offset) != 'P'); // Empty slots stay empty until selected.
     assert(measure_audio(core, 60) > 1000);
     screenshot(debug ? "build/debug_title.ppm" : "build/title.ppm");
     if(! debug && ! loss)
@@ -592,6 +634,9 @@ int main(int argc, char** argv)
     }
     browse_almanac(core);
     press(core, 1 << 0);
+    if(! debug && ! loss) { screenshot("build/save_slots_empty.ppm"); }
+    press(core, 1 << 0);
+    assert(saved_byte(core, offset, 5) == (debug ? 10 : 1));
     assert(! on_lawn());
     screenshot(debug ? "build/levels_debug.ppm" : "build/levels_locked.ppm");
     uint32_t first_badge = region_hash(38, 70, 13, 11);
@@ -640,7 +685,7 @@ int main(int argc, char** argv)
         screenshot("build/debug_level_10.ppm");
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 10 && saved_byte(core, offset, 6) == 9);
-        press(core, 1 << 0);
+        open_levels(core);
         start_round(core, NULL);
         assert(on_lawn());
         assert(core->busRead8(core, 0x0e000100) != 'P'); // Debug save is isolated.
@@ -687,7 +732,7 @@ int main(int argc, char** argv)
         screenshot("build/snow_pea_gameplay.ppm");
         assert(ice > 20); // The slowed zombie is visibly blue, beyond the Snow Pea itself.
         reset_cartridge(core);
-        press(core, 1 << 0);
+    open_levels(core);
         start_round(core, NULL);
         frames(core, 0, 3450);
         assert(on_lawn());
@@ -735,7 +780,7 @@ int main(int argc, char** argv)
         }
         assert(sand >= 8); // Hourglass feedback appears on the target cell, clear of the seed bank.
         reset_cartridge(core);
-        press(core, 1 << 0);
+    open_levels(core);
         start_round(core, NULL);
         assert(on_lawn());
         clear_first_level(core);
@@ -803,7 +848,7 @@ int main(int argc, char** argv)
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 2 && saved_byte(core, offset, 6) == 1);
         assert(saved_kills(core, offset, 0) == 4 && saved_kills(core, offset, 3) == 3);
-        press(core, 1 << 0);
+        open_levels(core);
         screenshot("build/levels_reloaded.ppm");
         assert(region_hash(76, 70, 13, 11) != second_badge);
         int newest = save_slot(core, offset);
@@ -811,7 +856,7 @@ int main(int argc, char** argv)
                        core->busRead8(core, 0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM) ^ 1);
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 2); // Backup retains completion and unlock.
-        press(core, 1 << 0);
+        open_levels(core);
         press(core, 1 << 5); // Replay the already-completed first level.
         start_round(core, NULL);
         assert(first_level_active(core));
@@ -839,6 +884,7 @@ int main(int argc, char** argv)
         reset_cartridge(core);
         assert(saved_kills(core, offset, 0) == 8 && saved_kills(core, offset, 3) == 6);
     }
+    if(! debug && ! loss) { profile_slots_test(core, offset); }
     if(gallery) { capture_gallery(core); }
     printf("PASS %s selection, locks, SRAM progress, reload, and save isolation\n", loss ? "loss animation and retry" : (debug ? "debug" : "normal"));
     mCoreConfigDeinit(&core->config);
