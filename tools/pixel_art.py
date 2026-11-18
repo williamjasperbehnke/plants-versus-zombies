@@ -295,6 +295,7 @@ def tallnut(draw, state):
     if damage == 2:
         draw.line((8, 17, 12, 16, 11, 20, 13, 25), fill=9)
         draw.polygon([(24, 5), (21, 7), (25, 10)], fill=0)
+        draw.point((25, 7), fill=0)
 
 
 def jersey_skull(draw, x, y):

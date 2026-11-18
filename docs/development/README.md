@@ -141,7 +141,8 @@ lawn visible; scouting uses the road panorama.
 | `tools/generate_music.py`, `tools/audio_config.py` | Music generation and output gain |
 | `tools/audio_sources/` | Defeat recordings and credits |
 | `tools/generate_previews.py` | ROM screenshot and GIF publication |
-| `tools/zombie_previews.py` | Per-type damage/death animation studies |
+| `tools/zombie_previews.py`, `tools/plant_previews.py` | Per-type animation studies |
+| `tools/study_art.py` | Shared indexed frame loading, palettes and text-free study layouts |
 
 Graphics are grouped into `plants`, `zombies`, `effects`, `seeds`, `ui` and
 `backgrounds` under `graphics/`. Character sheets stack poses vertically. Most

@@ -72,6 +72,8 @@ it's vulnerable and can't eat again.
 
 ![Chomper eating a zombie](docs/media/gameplay/chomper_bite.gif)
 
+[Animation studies for every plant](docs/player/README.md#plant-animations).
+
 ## Zombies
 
 Normal zombies are joined by **Coneheads, Bucketheads, Newspaper Zombies, Screen

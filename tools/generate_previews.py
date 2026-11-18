@@ -5,6 +5,7 @@ import json
 from PIL import Image, ImageDraw
 from asset_layout import asset_path
 from zombie_previews import damage_studies, DURATION_MS
+from plant_previews import plant_studies, DURATION_MS as PLANT_DURATION_MS
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / 'build'
@@ -158,6 +159,7 @@ def main():
         with Image.open(asset_path(name)) as source:
             studies[name] = source.copy()
     zombie_damage, zombie_damage_details = damage_studies()
+    plant_animation, plant_details = plant_studies()
     for folder in ('screenshots', 'gameplay', 'studies'):
         (MEDIA / folder).mkdir(parents=True, exist_ok=True)
     outputs = set()
@@ -275,6 +277,11 @@ def main():
                        duration=DURATION_MS, loop=0, disposal=2)
         outputs.add(media_name(filename))
 
+    for filename, frames in plant_animation.items():
+        frames[0].save(media_path(filename), save_all=True, append_images=frames[1:],
+                       duration=PLANT_DURATION_MS, loop=0, disposal=2)
+        outputs.add(media_name(filename))
+
     # This directory contains current published captures and studies; old runner/campaign studies
     # must not linger beside current ROM screenshots after a successful refresh.
     retired = []
@@ -290,8 +297,8 @@ def main():
         'animations': {media_name(name + '.gif'): {'sources': [source + '.ppm' for source, _ in sources],
                                       'debug': sources[0][1], 'duration_ms': duration}
                         for name, (sources, duration) in ANIMATIONS.items()},
-        'studies': [media_name(name) for name in ['zombie_deaths_study.gif', 'newspaper_deaths_study.gif', 'falling_equipment_study.gif', 'flag_deaths_study.gif', 'football_deaths_study.gif', 'football_charge_study.gif', 'pole_vaulter_study.gif', 'screen_door_bite_study.gif', 'vault_deaths_study.gif'] + sorted(zombie_damage)],
-        'study_details': {media_name(name): detail for name, detail in zombie_damage_details.items()},
+        'studies': [media_name(name) for name in ['zombie_deaths_study.gif', 'newspaper_deaths_study.gif', 'falling_equipment_study.gif', 'flag_deaths_study.gif', 'football_deaths_study.gif', 'football_charge_study.gif', 'pole_vaulter_study.gif', 'screen_door_bite_study.gif', 'vault_deaths_study.gif'] + sorted(zombie_damage) + sorted(plant_animation)],
+        'study_details': {media_name(name): detail for name, detail in (zombie_damage_details | plant_details).items()},
         'files': sorted(outputs),
     }
     (MEDIA / 'captures.json').write_text(json.dumps(manifest, indent=2) + '\n')

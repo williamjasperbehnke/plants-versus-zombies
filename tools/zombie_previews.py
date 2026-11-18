@@ -1,6 +1,5 @@
 """Close-up damage/death studies assembled from the current indexed sprite sheets."""
-from PIL import Image
-from asset_layout import asset_path
+from study_art import StudyArt
 
 # Asset names, not global animation IDs. The last two columns identify debris.
 ZOMBIES = {
@@ -16,8 +15,6 @@ ZOMBIES = {
 NATIVE_WIDTH = 64
 NATIVE_HEIGHT = 56
 SCALE = 3
-PANEL_WIDTH = NATIVE_WIDTH * SCALE
-PANEL_HEIGHT = NATIVE_HEIGHT * SCALE
 DURATION_MS = 100
 
 
@@ -26,32 +23,9 @@ def damage_studies():
     names = {'zombie_debris', 'damage_flash', 'normal_zombies'}
     for whole, wounded, corpse, _, _ in ZOMBIES.values():
         names.update((whole, wounded, corpse))
-    assets = {}
-    for name in names:
-        with Image.open(asset_path(name)) as image:
-            assets[name] = image.copy()
-
-    def pose(name, index, red=False, palette=None):
-        source = assets[name]
-        assert 0 <= index < source.height // 32, (name, index)
-        sprite = source.crop((0, index * 32, source.width, (index + 1) * 32))
-        if palette:
-            sprite.putpalette(assets[palette].getpalette())
-        if red:
-            colors = assets['damage_flash'].getpalette().copy()
-            colors[45:48] = sprite.getpalette()[45:48]
-            sprite.putpalette(colors)
-        return sprite
-
-    def paste(scene, sprite, x=32, y=30):
-        bounds = sprite.getbbox()
-        if bounds:
-            assert x - sprite.width // 2 + bounds[0] >= 0
-            assert x - sprite.width // 2 + bounds[2] <= scene.width
-            assert y - 16 + bounds[1] >= 0
-            assert y - 16 + bounds[3] <= scene.height
-        scene.paste(sprite.convert('RGB'), (x - sprite.width // 2, y - 16),
-                    sprite.point([0] + [255] * 255, 'L'))
+    art = StudyArt(names, NATIVE_WIDTH, NATIVE_HEIGHT, SCALE)
+    pose = art.sprite
+    paste = art.paste
 
     def debris(scene, kind, age):
         if not 0 <= age < 36:
@@ -98,10 +72,9 @@ def damage_studies():
     for kind, (whole, wounded, corpse, equipment, arm) in ZOMBIES.items():
         frames = []
         for clock in range(0, 192, 6):
-            image = Image.new('RGB', (PANEL_WIDTH * 2, PANEL_HEIGHT * 2), (17, 30, 29))
+            scenes = []
             for panel in range(4):
-                scene = Image.new('RGB', (NATIVE_WIDTH, NATIVE_HEIGHT), (75, 119, 56))
-                x, y = panel % 2 * PANEL_WIDTH, panel // 2 * PANEL_HEIGHT
+                scene = art.scene()
                 if panel == 0:
                     stripped = clock >= 48 and kind != 'flag'
                     name, index = walk(kind, clock, stripped)
@@ -142,8 +115,8 @@ def damage_studies():
                         paste(scene, pose(corpse, index))
                     if equipment is not None and (panel == 2 or kind == 'flag'):
                         debris(scene, equipment, age)
-                image.paste(scene.resize((PANEL_WIDTH, NATIVE_HEIGHT * SCALE), Image.Resampling.NEAREST), (x, y))
-            frames.append(image)
+                scenes.append(scene)
+            frames.append(art.compose(scenes))
         filename = f'zombie_{kind}_damage_death_study.gif'
         result[filename] = frames
         details[filename] = {

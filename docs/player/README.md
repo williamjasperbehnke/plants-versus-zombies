@@ -165,6 +165,42 @@ next cell, so a nut in front doesn't put that target out of reach.
 
 [Browse every plant's Almanac entry](../media/screenshots/almanac_plant_entries.png)
 
+## Plant animations
+
+These text-free studies use the current sprite sheets. Panels read left to right,
+top to bottom; the descriptions below each GIF give their order. Action stages are
+brought together for comparison, so a full recharge or chewing wait isn't shown.
+They are sprite studies, not recordings of gameplay.
+
+| Sunflower | Peashooter |
+| --- | --- |
+| ![Sunflower idle, sun production, hit flashes and removal](../media/studies/plant_sunflower_study.gif) | ![Peashooter idle, firing, hit flashes and removal](../media/studies/plant_peashooter_study.gif) |
+| Idle · sun production and collection · hit flash · removal | Idle · shooting · hit flash · removal |
+
+| Wall-nut | Tall-nut |
+| --- | --- |
+| ![Wall-nut healthy, damaged, worn and being removed](../media/studies/plant_wallnut_study.gif) | ![Tall-nut healthy, damaged, worn and being removed](../media/studies/plant_tallnut_study.gif) |
+| Healthy · damaged · worn · damage and removal | Healthy · damaged · worn · damage and removal |
+
+| Potato Mine | Cherry Bomb |
+| --- | --- |
+| ![Potato Mine arming, blinking, detonating and taking damage before arming](../media/studies/plant_potato_mine_study.gif) | ![Cherry Bomb idle, fuse and explosion](../media/studies/plant_cherry_bomb_study.gif) |
+| Arming · armed · detonation · damage before arming | Two panels: idle · fuse and explosion |
+
+| Snow Pea | Repeater |
+| --- | --- |
+| ![Snow Pea idle, frozen shots, hit flashes and removal](../media/studies/plant_snow_pea_study.gif) | ![Repeater idle, paired shots, hit flashes and removal](../media/studies/plant_repeater_study.gif) |
+| Idle · shooting · hit flash · removal | Idle · paired shots · hit flash · removal |
+
+| Squash | Chomper |
+| --- | --- |
+| ![Squash idle, leap, impact and damage before leaping](../media/studies/plant_squash_study.gif) | ![Chomper idle, bite and swallow, chewing and damage](../media/studies/plant_chomper_study.gif) |
+| Idle · leap and landing · impact · damage before leaping | Idle · bite and swallow · chewing and recovery · damage and removal |
+
+The wilted plants used in the shovel lesson have their own idle cycle:
+
+![Wilted plant sagging and blinking](../media/studies/plant_wilted_study.gif)
+
 ## Know the zombies
 
 | Zombie | What to watch for | What helps |

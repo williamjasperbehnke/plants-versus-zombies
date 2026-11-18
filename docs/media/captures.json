@@ -1,7 +1,7 @@
 {
   "roms": {
-    "plants_vs_zombies.gba": "4dcc98a21b4f7ff01ae22de97e9418d23be04a045ac2b4f3a62515a4ee401338",
-    "plants_vs_zombies_debug.gba": "b8299f744de06477fd4194a1f462d4240bf6383e88413976f8f2d5f56bcf3bd3"
+    "plants_vs_zombies.gba": "5ccf7874a7c8e424737c80c2dde59e9df38454a366443a02f8c627854f6a8e38",
+    "plants_vs_zombies_debug.gba": "4d9be4e92053a3f3a9a8ebef19bfe07c28db30c22f85e44eb49589ea84fb8753"
   },
   "screenshots": {
     "screenshots/save_slots_empty.png": {
@@ -1176,7 +1176,18 @@
     "studies/zombie_newspaper_damage_death_study.gif",
     "studies/zombie_normal_damage_death_study.gif",
     "studies/zombie_pole_vaulter_damage_death_study.gif",
-    "studies/zombie_screen_door_damage_death_study.gif"
+    "studies/zombie_screen_door_damage_death_study.gif",
+    "studies/plant_cherry_bomb_study.gif",
+    "studies/plant_chomper_study.gif",
+    "studies/plant_peashooter_study.gif",
+    "studies/plant_potato_mine_study.gif",
+    "studies/plant_repeater_study.gif",
+    "studies/plant_snow_pea_study.gif",
+    "studies/plant_squash_study.gif",
+    "studies/plant_sunflower_study.gif",
+    "studies/plant_tallnut_study.gif",
+    "studies/plant_wallnut_study.gif",
+    "studies/plant_wilted_study.gif"
   ],
   "study_details": {
     "studies/zombie_normal_damage_death_study.gif": {
@@ -1314,6 +1325,158 @@
         "death",
         "wounded death"
       ]
+    },
+    "studies/plant_sunflower_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "field_items",
+        "sunflowers"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "sun production and collection",
+        "hit flash",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_peashooter_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "field_items",
+        "peashooters"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "shooting",
+        "hit flash",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_wallnut_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "wallnuts"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "healthy",
+        "damaged",
+        "worn",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_potato_mine_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "potato_mines"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "arming",
+        "armed",
+        "detonation",
+        "damage and removal before arming"
+      ]
+    },
+    "studies/plant_snow_pea_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "snow_peashooters"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "shooting",
+        "hit flash",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_cherry_bomb_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "cherries",
+        "explosion"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "fuse and explosion"
+      ]
+    },
+    "studies/plant_squash_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "squash"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "leap and landing",
+        "impact",
+        "damage and removal before leaping"
+      ]
+    },
+    "studies/plant_tallnut_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "tallnuts"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "healthy",
+        "damaged",
+        "worn",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_repeater_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "field_items",
+        "repeaters"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "paired shots",
+        "hit flash",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_chomper_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "chompers",
+        "damage_flash",
+        "normal_zombies"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle",
+        "bite and swallow",
+        "chewing and recovery",
+        "damage and removal"
+      ]
+    },
+    "studies/plant_wilted_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "wilted_plant"
+      ],
+      "duration_ms": 50,
+      "panels": [
+        "idle"
+      ]
     }
   },
   "files": [
@@ -1450,6 +1613,17 @@
     "studies/football_charge_study.gif",
     "studies/football_deaths_study.gif",
     "studies/newspaper_deaths_study.gif",
+    "studies/plant_cherry_bomb_study.gif",
+    "studies/plant_chomper_study.gif",
+    "studies/plant_peashooter_study.gif",
+    "studies/plant_potato_mine_study.gif",
+    "studies/plant_repeater_study.gif",
+    "studies/plant_snow_pea_study.gif",
+    "studies/plant_squash_study.gif",
+    "studies/plant_sunflower_study.gif",
+    "studies/plant_tallnut_study.gif",
+    "studies/plant_wallnut_study.gif",
+    "studies/plant_wilted_study.gif",
     "studies/pole_vaulter_study.gif",
     "studies/screen_door_bite_study.gif",
     "studies/vault_deaths_study.gif",
