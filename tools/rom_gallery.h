@@ -258,6 +258,135 @@ static void gallery_chomper(struct mCore* core) {
     screenshot("build/chomper_chewing.ppm");
 }
 
+// Build a later-level garden through normal input, using packet colors to wait
+// for both sun and recharge. Never patch the game or the emulator's save data.
+static bool gallery_packet_ready(int seed) {
+    uint32_t color = pixels[26 * 240 + 58 + seed * 28];
+    int red = color & 255, green = color >> 8 & 255;
+    return green > 85 && red < 80;
+}
+
+static bool gallery_lawn_playing(void) {
+    for (int seed = 0; seed < 6; ++seed) {
+        uint32_t color = pixels[24 * 240 + 55 + seed * 28];
+        if ((color & 255) > 200 && (color >> 8 & 255) > 150 && (color >> 16 & 255) < 160) {
+            return on_lawn();
+        }
+    }
+    return false;
+}
+
+static void gallery_developed_lawns(struct mCore* core) {
+    reset_cartridge(core);
+    open_levels(core);
+    int selected = saved_byte(core, PVZ_SAVE_DEBUG_OFFSET, 6);
+    while (selected % 5 != 2) {
+        press(core, 1 << (selected % 5 > 2 ? 5 : 4));
+        selected += selected % 5 > 2 ? -1 : 1;
+    }
+    if (selected >= 5) {
+        press(core, 1 << 6);
+    }
+    press(core, 1 << 0); // Backyard 1-3: all five lanes, Peashooter, Sunflower and Wall-nut.
+    frames(core, 0, 120);
+    press(core, 1 << 0);
+    frames(core, 0, 75);
+    assert(gallery_lawn_playing());
+    // Default bank order here is Peashooter, Sunflower, Wall-nut.
+    struct GalleryCursor cursor = {2, 0, 0};
+    bool planted[5][6] = {{false}};
+    const int order[] = {1, 4, 2, 0, 3};
+    int flowers = 0, shooters = 0, extras = 0;
+    bool middle = false, mature = false;
+    for (int tick = 0; tick < 550 && gallery_lawn_playing(); ++tick) {
+        frames(core, 1 << 1, 30);
+        int row = -1, column = -1, seed = -1;
+        if (flowers < 3 && gallery_packet_ready(1)) {
+            row = order[flowers];
+            column = 0;
+            seed = 1;
+        } else if (shooters < 5 && gallery_packet_ready(0)) {
+            row = order[shooters];
+            column = 2;
+            seed = 0;
+        } else {
+            const int wall_order[] = {0, 3, 1, 4, 2};
+            for (int i = 0; i < 5; ++i) {
+                int candidate = wall_order[i];
+                if (!planted[candidate][5] && gallery_packet_ready(2)) {
+                    row = candidate;
+                    column = 5;
+                    seed = 2;
+                    break;
+                }
+            }
+            if (row < 0 && flowers < 5 && gallery_packet_ready(1)) {
+                row = order[flowers];
+                column = 0;
+                seed = 1;
+            }
+            if (row < 0 && shooters < 10 && gallery_packet_ready(0)) {
+                row = order[shooters % 5];
+                column = 2 + shooters / 5;
+                seed = 0;
+            }
+            if (row < 0 && flowers < 10 && gallery_packet_ready(1)) {
+                row = order[flowers % 5];
+                column = flowers / 5;
+                seed = 1;
+            }
+        }
+        if (row >= 0) {
+            gallery_move(core, &cursor, row, column);
+            while (cursor.seed != seed) {
+                press(core, 1 << 8);
+                cursor.seed = (cursor.seed + 1) % 3;
+            }
+            press(core, 1 << 0);
+            if (!gallery_packet_ready(seed)) {
+                planted[row][column] = true;
+                if (seed == 1) {
+                    ++flowers;
+                } else if (seed == 0) {
+                    ++shooters;
+                } else {
+                    ++extras;
+                }
+            }
+        }
+        int count = flowers + shooters + extras;
+        if (!middle && count >= 18) {
+            gallery_move(core, &cursor, 2, 8);
+            frames(core, 1 << 1, 36);
+            screenshot("build/developed_backyard.ppm");
+            middle = true;
+        }
+        if (!mature && count >= 24) {
+            gallery_move(core, &cursor, 2, 8);
+            frames(core, 1 << 1, 36);
+            screenshot("build/developed_backyard_late.ppm");
+            for (int frame = 0; frame < 16; ++frame) {
+                char path[80];
+                snprintf(path, sizeof(path), "build/developed_backyard_%02d.ppm", frame);
+                screenshot(path);
+                frames(core, 1 << 1, 8);
+            }
+            mature = true;
+            break;
+        }
+    }
+    fprintf(
+        stderr,
+        "Garden capture: flowers=%d shooters=%d extras=%d middle=%d mature=%d\n",
+        flowers,
+        shooters,
+        extras,
+        middle,
+        mature
+    );
+    assert(middle && mature);
+}
+
 static void capture_gallery(struct mCore* core) {
     gallery_feedback_and_audio(core);
     gallery_mine(core);
@@ -267,5 +396,6 @@ static void capture_gallery(struct mCore* core) {
     gallery_road_entry(core);
     gallery_new_plants(core);
     gallery_chomper(core);
+    gallery_developed_lawns(core);
     puts("PASS gallery placement, sun flights, shovel, mixer, mine and mower captures");
 }

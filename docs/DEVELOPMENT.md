@@ -463,7 +463,7 @@ The player-facing gallery lives in [docs/README.md](README.md).
 | Normal ROM smoke | Title/Almanac, locked levels, actual first-level clear and replay, reward dismissal, progress/reload, corrupt-backup recovery, lifetime kills, all three profiles and deletion/recreation |
 | Debug ROM smoke | Unlocked selection/save isolation, late scouting, tombstones, emergence, blast ordering, hit colors, held seed cycling, freezing and hordes |
 | Loss smoke | Record scratch/scream sequencing, input guard, music silence, retry and return to levels |
-| Gallery mode | Additional button-driven placement, sun, shovel, mixer, mine, Wall-nut, mower and zombie-combat scenes |
+| Gallery mode | Additional button-driven placement, sun, shovel, mixer, mine, Wall-nut, mower, zombie-combat and developed five-lane lawn scenes |
 
 The tests use fresh emulator SRAM and do not touch player `.sav` files. Gallery
 mode includes the debug smoke sequence, then its additional scenes. No gallery

@@ -20,6 +20,15 @@ Continue opens the level screen. Clear a level to unlock the next one. You can
 revisit any cleared level, but its lawn size and available plants stay the same
 as on your first visit.
 
+## A planted lawn
+
+These scenes show a garden built during Backyard 1-3, with Sunflowers at the
+house end, Peashooters behind the front line, and Wall-nuts farther out.
+
+![An established garden across five lanes](developed_backyard_late.png)
+
+![The garden during play](developed_backyard.gif)
+
 ## Learning the lawn
 
 **Backyard 1-1** gives you one lane and Peashooter. Follow the flashing gold cell

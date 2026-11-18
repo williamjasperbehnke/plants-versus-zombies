@@ -1,184 +1,130 @@
 # Plants vs. Zombies for Game Boy Advance
 
-Plant a garden, collect sun, and keep the zombies away from the house. This GBA
-adaptation has a ten-level Backyard campaign, ten plants to unlock, eight kinds
-of zombies, and three save slots.
+A Plants vs. Zombies remake for the GBA, built with [Butano](https://github.com/GValiente/butano).
+There are ten Backyard levels, ten plants, eight zombie types, and three save slots.
 
-You start with one lane and a Peashooter. By the last level, you're choosing six
-seeds for a full lawn of armored zombies, flag-led hordes, and graves that won't
-stay quiet.
+**[Download the ROM](plants_vs_zombies.gba)** and open it in a GBA emulator or load
+it onto a flash cartridge. Choose **Play** to start or continue a save.
 
-![Gameplay, scouting, hordes, the Almanac, plant rewards, tombstones, freezing, mowers, and defeat](docs/overview.png)
+![Five lanes planted with Sunflowers, Peashooters, and Wall-nuts](docs/developed_backyard_late.png)
 
-[Illustrated player guide](docs/README.md) · [Development guide](docs/DEVELOPMENT.md)
+[Player guide and more screenshots](docs/README.md) · [Build instructions](docs/DEVELOPMENT.md)
 
-## Play
+## The campaign
 
-Open [plants_vs_zombies.gba](plants_vs_zombies.gba) in a GBA emulator such as mGBA,
-or load it onto a GBA flash cartridge. Choose **Play**, pick one of the three save
-slots, and start a new game. Choose **Continue** to return to that slot's levels.
-Keep your emulator's save file when moving or updating the ROM.
+Level one starts with a single lane and Peashooter. Level two opens three lanes
+and teaches you to clear old plants with the shovel and grow Sunflowers. From
+level three onward, you have all five lanes to defend.
 
-The current campaign is **Backyard, levels 1–10**. Night and Pool worlds aren't
-included yet.
+Clearing a level unlocks the next one and usually earns a new plant. Replays keep
+that level's original plant selection and skip any tutorial you've already done.
+The current campaign ends at Backyard 1-10; Night and Pool aren't included.
 
-## From one lane to a full backyard
+Before each round, the camera pans over to the road to show the incoming zombies
+and their counts. Early levels bring all their plants automatically. Later on,
+you choose six seed packets to take with you.
 
-The first level teaches planting and collecting sun on a single strip of grass.
-Level two opens three lanes: clear the wilted plants with the shovel, then plant
-a Sunflower near the house and collect what it produces. From level three onward,
-you defend all five lanes.
+![Choosing six plants before a later level](docs/seed_selection.png)
 
-The lessons wait for you to complete each action before the zombies start.
-Replaying a completed level skips the tutorial.
+## On the lawn
 
-![The first level teaches planting on the highlighted cell](docs/tutorial_peashooter.png)
+Collect sun with B and spend it on plants with A. Sunflowers produce more sun;
+falling sun alone won't cover a full garden. Uncollected sun disappears after a
+few seconds. Hold B to keep collecting while you move and plant.
 
-Clear a level to open the next one and earn a new plant. Each level keeps its own
-plant roster when you replay it, so you won't bring a Chomper back into the first
-Peashooter lesson. A gray lock marks a level you haven't reached; a check marks
-one you've cleared.
+L/R switches seed packets. A packet turns gray when you can't use it, then fills
+with color as it recharges. Hold Select and press A to shovel a plant when you
+need its cell. You don't get the sun back.
 
-![Completed levels, the next available level, and locked levels](docs/levels_progress.png)
+![A garden taking shape across all five lanes](docs/developed_backyard.png)
 
-## Scout first, then choose your seeds
+The wave bar at the top marks each incoming horde. Its Flag Zombie speeds up
+nearby zombies while alive. Ordinary groups arrive between hordes, and the final
+horde brings more zombies.
 
-Before planting, the camera moves across the yard to the road. You'll see which
-zombies are coming and a count for each type. Check for fast attackers, heavy
-armor, and Pole Vaulters before deciding what to bring.
+Later yards have tombstones that block planting and stop peas. Each standing
+stone raises a zombie when a horde starts. You can shoot or blast the stones down;
+they crack and crumble as they're destroyed.
 
-![The final level's incoming zombies and their counts](docs/preview_level_10.png)
+Each lane gets one mower. It clears the lane when a zombie reaches the house end,
+but it's gone for the rest of the round. Another breakthrough in that lane ends
+the game.
 
-Early levels bring all their available plants automatically. Once there are more
-than six choices, pick **exactly six** packets from the grid. Selected packets
-slide into the tray above. Press A again to put one back, then START when your
-bank is full. Scouting and seed selection don't use your preparation time.
+![The planted lawn during play](docs/developed_backyard.gif)
 
-![Choose six seed packets over the road preview](docs/seed_selection.png)
+## Plants
 
-## Defend the lawn
-
-Sun pays for plants. Collect falling sun and grow Sunflowers to keep planting;
-sky drops alone won't support a busy lawn. Press B to collect the available sun,
-or hold it to collect new drops as they appear. Collected suns fly to the counter.
-Uncollected sun disappears, so don't leave it sitting around.
-
-Every packet shows its price. Gray packets are unavailable, and color fills upward
-as they recharge. Plant with A, switch packets with L/R, and use Select + A to dig
-up a plant when you need the space. The shovel doesn't return its sun cost.
-
-![Sun being collected and flying to the counter](docs/sun_collection.gif)
-
-Peashooters handle a quiet lane. Wall-nuts buy time, Snow Peas slow a rush, and
-Mines, Squash, and Cherry Bombs can save a lane that's getting away from you.
-Repeater adds firepower; Chomper can swallow an armored zombie but needs time to
-finish chewing.
-
-The bar at the top tracks the round. Each flag marks a horde led by a Flag Zombie.
-Flags turn yellow as their leaders enter the screen. A living flag carrier makes
-nearby zombies move and bite faster, so taking it out helps the whole lawn.
-Ordinary zombies arrive between hordes, and the last horde is the largest.
-
-![A later horde with armor, a flag carrier, and tombstones](docs/armored_horde.png)
-
-Later levels add tombstones. They occupy planting cells, stop peas, and raise
-zombies whenever a horde leader arrives. Shoot them down or destroy them with a
-blast before the next flag. Broken stones crumble; raised zombies crawl out of
-the dirt before joining the fight.
-
-![A zombie climbing out beside a tombstone](docs/grave_emergence.gif)
-
-Each lane has one lawn mower as a last chance. A zombie that reaches it sends it
-racing down the lane. Once it's gone, another breakthrough in that lane costs you
-the round.
-
-## Your plants
-
-| Plant | Sun | What it does |
+| Plant | Sun | Use |
 | --- | ---: | --- |
-| Peashooter | 100 | Shoots peas down its lane. Your first defender. |
-| Sunflower | 50 | Produces more sun so you can grow the garden. |
-| Wall-nut | 50 | Holds zombies in place while your shooters work. |
-| Potato Mine | 25 | Needs time to arm, then explodes when a zombie reaches it. |
-| Snow Pea | 175 | Slows walking and biting with frozen peas. |
-| Cherry Bomb | 150 | Explodes after a short fuse, hitting nearby zombies across three lanes. |
+| Peashooter | 100 | Shoots peas down its lane. |
+| Sunflower | 50 | Produces sun for more planting. |
+| Wall-nut | 50 | Holds up zombies while other plants attack. |
+| Potato Mine | 25 | Takes time to arm, then explodes on contact. |
+| Snow Pea | 175 | Slows movement and biting with frozen peas. |
+| Cherry Bomb | 150 | Blasts nearby zombies across three lanes. |
 | Squash | 50 | Jumps onto a nearby zombie and crushes through armor. |
-| Tall-nut | 125 | Takes more punishment and stops Pole Vaulters from jumping. |
-| Repeater | 200 | Fires two peas in each burst. |
-| Chomper | 150 | Swallows one nearby zombie through its armor, then spends time chewing. |
+| Tall-nut | 125 | A tougher barrier that also stops Pole Vaulters. |
+| Repeater | 200 | Fires two peas per attack. |
+| Chomper | 150 | Swallows one zombie through its armor, then needs time to chew. |
 
-Chomper can reach over a Wall-nut to eat the zombie biting it. Tall-nut is your
-answer to a Pole Vaulter, who can jump the first ordinary plant in his path.
+Chomper can reach a zombie eating the Wall-nut in front of it. While chewing,
+it's vulnerable and can't eat again.
 
-![Chomper pulling in a zombie and starting to chew](docs/chomper_bite.gif)
+![Chomper eating a zombie](docs/chomper_bite.gif)
 
-## The zombies
+## Zombies
 
-There are eight types: **Normal, Conehead, Buckethead, Newspaper, Screen Door,
-Flag, Football, and Pole Vaulter**.
+Normal zombies are joined by **Coneheads, Bucketheads, Newspaper Zombies, Screen
+Doors, Flag Zombies, Football Zombies, and Pole Vaulters** as you progress.
 
-Cones and buckets take extra hits. Newspapers shield their owners until they
-break, at which point the zombie starts running. Screen doors stop peas and
-freezing, but explosions get through. Football Zombies charge with heavy armor;
-Pole Vaulters jump your first plant unless a Tall-nut stops them.
+Cones and buckets take extra hits. A Newspaper Zombie runs once its paper breaks.
+A screen door blocks peas and freezing, but not explosions. Football Zombies
+charge with heavy armor. Pole Vaulters jump the first ordinary plant they reach;
+Tall-nut stops the jump.
 
-Damage shows on the zombies: equipment falls away, arms drop off, and defeated
-zombies collapse on the lawn. Plants and zombies flash red when hit. Flag
-carriers drop their flags as they fall.
+Equipment and arms fall off as zombies take damage. Plants and zombies flash red
+when hit, and defeated zombies fall onto the lawn. Flag carriers drop their flags
+as they collapse.
 
-![The zombie Almanac, with descriptions and stats for every type](docs/almanac_zombie_entries.png)
+## Saves, rewards, and menus
 
-## Rewards, saves, and the Almanac
+Each save slot keeps its own level progress and zombie kill counts. Continue or
+delete a slot from the save menu; deletion asks for confirmation. Keep your
+emulator's save file when moving or updating the ROM.
 
-New plants arrive as bouncing seed packets above a wooden sign. Replay a cleared
-level, or finish one without a new plant to earn, and you'll get a trophy instead.
-After the reveal, press any button to return to the level screen.
+New plants arrive as bouncing seed packets after a win. Replaying a cleared level,
+or finishing one without a new plant, earns a trophy. After the reveal, any button
+returns to level selection.
 
-![A new seed packet arriving after a win](docs/plant_reward.gif)
+![A Sunflower unlocked after the first level](docs/plant_reward.gif)
 
-Each of the three save slots keeps its own level progress and zombie kill counts.
-You can continue or delete a slot from the save menu; deletion asks you to confirm.
+The **Almanac** is on the title screen. Browse animated plant and zombie entries,
+read their descriptions, and check costs, recharge times, health, and saved kills.
+L/R changes pages; Up/Down scrolls longer descriptions.
 
-Open the **Almanac** from the title screen to browse animated plants and zombies.
-Select an entry to see its description and stats. Plant entries show sun cost,
-recharge, and health; zombie entries show durability and your saved kill count.
-Use L/R to change pages and Up/Down to scroll a longer description.
+START pauses the game. You can resume, restart, return to levels, or adjust Master,
+Music, and Effects volume separately. Audio settings last until you close the game.
 
-![Plant entries in the Almanac](docs/almanac_plants.png)
-
-Press START during a round to pause. You can resume, restart the level, return to
-level selection, or adjust Master, Music, and Effects volume separately. Volume
-settings stay with you during the session and return to their defaults on relaunch.
-
-![Title screen, pause menu with volume sliders, and level selection](docs/menus.png)
+![Title screen, pause menu, and level selection](docs/menus.png)
 
 ## Controls
 
-| Button | On the lawn |
+| Button | During a round |
 | --- | --- |
-| D-pad | Move the planting cursor; hold to keep moving |
-| A | Plant the selected packet |
-| L / R | Previous / next packet; hold to cycle |
+| D-pad | Move the planting cursor; hold to repeat |
+| A | Plant |
+| L / R | Change seed packet; hold to cycle |
 | B | Collect sun; hold to keep collecting |
-| Hold SELECT + A | Shovel the plant under the cursor |
+| Hold SELECT + A | Shovel a plant |
 | START | Pause |
 
-In menus, use the D-pad to select and A to confirm. Scouting also accepts START
-to continue. In seed selection, A adds or removes a packet and START confirms all
-six. In the Almanac, L/R changes pages, A opens an entry, and B goes back.
+Use the D-pad and A in menus. In seed selection, A adds or removes a packet and
+START confirms all six. In the Almanac, L/R changes pages, A opens an entry, and B
+goes back. After a defeat, A/START retries and B returns to levels.
 
-If the zombies reach the house, the music stops and the defeat sequence plays.
-Afterward, A/START retries the level through scouting and B returns to levels.
+The [player guide](docs/README.md) has the unlock order, plant timings, enemy
+counters, and more screenshots. The [development guide](docs/DEVELOPMENT.md)
+covers building the ROM, editing assets, and running tests.
 
-[See the full player guide and screenshot gallery](docs/README.md) for the unlock
-order, plant timings, enemy counters, and more of the game in motion.
-
-## About the project
-
-Built in C++ with [Butano](https://github.com/GValiente/butano), with pixel art,
-animated menus, music, and sound effects adapted to the handheld. This is an
-unofficial fan project based on Plants vs. Zombies. The original game and defeat
-scream belong to PopCap / EA; see the [audio credits](tools/audio_sources/credits.json).
-
-For building the ROM, working on the artwork, or running tests, see the
-[development guide](docs/DEVELOPMENT.md).
+This is an unofficial fan project. Plants vs. Zombies and the original defeat
+scream belong to PopCap / EA. See the [audio credits](tools/audio_sources/credits.json).

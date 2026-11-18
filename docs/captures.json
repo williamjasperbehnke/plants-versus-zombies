@@ -109,6 +109,16 @@
       "debug": false,
       "scale": 3
     },
+    "developed_backyard.png": {
+      "source": "developed_backyard.ppm",
+      "debug": true,
+      "scale": 3
+    },
+    "developed_backyard_late.png": {
+      "source": "developed_backyard_late.ppm",
+      "debug": true,
+      "scale": 3
+    },
     "lawn_start.png": {
       "source": "playing.ppm",
       "debug": false,
@@ -466,6 +476,28 @@
     }
   },
   "animations": {
+    "developed_backyard.gif": {
+      "sources": [
+        "developed_backyard_00.ppm",
+        "developed_backyard_01.ppm",
+        "developed_backyard_02.ppm",
+        "developed_backyard_03.ppm",
+        "developed_backyard_04.ppm",
+        "developed_backyard_05.ppm",
+        "developed_backyard_06.ppm",
+        "developed_backyard_07.ppm",
+        "developed_backyard_08.ppm",
+        "developed_backyard_09.ppm",
+        "developed_backyard_10.ppm",
+        "developed_backyard_11.ppm",
+        "developed_backyard_12.ppm",
+        "developed_backyard_13.ppm",
+        "developed_backyard_14.ppm",
+        "developed_backyard_15.ppm"
+      ],
+      "debug": true,
+      "duration_ms": 133
+    },
     "wilted_tutorial.gif": {
       "sources": [
         "wilted_idle_00.ppm",
@@ -1166,6 +1198,9 @@
     "chomper_bite.gif",
     "chomper_chewing.png",
     "defeat.gif",
+    "developed_backyard.gif",
+    "developed_backyard.png",
+    "developed_backyard_late.png",
     "explosion_above_plants.png",
     "falling_equipment_study.gif",
     "final_flag.png",

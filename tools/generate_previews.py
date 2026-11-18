@@ -24,6 +24,8 @@ CAPTURES = {
     'repeater_pair': ('repeater_pair', True),
     'squash_landing': ('squash_leap_08', True),
     'gameplay': ('developed_lawn', False),
+    'developed_backyard': ('developed_backyard', True),
+    'developed_backyard_late': ('developed_backyard_late', True),
     'lawn_start': ('playing', False),
     'lawn_three_lanes': ('lawn_three_lanes', False),
     'paused': ('paused', False),
@@ -78,6 +80,7 @@ for kind, names in (('plant', PLANTS), ('zombie', ZOMBIES)):
         CAPTURES[f'almanac_{kind}_{name}'] = (f'almanac_{kind}_{index}', True)
 
 ANIMATIONS = {
+    'developed_backyard': ([(f'developed_backyard_{i:02d}', True) for i in range(16)], 133),
     'wilted_tutorial': ([(f'wilted_idle_{i:02d}', False) for i in range(18)], 170),
     'seed_bank_flight': ([(f'seed_bank_flight_{i:02d}', True) for i in range(12)], [65] * 11 + [700]),
     'repeater_burst': ([(f'repeater_burst_{i:02d}', True) for i in range(24)], [65] * 23 + [700]),
@@ -154,7 +157,7 @@ def main():
                          'save_delete_confirmation', 'save_slots_deleted', 'save_slots_reloaded'),
           ('New game', 'Continue progress', 'Three profiles', 'Delete confirmation', 'Slot deleted', 'After relaunch'))
     sheet('menus', ('title', 'paused', 'levels_locked'), ('Title', 'Pause / audio', 'Backyard levels'))
-    sheet('overview', ('gameplay', 'preview_level_10', 'armored_horde', 'almanac_plants',
+    sheet('overview', ('developed_backyard_late', 'preview_level_10', 'armored_horde', 'almanac_plants',
           'plant_reward', 'tombstones_lawn', 'snow_pea_gameplay', 'mower_active', 'loss_prompt'),
           ('Lawn and HUD', 'Road scouting', 'Flag-led horde', 'Almanac', 'New seed',
            'Tombstones', 'Snow Pea', 'Lawn mower', 'Defeat'))
