@@ -6,9 +6,9 @@ There are ten Backyard levels, ten plants, eight zombie types, and three save sl
 **[Download the ROM](plants_vs_zombies.gba)** and open it in a GBA emulator or load
 it onto a flash cartridge. Choose **Play** to start or continue a save.
 
-![Five lanes planted with Sunflowers, Peashooters, and Wall-nuts](docs/developed_backyard_late.png)
+![Five lanes planted with Sunflowers, Peashooters, and Wall-nuts](docs/media/screenshots/developed_backyard_late.png)
 
-[Player guide and more screenshots](docs/README.md) · [Build instructions](docs/DEVELOPMENT.md)
+[Player guide and more screenshots](docs/player/README.md) · [Build instructions](docs/development/README.md)
 
 ## The campaign
 
@@ -24,7 +24,7 @@ Before each round, the camera pans over to the road to show the incoming zombies
 and their counts. Early levels bring all their plants automatically. Later on,
 you choose six seed packets to take with you.
 
-![Choosing six plants before a later level](docs/seed_selection.png)
+![Choosing six plants before a later level](docs/media/screenshots/seed_selection.png)
 
 ## On the lawn
 
@@ -36,7 +36,7 @@ L/R switches seed packets. A packet turns gray when you can't use it, then fills
 with color as it recharges. Hold Select and press A to shovel a plant when you
 need its cell. You don't get the sun back.
 
-![A garden taking shape across all five lanes](docs/developed_backyard.png)
+![A garden taking shape across all five lanes](docs/media/screenshots/developed_backyard.png)
 
 The wave bar at the top marks each incoming horde. Its Flag Zombie speeds up
 nearby zombies while alive. Ordinary groups arrive between hordes, and the final
@@ -50,7 +50,7 @@ Each lane gets one mower. It clears the lane when a zombie reaches the house end
 but it's gone for the rest of the round. Another breakthrough in that lane ends
 the game.
 
-![The planted lawn during play](docs/developed_backyard.gif)
+![The planted lawn during play](docs/media/gameplay/developed_backyard.gif)
 
 ## Plants
 
@@ -70,7 +70,7 @@ the game.
 Chomper can reach a zombie eating the Wall-nut in front of it. While chewing,
 it's vulnerable and can't eat again.
 
-![Chomper eating a zombie](docs/chomper_bite.gif)
+![Chomper eating a zombie](docs/media/gameplay/chomper_bite.gif)
 
 ## Zombies
 
@@ -86,6 +86,8 @@ Equipment and arms fall off as zombies take damage. Plants and zombies flash red
 when hit, and defeated zombies fall onto the lawn. Flag carriers drop their flags
 as they collapse.
 
+[Damage and death animations for all eight zombies](docs/player/README.md#zombie-damage-and-death).
+
 ## Saves, rewards, and menus
 
 Each save slot keeps its own level progress and zombie kill counts. Continue or
@@ -96,7 +98,7 @@ New plants arrive as bouncing seed packets after a win. Replaying a cleared leve
 or finishing one without a new plant, earns a trophy. After the reveal, any button
 returns to level selection.
 
-![A Sunflower unlocked after the first level](docs/plant_reward.gif)
+![A Sunflower unlocked after the first level](docs/media/gameplay/plant_reward.gif)
 
 The **Almanac** is on the title screen. Browse animated plant and zombie entries,
 read their descriptions, and check costs, recharge times, health, and saved kills.
@@ -105,7 +107,7 @@ L/R changes pages; Up/Down scrolls longer descriptions.
 START pauses the game. You can resume, restart, return to levels, or adjust Master,
 Music, and Effects volume separately. Audio settings last until you close the game.
 
-![Title screen, pause menu, and level selection](docs/menus.png)
+![Title screen, pause menu, and level selection](docs/media/screenshots/menus.png)
 
 ## Controls
 
@@ -122,8 +124,8 @@ Use the D-pad and A in menus. In seed selection, A adds or removes a packet and
 START confirms all six. In the Almanac, L/R changes pages, A opens an entry, and B
 goes back. After a defeat, A/START retries and B returns to levels.
 
-The [player guide](docs/README.md) has the unlock order, plant timings, enemy
-counters, and more screenshots. The [development guide](docs/DEVELOPMENT.md)
+The [player guide](docs/player/README.md) has the unlock order, plant timings, enemy
+counters, and more screenshots. The [development guide](docs/development/README.md)
 covers building the ROM, editing assets, and running tests.
 
 This is an unofficial fan project. Plants vs. Zombies and the original defeat

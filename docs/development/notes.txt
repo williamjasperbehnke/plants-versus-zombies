@@ -1,0 +1,25 @@
+Plants vs. Zombies — project notes
+
+Current scope
+- Ten Backyard levels, with one lane in 1-1, three in 1-2, and five from 1-3.
+- Ten plants and eight zombie types; six-packet selection on larger rosters.
+- Saved level unlocks, completion and kill counts in three independent profiles.
+- Scouting, tutorials, an animated Almanac, pause controls, music and volume settings.
+- Flag-led hordes, tombstones, zombie damage/death effects and seed/trophy rewards.
+- Normal and debug ROMs with separate save regions.
+- Emulator screenshots, gameplay GIFs and per-type animation studies.
+
+Known issue deferred
+- On a real Game Boy, the user reports a silent freeze after new-seed rewards on
+  levels 1-4 and 1-6. The cause is not confirmed and no crash fix has been applied.
+- Emulator checks of all reward reveals with populated lawns and complete rendered
+  levels 1-4 / 1-6 did not reproduce it. Diagnostic sources are archived in
+  build/deferred_reward_investigation for a later investigation.
+
+Possible future work (not implemented)
+- Night and Pool worlds, with ten levels per world.
+- Performance, mixer and readability checks on physical GBA hardware.
+
+Project overview: ../../README.md
+Player guide and animation gallery: ../player/README.md
+Build instructions, architecture, assets, saves and verification: README.md

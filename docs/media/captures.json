@@ -1,482 +1,482 @@
 {
   "roms": {
-    "plants_vs_zombies.gba": "f792c6a4586915a5597469af5129e2d28f809aaee74f02a790ae83d4c327ff1f",
-    "plants_vs_zombies_debug.gba": "b520aa5cde0218563b84b6b4f6d51609f1b415de8c2a5a6a3b13d414574f574a"
+    "plants_vs_zombies.gba": "4dcc98a21b4f7ff01ae22de97e9418d23be04a045ac2b4f3a62515a4ee401338",
+    "plants_vs_zombies_debug.gba": "b8299f744de06477fd4194a1f462d4240bf6383e88413976f8f2d5f56bcf3bd3"
   },
   "screenshots": {
-    "save_slots_empty.png": {
+    "screenshots/save_slots_empty.png": {
       "source": "save_slots_empty.ppm",
       "debug": false,
       "scale": 3
     },
-    "save_slots_progress.png": {
+    "screenshots/save_slots_progress.png": {
       "source": "save_slots_progress.ppm",
       "debug": false,
       "scale": 3
     },
-    "save_slots_full.png": {
+    "screenshots/save_slots_full.png": {
       "source": "save_slots_full.ppm",
       "debug": false,
       "scale": 3
     },
-    "save_slots_deleted.png": {
+    "screenshots/save_slots_deleted.png": {
       "source": "save_slots_deleted.ppm",
       "debug": false,
       "scale": 3
     },
-    "save_slots_reloaded.png": {
+    "screenshots/save_slots_reloaded.png": {
       "source": "save_slots_reloaded.ppm",
       "debug": false,
       "scale": 3
     },
-    "save_delete_confirmation.png": {
+    "screenshots/save_delete_confirmation.png": {
       "source": "save_delete_confirmation.ppm",
       "debug": false,
       "scale": 3
     },
-    "tutorial_peashooter.png": {
+    "screenshots/tutorial_peashooter.png": {
       "source": "tutorial_peashooter.ppm",
       "debug": false,
       "scale": 3
     },
-    "tutorial_collect_sun.png": {
+    "screenshots/tutorial_collect_sun.png": {
       "source": "tutorial_collect_sun.ppm",
       "debug": false,
       "scale": 3
     },
-    "tutorial_shovel.png": {
+    "screenshots/tutorial_shovel.png": {
       "source": "tutorial_shovel.ppm",
       "debug": false,
       "scale": 3
     },
-    "tutorial_sunflower.png": {
+    "screenshots/tutorial_sunflower.png": {
       "source": "tutorial_sunflower.ppm",
       "debug": false,
       "scale": 3
     },
-    "tutorial_flower_sun.png": {
+    "screenshots/tutorial_flower_sun.png": {
       "source": "tutorial_flower_sun.ppm",
       "debug": false,
       "scale": 3
     },
-    "tutorial_complete.png": {
+    "screenshots/tutorial_complete.png": {
       "source": "tutorial_complete.ppm",
       "debug": false,
       "scale": 3
     },
-    "almanac_scrolled.png": {
+    "screenshots/almanac_scrolled.png": {
       "source": "almanac_scrolled.ppm",
       "debug": true,
       "scale": 3
     },
-    "title.png": {
+    "screenshots/title.png": {
       "source": "title.ppm",
       "debug": false,
       "scale": 3
     },
-    "seed_selection.png": {
+    "screenshots/seed_selection.png": {
       "source": "seed_selection_all.ppm",
       "debug": true,
       "scale": 3
     },
-    "seed_selection_custom.png": {
+    "screenshots/seed_selection_custom.png": {
       "source": "seed_selection_custom.ppm",
       "debug": true,
       "scale": 3
     },
-    "seed_selection_error.png": {
+    "screenshots/seed_selection_error.png": {
       "source": "seed_selection_error.ppm",
       "debug": true,
       "scale": 3
     },
-    "chomper_chewing.png": {
+    "screenshots/chomper_chewing.png": {
       "source": "chomper_chewing.ppm",
       "debug": true,
       "scale": 3
     },
-    "repeater_pair.png": {
+    "screenshots/repeater_pair.png": {
       "source": "repeater_pair.ppm",
       "debug": true,
       "scale": 3
     },
-    "squash_landing.png": {
+    "screenshots/squash_landing.png": {
       "source": "squash_leap_08.ppm",
       "debug": true,
       "scale": 3
     },
-    "gameplay.png": {
+    "screenshots/gameplay.png": {
       "source": "developed_lawn.ppm",
       "debug": false,
       "scale": 3
     },
-    "developed_backyard.png": {
+    "screenshots/developed_backyard.png": {
       "source": "developed_backyard.ppm",
       "debug": true,
       "scale": 3
     },
-    "developed_backyard_late.png": {
+    "screenshots/developed_backyard_late.png": {
       "source": "developed_backyard_late.ppm",
       "debug": true,
       "scale": 3
     },
-    "lawn_start.png": {
+    "screenshots/lawn_start.png": {
       "source": "playing.ppm",
       "debug": false,
       "scale": 3
     },
-    "lawn_three_lanes.png": {
+    "screenshots/lawn_three_lanes.png": {
       "source": "lawn_three_lanes.ppm",
       "debug": false,
       "scale": 3
     },
-    "paused.png": {
+    "screenshots/paused.png": {
       "source": "paused.ppm",
       "debug": false,
       "scale": 3
     },
-    "levels_locked.png": {
+    "screenshots/levels_locked.png": {
       "source": "levels_locked.ppm",
       "debug": false,
       "scale": 3
     },
-    "levels_progress.png": {
+    "screenshots/levels_progress.png": {
       "source": "levels_progress.ppm",
       "debug": false,
       "scale": 3
     },
-    "levels_debug.png": {
+    "screenshots/levels_debug.png": {
       "source": "levels_debug.ppm",
       "debug": true,
       "scale": 3
     },
-    "levels_reloaded.png": {
+    "screenshots/levels_reloaded.png": {
       "source": "levels_reloaded.ppm",
       "debug": false,
       "scale": 3
     },
-    "preview_level_1.png": {
+    "screenshots/preview_level_1.png": {
       "source": "preview_level_1.ppm",
       "debug": false,
       "scale": 3
     },
-    "preview_level_10.png": {
+    "screenshots/preview_level_10.png": {
       "source": "preview_level_10.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plants.png": {
+    "screenshots/almanac_plants.png": {
       "source": "almanac_plants.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombies.png": {
+    "screenshots/almanac_zombies.png": {
       "source": "almanac_zombies.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_lifetime_kills.png": {
+    "screenshots/almanac_lifetime_kills.png": {
       "source": "almanac_lifetime_kills.ppm",
       "debug": false,
       "scale": 3
     },
-    "plant_reward.png": {
+    "screenshots/plant_reward.png": {
       "source": "plant_reward.ppm",
       "debug": false,
       "scale": 3
     },
-    "plant_reward_mid.png": {
+    "screenshots/plant_reward_mid.png": {
       "source": "plant_reward_mid.ppm",
       "debug": false,
       "scale": 3
     },
-    "trophy_reward.png": {
+    "screenshots/trophy_reward.png": {
       "source": "trophy_reward.ppm",
       "debug": false,
       "scale": 3
     },
-    "loss_animation.png": {
+    "screenshots/loss_animation.png": {
       "source": "loss_animation.ppm",
       "debug": false,
       "scale": 3
     },
-    "loss_prompt.png": {
+    "screenshots/loss_prompt.png": {
       "source": "loss_prompt.ppm",
       "debug": false,
       "scale": 3
     },
-    "snow_pea_gameplay.png": {
+    "screenshots/snow_pea_gameplay.png": {
       "source": "snow_pea_gameplay.ppm",
       "debug": true,
       "scale": 3
     },
-    "plant_red_flash.png": {
+    "screenshots/plant_red_flash.png": {
       "source": "plant_red_flash.ppm",
       "debug": true,
       "scale": 3
     },
-    "zombie_damage_flash.png": {
+    "screenshots/zombie_damage_flash.png": {
       "source": "zombie_damage_flash.ppm",
       "debug": true,
       "scale": 3
     },
-    "tombstones_lawn.png": {
+    "screenshots/tombstones_lawn.png": {
       "source": "tombstones_lawn.ppm",
       "debug": true,
       "scale": 3
     },
-    "tombstone_cracked.png": {
+    "screenshots/tombstone_cracked.png": {
       "source": "tombstone_cracked.ppm",
       "debug": true,
       "scale": 3
     },
-    "tombstone_crumble.png": {
+    "screenshots/tombstone_crumble.png": {
       "source": "tombstone_crumble_31.ppm",
       "debug": true,
       "scale": 3
     },
-    "tombstone_destroyed.png": {
+    "screenshots/tombstone_destroyed.png": {
       "source": "tombstone_destroyed.ppm",
       "debug": true,
       "scale": 3
     },
-    "explosion_above_plants.png": {
+    "screenshots/explosion_above_plants.png": {
       "source": "explosion_above_plants.ppm",
       "debug": true,
       "scale": 3
     },
-    "grave_emergence.png": {
+    "screenshots/grave_emergence.png": {
       "source": "grave_emergence_2.ppm",
       "debug": true,
       "scale": 3
     },
-    "armored_horde.png": {
+    "screenshots/armored_horde.png": {
       "source": "armored_horde.ppm",
       "debug": true,
       "scale": 3
     },
-    "placement_check.png": {
+    "screenshots/placement_check.png": {
       "source": "placement_check.ppm",
       "debug": true,
       "scale": 3
     },
-    "placement_occupied.png": {
+    "screenshots/placement_occupied.png": {
       "source": "placement_occupied.ppm",
       "debug": true,
       "scale": 3
     },
-    "placement_cooldown.png": {
+    "screenshots/placement_cooldown.png": {
       "source": "placement_cooldown.ppm",
       "debug": true,
       "scale": 3
     },
-    "placement_unaffordable.png": {
+    "screenshots/placement_unaffordable.png": {
       "source": "placement_unaffordable.ppm",
       "debug": true,
       "scale": 3
     },
-    "shovel_selected.png": {
+    "screenshots/shovel_selected.png": {
       "source": "shovel_selected.ppm",
       "debug": true,
       "scale": 3
     },
-    "shovel_removed.png": {
+    "screenshots/shovel_removed.png": {
       "source": "shovel_removed.ppm",
       "debug": true,
       "scale": 3
     },
-    "mixer_master_muted.png": {
+    "screenshots/mixer_master_muted.png": {
       "source": "mixer_master_muted.ppm",
       "debug": true,
       "scale": 3
     },
-    "mixer_music_muted.png": {
+    "screenshots/mixer_music_muted.png": {
       "source": "mixer_music_muted.ppm",
       "debug": true,
       "scale": 3
     },
-    "mixer_effects_muted.png": {
+    "screenshots/mixer_effects_muted.png": {
       "source": "mixer_effects_muted.ppm",
       "debug": true,
       "scale": 3
     },
-    "mower_active.png": {
+    "screenshots/mower_active.png": {
       "source": "mower_active.ppm",
       "debug": true,
       "scale": 3
     },
-    "zombie_arm_drop.png": {
+    "screenshots/zombie_arm_drop.png": {
       "source": "zombie_combat_034.ppm",
       "debug": true,
       "scale": 3
     },
-    "zombie_missing_arm.png": {
+    "screenshots/zombie_missing_arm.png": {
       "source": "zombie_combat_055.ppm",
       "debug": true,
       "scale": 3
     },
-    "zombie_death.png": {
+    "screenshots/zombie_death.png": {
       "source": "zombie_combat_080.ppm",
       "debug": true,
       "scale": 3
     },
-    "flag_death.png": {
+    "screenshots/flag_death.png": {
       "source": "flag_death_03.ppm",
       "debug": true,
       "scale": 3
     },
-    "road_entry.png": {
+    "screenshots/road_entry.png": {
       "source": "road_entry_12.ppm",
       "debug": true,
       "scale": 3
     },
-    "sun_before.png": {
+    "screenshots/sun_before.png": {
       "source": "sun_before.ppm",
       "debug": true,
       "scale": 3
     },
-    "sun_start.png": {
+    "screenshots/sun_start.png": {
       "source": "sun_start.ppm",
       "debug": true,
       "scale": 3
     },
-    "sun_mid.png": {
+    "screenshots/sun_mid.png": {
       "source": "sun_mid.ppm",
       "debug": true,
       "scale": 3
     },
-    "sun_arrived.png": {
+    "screenshots/sun_arrived.png": {
       "source": "sun_arrived.ppm",
       "debug": true,
       "scale": 3
     },
-    "mine_arming.png": {
+    "screenshots/mine_arming.png": {
       "source": "mine_arming.ppm",
       "debug": true,
       "scale": 3
     },
-    "mine_armed.png": {
+    "screenshots/mine_armed.png": {
       "source": "mine_armed.ppm",
       "debug": true,
       "scale": 3
     },
-    "mine_burst.png": {
+    "screenshots/mine_burst.png": {
       "source": "mine_burst.ppm",
       "debug": true,
       "scale": 3
     },
-    "mine_spent.png": {
+    "screenshots/mine_spent.png": {
       "source": "mine_spent.ppm",
       "debug": true,
       "scale": 3
     },
-    "wallnut_healthy.png": {
+    "screenshots/wallnut_healthy.png": {
       "source": "wallnut_healthy.ppm",
       "debug": true,
       "scale": 3
     },
-    "wallnut_damaged.png": {
+    "screenshots/wallnut_damaged.png": {
       "source": "wallnut_damaged.ppm",
       "debug": true,
       "scale": 3
     },
-    "wallnut_worn.png": {
+    "screenshots/wallnut_worn.png": {
       "source": "wallnut_worn.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_peashooter.png": {
+    "screenshots/almanac_plant_peashooter.png": {
       "source": "almanac_plant_0.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_sunflower.png": {
+    "screenshots/almanac_plant_sunflower.png": {
       "source": "almanac_plant_1.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_wallnut.png": {
+    "screenshots/almanac_plant_wallnut.png": {
       "source": "almanac_plant_2.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_potato_mine.png": {
+    "screenshots/almanac_plant_potato_mine.png": {
       "source": "almanac_plant_3.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_snow_pea.png": {
+    "screenshots/almanac_plant_snow_pea.png": {
       "source": "almanac_plant_4.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_cherry_bomb.png": {
+    "screenshots/almanac_plant_cherry_bomb.png": {
       "source": "almanac_plant_5.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_squash.png": {
+    "screenshots/almanac_plant_squash.png": {
       "source": "almanac_plant_6.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_tallnut.png": {
+    "screenshots/almanac_plant_tallnut.png": {
       "source": "almanac_plant_7.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_repeater.png": {
+    "screenshots/almanac_plant_repeater.png": {
       "source": "almanac_plant_8.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_plant_chomper.png": {
+    "screenshots/almanac_plant_chomper.png": {
       "source": "almanac_plant_9.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_normal.png": {
+    "screenshots/almanac_zombie_normal.png": {
       "source": "almanac_zombie_0.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_conehead.png": {
+    "screenshots/almanac_zombie_conehead.png": {
       "source": "almanac_zombie_1.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_newspaper.png": {
+    "screenshots/almanac_zombie_newspaper.png": {
       "source": "almanac_zombie_2.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_flag.png": {
+    "screenshots/almanac_zombie_flag.png": {
       "source": "almanac_zombie_3.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_buckethead.png": {
+    "screenshots/almanac_zombie_buckethead.png": {
       "source": "almanac_zombie_4.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_screen_door.png": {
+    "screenshots/almanac_zombie_screen_door.png": {
       "source": "almanac_zombie_5.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_football.png": {
+    "screenshots/almanac_zombie_football.png": {
       "source": "almanac_zombie_6.ppm",
       "debug": true,
       "scale": 3
     },
-    "almanac_zombie_pole_vaulter.png": {
+    "screenshots/almanac_zombie_pole_vaulter.png": {
       "source": "almanac_zombie_7.ppm",
       "debug": true,
       "scale": 3
     }
   },
   "animations": {
-    "developed_backyard.gif": {
+    "gameplay/developed_backyard.gif": {
       "sources": [
         "developed_backyard_00.ppm",
         "developed_backyard_01.ppm",
@@ -498,7 +498,7 @@
       "debug": true,
       "duration_ms": 133
     },
-    "wilted_tutorial.gif": {
+    "gameplay/wilted_tutorial.gif": {
       "sources": [
         "wilted_idle_00.ppm",
         "wilted_idle_01.ppm",
@@ -522,7 +522,7 @@
       "debug": false,
       "duration_ms": 170
     },
-    "seed_bank_flight.gif": {
+    "gameplay/seed_bank_flight.gif": {
       "sources": [
         "seed_bank_flight_00.ppm",
         "seed_bank_flight_01.ppm",
@@ -553,7 +553,7 @@
         700
       ]
     },
-    "repeater_burst.gif": {
+    "gameplay/repeater_burst.gif": {
       "sources": [
         "repeater_burst_00.ppm",
         "repeater_burst_01.ppm",
@@ -608,7 +608,7 @@
         700
       ]
     },
-    "chomper_bite.gif": {
+    "gameplay/chomper_bite.gif": {
       "sources": [
         "chomper_bite_00.ppm",
         "chomper_bite_01.ppm",
@@ -679,7 +679,7 @@
         700
       ]
     },
-    "squash_leap.gif": {
+    "gameplay/squash_leap.gif": {
       "sources": [
         "squash_leap_00.ppm",
         "squash_leap_01.ppm",
@@ -710,7 +710,7 @@
         700
       ]
     },
-    "tombstone_crumble.gif": {
+    "gameplay/tombstone_crumble.gif": {
       "sources": [
         "tombstone_crumble_00.ppm",
         "tombstone_crumble_01.ppm",
@@ -766,7 +766,7 @@
       "debug": true,
       "duration_ms": 50
     },
-    "road_entry.gif": {
+    "gameplay/road_entry.gif": {
       "sources": [
         "road_entry_00.ppm",
         "road_entry_01.ppm",
@@ -820,7 +820,7 @@
       "debug": true,
       "duration_ms": 100
     },
-    "gameplay.gif": {
+    "gameplay/gameplay.gif": {
       "sources": [
         "gameplay_action_00.ppm",
         "gameplay_action_01.ppm",
@@ -838,7 +838,7 @@
       "debug": false,
       "duration_ms": 100
     },
-    "flag_death.gif": {
+    "gameplay/flag_death.gif": {
       "sources": [
         "flag_death_00.ppm",
         "flag_death_01.ppm",
@@ -868,7 +868,7 @@
       "debug": true,
       "duration_ms": 100
     },
-    "zombie_combat.gif": {
+    "gameplay/zombie_combat.gif": {
       "sources": [
         "zombie_combat_000.ppm",
         "zombie_combat_001.ppm",
@@ -994,7 +994,7 @@
       "debug": true,
       "duration_ms": 100
     },
-    "title.gif": {
+    "gameplay/title.gif": {
       "sources": [
         "title_animation_00.ppm",
         "title_animation_01.ppm",
@@ -1012,7 +1012,7 @@
       "debug": false,
       "duration_ms": 200
     },
-    "plant_reward.gif": {
+    "gameplay/plant_reward.gif": {
       "sources": [
         "reward_00.ppm",
         "reward_01.ppm",
@@ -1074,7 +1074,7 @@
       "debug": false,
       "duration_ms": 100
     },
-    "grave_emergence.gif": {
+    "gameplay/grave_emergence.gif": {
       "sources": [
         "grave_emergence_0.ppm",
         "grave_emergence_1.ppm",
@@ -1093,7 +1093,7 @@
         600
       ]
     },
-    "sun_collection.gif": {
+    "gameplay/sun_collection.gif": {
       "sources": [
         "sun_before.ppm",
         "sun_start.ppm",
@@ -1108,7 +1108,7 @@
         600
       ]
     },
-    "scouting.gif": {
+    "gameplay/scouting.gif": {
       "sources": [
         "scouting_pan_start.ppm",
         "scouting_pan_0.ppm",
@@ -1129,7 +1129,7 @@
         700
       ]
     },
-    "defeat.gif": {
+    "gameplay/defeat.gif": {
       "sources": [
         "loss_sequence_00.ppm",
         "loss_sequence_01.ppm",
@@ -1160,151 +1160,307 @@
     }
   },
   "studies": [
-    "zombie_deaths_study.gif",
-    "newspaper_deaths_study.gif",
-    "falling_equipment_study.gif",
-    "flag_deaths_study.gif",
-    "football_deaths_study.gif",
-    "football_charge_study.gif",
-    "pole_vaulter_study.gif",
-    "screen_door_bite_study.gif"
+    "studies/zombie_deaths_study.gif",
+    "studies/newspaper_deaths_study.gif",
+    "studies/falling_equipment_study.gif",
+    "studies/flag_deaths_study.gif",
+    "studies/football_deaths_study.gif",
+    "studies/football_charge_study.gif",
+    "studies/pole_vaulter_study.gif",
+    "studies/screen_door_bite_study.gif",
+    "studies/vault_deaths_study.gif",
+    "studies/zombie_buckethead_damage_death_study.gif",
+    "studies/zombie_conehead_damage_death_study.gif",
+    "studies/zombie_flag_damage_death_study.gif",
+    "studies/zombie_football_damage_death_study.gif",
+    "studies/zombie_newspaper_damage_death_study.gif",
+    "studies/zombie_normal_damage_death_study.gif",
+    "studies/zombie_pole_vaulter_damage_death_study.gif",
+    "studies/zombie_screen_door_damage_death_study.gif"
   ],
+  "study_details": {
+    "studies/zombie_normal_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "normal_zombies",
+        "wounded_normal_zombies",
+        "zombie_deaths",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_conehead_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "cone_zombies",
+        "damage_flash",
+        "wounded_normal_zombies",
+        "zombie_deaths",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_buckethead_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "bucket_zombies",
+        "damage_flash",
+        "wounded_normal_zombies",
+        "zombie_deaths",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_newspaper_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "newspaper_deaths",
+        "newspaper_zombies",
+        "wounded_newspaper_zombies",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_screen_door_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "screen_door_zombies",
+        "wounded_normal_zombies",
+        "zombie_deaths",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_flag_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "flag_deaths",
+        "flag_zombies",
+        "wounded_flag_zombies",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_football_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "football_deaths",
+        "football_zombies",
+        "wounded_football_zombies",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    },
+    "studies/zombie_pole_vaulter_damage_death_study.gif": {
+      "kind": "sprite-sheet study",
+      "sheets": [
+        "damage_flash",
+        "vault_deaths",
+        "vaulting_zombies",
+        "wounded_vaulting_zombies",
+        "zombie_debris"
+      ],
+      "duration_ms": 100,
+      "panels": [
+        "damage and equipment",
+        "wounded movement",
+        "death",
+        "wounded death"
+      ]
+    }
+  },
   "files": [
-    "almanac_lifetime_kills.png",
-    "almanac_plant_cherry_bomb.png",
-    "almanac_plant_chomper.png",
-    "almanac_plant_entries.png",
-    "almanac_plant_peashooter.png",
-    "almanac_plant_potato_mine.png",
-    "almanac_plant_repeater.png",
-    "almanac_plant_snow_pea.png",
-    "almanac_plant_squash.png",
-    "almanac_plant_sunflower.png",
-    "almanac_plant_tallnut.png",
-    "almanac_plant_wallnut.png",
-    "almanac_plants.png",
-    "almanac_scrolled.png",
-    "almanac_zombie_buckethead.png",
-    "almanac_zombie_conehead.png",
-    "almanac_zombie_entries.png",
-    "almanac_zombie_flag.png",
-    "almanac_zombie_football.png",
-    "almanac_zombie_newspaper.png",
-    "almanac_zombie_normal.png",
-    "almanac_zombie_pole_vaulter.png",
-    "almanac_zombie_screen_door.png",
-    "almanac_zombies.png",
-    "armored_horde.png",
-    "chomper_bite.gif",
-    "chomper_chewing.png",
-    "defeat.gif",
-    "developed_backyard.gif",
-    "developed_backyard.png",
-    "developed_backyard_late.png",
-    "explosion_above_plants.png",
-    "falling_equipment_study.gif",
-    "final_flag.png",
-    "flag_death.gif",
-    "flag_death.png",
-    "flag_deaths_study.gif",
-    "football_charge_study.gif",
-    "football_deaths_study.gif",
-    "gameplay.gif",
-    "gameplay.png",
-    "grave_emergence.gif",
-    "grave_emergence.png",
-    "lawn_edge.png",
-    "lawn_start.png",
-    "lawn_three_lanes.png",
-    "levels_debug.png",
-    "levels_locked.png",
-    "levels_progress.png",
-    "levels_reloaded.png",
-    "loss_animation.png",
-    "loss_prompt.png",
-    "menus.png",
-    "mine.png",
-    "mine_armed.png",
-    "mine_arming.png",
-    "mine_burst.png",
-    "mine_spent.png",
-    "mixer.png",
-    "mixer_effects_muted.png",
-    "mixer_master_muted.png",
-    "mixer_music_muted.png",
-    "mower_active.png",
-    "mower_closeup.png",
-    "newspaper_deaths_study.gif",
-    "overview.png",
-    "paused.png",
-    "placement.png",
-    "placement_check.png",
-    "placement_cooldown.png",
-    "placement_occupied.png",
-    "placement_unaffordable.png",
-    "plant_red_flash.png",
-    "plant_reward.gif",
-    "plant_reward.png",
-    "plant_reward_mid.png",
-    "pole_vaulter_study.gif",
-    "preview_level_1.png",
-    "preview_level_10.png",
-    "repeater_burst.gif",
-    "repeater_pair.png",
-    "road_entry.gif",
-    "road_entry.png",
-    "save_delete_confirmation.png",
-    "save_slots.png",
-    "save_slots_deleted.png",
-    "save_slots_empty.png",
-    "save_slots_full.png",
-    "save_slots_progress.png",
-    "save_slots_reloaded.png",
-    "scouting.gif",
-    "screen_door_bite_study.gif",
-    "seed_bank_flight.gif",
-    "seed_packets.png",
-    "seed_selection.png",
-    "seed_selection_custom.png",
-    "seed_selection_error.png",
-    "shovel_removed.png",
-    "shovel_selected.png",
-    "snow_pea_gameplay.png",
-    "squash_landing.png",
-    "squash_leap.gif",
-    "sun_arrived.png",
-    "sun_before.png",
-    "sun_collection.gif",
-    "sun_collection.png",
-    "sun_mid.png",
-    "sun_start.png",
-    "title.gif",
-    "title.png",
-    "tombstone_cracked.png",
-    "tombstone_crumble.gif",
-    "tombstone_crumble.png",
-    "tombstone_destroyed.png",
-    "tombstones_lawn.png",
-    "trophy_reward.png",
-    "tutorial_collect_sun.png",
-    "tutorial_complete.png",
-    "tutorial_flower_sun.png",
-    "tutorial_peashooter.png",
-    "tutorial_shovel.png",
-    "tutorial_sunflower.png",
-    "wallnut.png",
-    "wallnut_damaged.png",
-    "wallnut_healthy.png",
-    "wallnut_worn.png",
-    "wave_track_3.png",
-    "wave_track_5.png",
-    "wilted_tutorial.gif",
-    "zombie_arm_drop.png",
-    "zombie_combat.gif",
-    "zombie_damage_death.gif",
-    "zombie_damage_flash.png",
-    "zombie_death.png",
-    "zombie_deaths_study.gif",
-    "zombie_missing_arm.png"
+    "gameplay/chomper_bite.gif",
+    "gameplay/defeat.gif",
+    "gameplay/developed_backyard.gif",
+    "gameplay/flag_death.gif",
+    "gameplay/gameplay.gif",
+    "gameplay/grave_emergence.gif",
+    "gameplay/plant_reward.gif",
+    "gameplay/repeater_burst.gif",
+    "gameplay/road_entry.gif",
+    "gameplay/scouting.gif",
+    "gameplay/seed_bank_flight.gif",
+    "gameplay/squash_leap.gif",
+    "gameplay/sun_collection.gif",
+    "gameplay/title.gif",
+    "gameplay/tombstone_crumble.gif",
+    "gameplay/wilted_tutorial.gif",
+    "gameplay/zombie_combat.gif",
+    "gameplay/zombie_damage_death.gif",
+    "screenshots/almanac_lifetime_kills.png",
+    "screenshots/almanac_plant_cherry_bomb.png",
+    "screenshots/almanac_plant_chomper.png",
+    "screenshots/almanac_plant_entries.png",
+    "screenshots/almanac_plant_peashooter.png",
+    "screenshots/almanac_plant_potato_mine.png",
+    "screenshots/almanac_plant_repeater.png",
+    "screenshots/almanac_plant_snow_pea.png",
+    "screenshots/almanac_plant_squash.png",
+    "screenshots/almanac_plant_sunflower.png",
+    "screenshots/almanac_plant_tallnut.png",
+    "screenshots/almanac_plant_wallnut.png",
+    "screenshots/almanac_plants.png",
+    "screenshots/almanac_scrolled.png",
+    "screenshots/almanac_zombie_buckethead.png",
+    "screenshots/almanac_zombie_conehead.png",
+    "screenshots/almanac_zombie_entries.png",
+    "screenshots/almanac_zombie_flag.png",
+    "screenshots/almanac_zombie_football.png",
+    "screenshots/almanac_zombie_newspaper.png",
+    "screenshots/almanac_zombie_normal.png",
+    "screenshots/almanac_zombie_pole_vaulter.png",
+    "screenshots/almanac_zombie_screen_door.png",
+    "screenshots/almanac_zombies.png",
+    "screenshots/armored_horde.png",
+    "screenshots/chomper_chewing.png",
+    "screenshots/developed_backyard.png",
+    "screenshots/developed_backyard_late.png",
+    "screenshots/explosion_above_plants.png",
+    "screenshots/final_flag.png",
+    "screenshots/flag_death.png",
+    "screenshots/gameplay.png",
+    "screenshots/grave_emergence.png",
+    "screenshots/lawn_edge.png",
+    "screenshots/lawn_start.png",
+    "screenshots/lawn_three_lanes.png",
+    "screenshots/levels_debug.png",
+    "screenshots/levels_locked.png",
+    "screenshots/levels_progress.png",
+    "screenshots/levels_reloaded.png",
+    "screenshots/loss_animation.png",
+    "screenshots/loss_prompt.png",
+    "screenshots/menus.png",
+    "screenshots/mine.png",
+    "screenshots/mine_armed.png",
+    "screenshots/mine_arming.png",
+    "screenshots/mine_burst.png",
+    "screenshots/mine_spent.png",
+    "screenshots/mixer.png",
+    "screenshots/mixer_effects_muted.png",
+    "screenshots/mixer_master_muted.png",
+    "screenshots/mixer_music_muted.png",
+    "screenshots/mower_active.png",
+    "screenshots/mower_closeup.png",
+    "screenshots/overview.png",
+    "screenshots/paused.png",
+    "screenshots/placement.png",
+    "screenshots/placement_check.png",
+    "screenshots/placement_cooldown.png",
+    "screenshots/placement_occupied.png",
+    "screenshots/placement_unaffordable.png",
+    "screenshots/plant_red_flash.png",
+    "screenshots/plant_reward.png",
+    "screenshots/plant_reward_mid.png",
+    "screenshots/preview_level_1.png",
+    "screenshots/preview_level_10.png",
+    "screenshots/repeater_pair.png",
+    "screenshots/road_entry.png",
+    "screenshots/save_delete_confirmation.png",
+    "screenshots/save_slots.png",
+    "screenshots/save_slots_deleted.png",
+    "screenshots/save_slots_empty.png",
+    "screenshots/save_slots_full.png",
+    "screenshots/save_slots_progress.png",
+    "screenshots/save_slots_reloaded.png",
+    "screenshots/seed_packets.png",
+    "screenshots/seed_selection.png",
+    "screenshots/seed_selection_custom.png",
+    "screenshots/seed_selection_error.png",
+    "screenshots/shovel_removed.png",
+    "screenshots/shovel_selected.png",
+    "screenshots/snow_pea_gameplay.png",
+    "screenshots/squash_landing.png",
+    "screenshots/sun_arrived.png",
+    "screenshots/sun_before.png",
+    "screenshots/sun_collection.png",
+    "screenshots/sun_mid.png",
+    "screenshots/sun_start.png",
+    "screenshots/title.png",
+    "screenshots/tombstone_cracked.png",
+    "screenshots/tombstone_crumble.png",
+    "screenshots/tombstone_destroyed.png",
+    "screenshots/tombstones_lawn.png",
+    "screenshots/trophy_reward.png",
+    "screenshots/tutorial_collect_sun.png",
+    "screenshots/tutorial_complete.png",
+    "screenshots/tutorial_flower_sun.png",
+    "screenshots/tutorial_peashooter.png",
+    "screenshots/tutorial_shovel.png",
+    "screenshots/tutorial_sunflower.png",
+    "screenshots/wallnut.png",
+    "screenshots/wallnut_damaged.png",
+    "screenshots/wallnut_healthy.png",
+    "screenshots/wallnut_worn.png",
+    "screenshots/wave_track_3.png",
+    "screenshots/wave_track_5.png",
+    "screenshots/zombie_arm_drop.png",
+    "screenshots/zombie_damage_flash.png",
+    "screenshots/zombie_death.png",
+    "screenshots/zombie_missing_arm.png",
+    "studies/falling_equipment_study.gif",
+    "studies/flag_deaths_study.gif",
+    "studies/football_charge_study.gif",
+    "studies/football_deaths_study.gif",
+    "studies/newspaper_deaths_study.gif",
+    "studies/pole_vaulter_study.gif",
+    "studies/screen_door_bite_study.gif",
+    "studies/vault_deaths_study.gif",
+    "studies/zombie_buckethead_damage_death_study.gif",
+    "studies/zombie_conehead_damage_death_study.gif",
+    "studies/zombie_deaths_study.gif",
+    "studies/zombie_flag_damage_death_study.gif",
+    "studies/zombie_football_damage_death_study.gif",
+    "studies/zombie_newspaper_damage_death_study.gif",
+    "studies/zombie_normal_damage_death_study.gif",
+    "studies/zombie_pole_vaulter_damage_death_study.gif",
+    "studies/zombie_screen_door_damage_death_study.gif"
   ]
 }

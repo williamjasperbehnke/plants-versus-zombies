@@ -4,10 +4,11 @@ import hashlib
 import json
 from PIL import Image, ImageDraw
 from asset_layout import asset_path
+from zombie_previews import damage_studies, DURATION_MS
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / 'build'
-DOCS = ROOT / 'docs'
+MEDIA = ROOT / 'docs' / 'media'
 NEAREST = Image.Resampling.NEAREST
 
 # target: (emulator capture, debug ROM). Shared Almanac captures are last written
@@ -131,6 +132,21 @@ def contact_sheet(images, labels, columns=3):
     return result
 
 
+
+def media_path(filename):
+    if filename.endswith('_study.gif'):
+        folder = 'studies'
+    elif filename.endswith('.gif'):
+        folder = 'gameplay'
+    else:
+        folder = 'screenshots'
+    return MEDIA / folder / filename
+
+
+def media_name(filename):
+    return media_path(filename).relative_to(MEDIA).as_posix()
+
+
 def main():
     # Load and validate every source before replacing or retiring any image.
     images = {target: capture(*source) for target, source in CAPTURES.items()}
@@ -138,15 +154,17 @@ def main():
                   for name, (sources, _) in ANIMATIONS.items()}
     # Validate current sprite atlases too; these studies are labeled separately from ROM captures.
     studies = {}
-    for name in ('zombie_deaths', 'newspaper_deaths', 'zombie_debris', 'newspaper_zombies', 'flag_deaths', 'football_zombies', 'football_deaths', 'vaulting_zombies', 'wounded_vaulting_zombies', 'screen_door_zombies'):
+    for name in ('zombie_deaths', 'newspaper_deaths', 'zombie_debris', 'newspaper_zombies', 'flag_deaths', 'football_zombies', 'football_deaths', 'vaulting_zombies', 'wounded_vaulting_zombies', 'screen_door_zombies', 'vault_deaths'):
         with Image.open(asset_path(name)) as source:
             studies[name] = source.copy()
-    DOCS.mkdir(exist_ok=True)
+    zombie_damage, zombie_damage_details = damage_studies()
+    for folder in ('screenshots', 'gameplay', 'studies'):
+        (MEDIA / folder).mkdir(parents=True, exist_ok=True)
     outputs = set()
 
     def publish(name, image):
-        image.save(DOCS / name)
-        outputs.add(name)
+        image.save(media_path(name))
+        outputs.add(media_name(name))
 
     def sheet(name, names, labels, columns=3):
         publish(name + '.png', contact_sheet([images[n] for n in names], labels, columns))
@@ -181,16 +199,16 @@ def main():
         publish(f'wave_track_{count}.png', enlarged(images[name].crop((50, 0, 240, 23)), 4))
     publish('final_flag.png', enlarged(images['lawn_start'].crop((53, 0, 78, 20)), 8))
     for name, frames in animations.items():
-        frames[0].save(DOCS / f'{name}.gif', save_all=True, append_images=frames[1:],
+        frames[0].save(media_path(f'{name}.gif'), save_all=True, append_images=frames[1:],
                        duration=ANIMATIONS[name][1], loop=0)
-        outputs.add(name + '.gif')
+        outputs.add(media_name(name + '.gif'))
 
     # Actual gameplay close-up, using the same captured frames as the full scene.
     combat = [enlarged(capture(f'zombie_combat_{i:03d}', True).crop((110, 66, 239, 108)), 4)
               for i in range(24, 88)]
-    combat[0].save(DOCS / 'zombie_damage_death.gif', save_all=True,
+    combat[0].save(media_path('zombie_damage_death.gif'), save_all=True,
                    append_images=combat[1:], duration=100, loop=0)
-    outputs.add('zombie_damage_death.gif')
+    outputs.add(media_name('zombie_damage_death.gif'))
     # Isolated sprite studies show every equipment type clearly, without claiming
     # these composites are an in-game screen. Gameplay adds the falling trajectories.
     def on_grass(sprite):
@@ -198,85 +216,85 @@ def main():
         image.paste(sprite.convert('RGB'), (0, 0), sprite.point([0] + [255] * 255, 'L'))
         return enlarged(image, 4)
 
-    for name in ('zombie_deaths', 'newspaper_deaths', 'flag_deaths', 'football_deaths'):
+    for name in ('zombie_deaths', 'newspaper_deaths', 'flag_deaths', 'football_deaths', 'vault_deaths'):
         source = studies[name]
         frames = [on_grass(source.crop((0, i * 32, 32, (i + 1) * 32))) for i in range(10 if name == 'flag_deaths' else 8)]
-        frames[0].save(DOCS / f'{name}_study.gif', save_all=True, append_images=frames[1:], duration=100, loop=0)
-        outputs.add(f'{name}_study.gif')
+        frames[0].save(media_path(f'{name}_study.gif'), save_all=True, append_images=frames[1:], duration=100, loop=0)
+        outputs.add(media_name(f'{name}_study.gif'))
     runner = studies['football_zombies']
     charge = [on_grass(runner.crop((0, i * 32, 32, (i + 1) * 32))) for i in range(4)]
-    charge[0].save(DOCS / 'football_charge_study.gif', save_all=True, append_images=charge[1:], duration=100, loop=0)
-    outputs.add('football_charge_study.gif')
+    charge[0].save(media_path('football_charge_study.gif'), save_all=True, append_images=charge[1:], duration=100, loop=0)
+    outputs.add(media_name('football_charge_study.gif'))
 
     door_frames = []
     source = studies['screen_door_zombies']
     for beat in range(4):
-        result = Image.new('RGB', (512, 152), (17, 30, 29))
-        draw = ImageDraw.Draw(result)
-        for armor, label in enumerate(('Intact door', 'Damaged door')):
+        result = Image.new('RGB', (512, 128), (17, 30, 29))
+        for armor in range(2):
             frame = 2 + beat + armor * 6
             sprite = source.crop((0, frame * 32, 64, (frame + 1) * 32))
-            draw.text((armor * 256 + 4, 5), label, fill=(255, 241, 191))
-            result.paste(on_grass(sprite), (armor * 256, 24))
+            result.paste(on_grass(sprite), (armor * 256, 0))
         door_frames.append(result)
-    door_frames[0].save(DOCS / 'screen_door_bite_study.gif', save_all=True,
+    door_frames[0].save(media_path('screen_door_bite_study.gif'), save_all=True,
                         append_images=door_frames[1:], duration=170, loop=0)
-    outputs.add('screen_door_bite_study.gif')
+    outputs.add(media_name('screen_door_bite_study.gif'))
     # Exact native sprite frames, including the equipment layer after arm loss.
     vaulter_frames = []
     poses = ((0, 1, 0, 1), (2, 3, 2, 3), (6, 7, 6, 7), (8, 9, 10, 11))
     for beat in range(4):
-        result = Image.new('RGB', (128 * 4, 152 * 2), (17, 30, 29))
-        draw = ImageDraw.Draw(result)
+        result = Image.new('RGB', (128 * 4, 128 * 2), (17, 30, 29))
         for row, name in enumerate(('vaulting_zombies', 'wounded_vaulting_zombies')):
-            for column, label in enumerate(('Walk / pole', 'Bite / pole', 'Bite / spent', 'Vault')):
+            for column in range(4):
                 frame = poses[column][beat]
                 sprite = studies[name].crop((0, frame * 32, 32, (frame + 1) * 32))
-                x, y = column * 128, row * 152
-                draw.text((x + 4, y + 5), ('Wounded ' if row else '') + label, fill=(255, 241, 191))
-                result.paste(on_grass(sprite), (x, y + 24))
+                x, y = column * 128, row * 128
+                result.paste(on_grass(sprite), (x, y))
         vaulter_frames.append(result)
-    vaulter_frames[0].save(DOCS / 'pole_vaulter_study.gif', save_all=True,
+    vaulter_frames[0].save(media_path('pole_vaulter_study.gif'), save_all=True,
                           append_images=vaulter_frames[1:], duration=160, loop=0)
-    outputs.add('pole_vaulter_study.gif')
+    outputs.add(media_name('pole_vaulter_study.gif'))
 
     frames = []
-    labels = ('Arm', 'Newspaper arm', 'Cone', 'Newspaper', 'Bucket', 'Screen door', 'Flag', 'Football arm', 'Football helmet')
+    equipment_count = 10
     for stage in range(6):
-        result = Image.new('RGB', (128 * 3, 152 * 3), (17, 30, 29))
-        draw = ImageDraw.Draw(result)
-        for kind, label in enumerate(labels):
+        result = Image.new('RGB', (128 * 3, 128 * ((equipment_count + 2) // 3)), (17, 30, 29))
+        for kind in range(equipment_count):
             source = studies['zombie_debris']
             sprite = source.crop((0, (kind * 6 + stage) * 32, 32, (kind * 6 + stage + 1) * 32))
             if kind == 1:
                 sprite.putpalette(studies['newspaper_zombies'].getpalette())
-            x, y = kind % 3 * 128, kind // 3 * 152
-            draw.text((x + 4, y + 5), label, fill=(255, 241, 191))
-            result.paste(on_grass(sprite), (x, y + 24))
+            x, y = kind % 3 * 128, kind // 3 * 128
+            result.paste(on_grass(sprite), (x, y))
         frames.append(result)
-    frames[0].save(DOCS / 'falling_equipment_study.gif', save_all=True,
+    frames[0].save(media_path('falling_equipment_study.gif'), save_all=True,
                    append_images=frames[1:], duration=100, loop=0)
-    outputs.add('falling_equipment_study.gif')
+    outputs.add(media_name('falling_equipment_study.gif'))
+
+    for filename, frames in zombie_damage.items():
+        frames[0].save(media_path(filename), save_all=True, append_images=frames[1:],
+                       duration=DURATION_MS, loop=0, disposal=2)
+        outputs.add(media_name(filename))
 
     # This directory contains current published captures and studies; old runner/campaign studies
     # must not linger beside current ROM screenshots after a successful refresh.
     retired = []
-    for path in DOCS.iterdir():
-        if path.suffix.lower() in ('.png', '.gif') and path.name not in outputs:
+    for path in MEDIA.rglob("*"):
+        if path.suffix.lower() in ('.png', '.gif') and path.relative_to(MEDIA).as_posix() not in outputs:
             path.unlink()
-            retired.append(path.name)
+            retired.append(path.relative_to(MEDIA).as_posix())
     manifest = {
         'roms': {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
                  for name in ('plants_vs_zombies.gba', 'plants_vs_zombies_debug.gba')},
-        'screenshots': {name + '.png': {'source': source + '.ppm', 'debug': debug, 'scale': 3}
+        'screenshots': {media_name(name + '.png'): {'source': source + '.ppm', 'debug': debug, 'scale': 3}
                         for name, (source, debug) in CAPTURES.items()},
-        'animations': {name + '.gif': {'sources': [source + '.ppm' for source, _ in sources],
+        'animations': {media_name(name + '.gif'): {'sources': [source + '.ppm' for source, _ in sources],
                                       'debug': sources[0][1], 'duration_ms': duration}
                         for name, (sources, duration) in ANIMATIONS.items()},
-        'studies': ['zombie_deaths_study.gif', 'newspaper_deaths_study.gif', 'falling_equipment_study.gif', 'flag_deaths_study.gif', 'football_deaths_study.gif', 'football_charge_study.gif', 'pole_vaulter_study.gif', 'screen_door_bite_study.gif'],
+        'studies': [media_name(name) for name in ['zombie_deaths_study.gif', 'newspaper_deaths_study.gif', 'falling_equipment_study.gif', 'flag_deaths_study.gif', 'football_deaths_study.gif', 'football_charge_study.gif', 'pole_vaulter_study.gif', 'screen_door_bite_study.gif', 'vault_deaths_study.gif'] + sorted(zombie_damage)],
+        'study_details': {media_name(name): detail for name, detail in zombie_damage_details.items()},
         'files': sorted(outputs),
     }
-    (DOCS / 'captures.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    (MEDIA / 'captures.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(f'Published {len(outputs)} current images/animations; removed {len(retired)} retired images.')
 
 
