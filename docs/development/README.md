@@ -142,7 +142,7 @@ lawn visible; scouting uses the road panorama.
 | `tools/audio_sources/` | Defeat recordings and credits |
 | `tools/generate_previews.py` | ROM screenshot and GIF publication |
 | `tools/zombie_previews.py`, `tools/plant_previews.py` | Per-type animation studies |
-| `tools/study_art.py` | Shared indexed frame loading, palettes and text-free study layouts |
+| `tools/study_art.py` | Shared indexed frame loading, palettes and study layouts |
 
 Graphics are grouped into `plants`, `zombies`, `effects`, `seeds`, `ui` and
 `backgrounds` under `graphics/`. Character sheets stack poses vertically. Most
@@ -165,8 +165,7 @@ relative to `docs/media/`.
 
 The damage/death studies crop the current indexed sheets and stage equipment,
 arm loss and corpse poses in comparison panels. They are labeled as studies in
-the gallery and manifest. Study GIFs contain no text; their panel descriptions
-belong in the guide or manifest. Gameplay GIFs use emulator frames. Add new study assets
+the gallery and manifest. Panel descriptions belong in the guide or manifest. Gameplay GIFs use emulator frames. Add new study assets
 to the publisher so a gallery refresh keeps them and records their sources.
 
 ## Save format

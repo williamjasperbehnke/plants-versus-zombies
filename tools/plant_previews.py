@@ -15,16 +15,16 @@ PLANTS = {
     'chomper': 'chompers',
 }
 PANELS = {
-    'sunflower': ['idle', 'sun production and collection', 'hit flash', 'damage and removal'],
-    'peashooter': ['idle', 'shooting', 'hit flash', 'damage and removal'],
-    'wallnut': ['healthy', 'damaged', 'worn', 'damage and removal'],
-    'potato_mine': ['arming', 'armed', 'detonation', 'damage and removal before arming'],
-    'snow_pea': ['idle', 'shooting', 'hit flash', 'damage and removal'],
+    'sunflower': ['idle', 'sun production and collection', 'damage'],
+    'peashooter': ['idle', 'shooting', 'damage'],
+    'wallnut': ['healthy', 'damaged', 'worn', 'damage'],
+    'potato_mine': ['arming', 'armed', 'detonation', 'damage before arming'],
+    'snow_pea': ['idle', 'shooting', 'damage'],
     'cherry_bomb': ['idle', 'fuse and explosion'],
-    'squash': ['idle', 'leap and landing', 'impact', 'damage and removal before leaping'],
-    'tallnut': ['healthy', 'damaged', 'worn', 'damage and removal'],
-    'repeater': ['idle', 'paired shots', 'hit flash', 'damage and removal'],
-    'chomper': ['idle', 'bite and swallow', 'chewing and recovery', 'damage and removal'],
+    'squash': ['idle', 'leap and landing', 'damage'],
+    'tallnut': ['healthy', 'damaged', 'worn', 'damage'],
+    'repeater': ['idle', 'paired shots', 'damage'],
+    'chomper': ['idle', 'bite and swallow', 'damage'],
 }
 DURATION_MS = 50
 
@@ -52,9 +52,7 @@ def plant_studies():
     def draw(scene, name, index, x=32, y=48, red=False):
         art.paste(scene, art.sprite(name, index, red), x, y)
 
-    def damage(scene, kind, clock, removal=False):
-        if removal and clock >= 168:
-            return
+    def damage(scene, kind, clock):
         stage = 0
         if kind in ('wallnut', 'tallnut'):
             stage = min(clock // 60, 2)
@@ -99,13 +97,10 @@ def plant_studies():
                 y += (16 - y) * progress // (24 * 24)
             draw(scene, 'field_items', 1, x, y)
 
-    def squash(scene, clock, impact=False):
+    def squash(scene, clock):
         age = clock - 48
         if age < 0:
             draw(scene, 'squash', idle('squash', clock))
-        elif impact:
-            if age < 18:
-                draw(scene, 'squash', 4, 64)
         elif age < 6:
             draw(scene, 'squash', 2)
         elif age < 30:
@@ -173,15 +168,14 @@ def plant_studies():
                 sources.add('explosion')
             elif kind == 'squash':
                 squash(scenes[1], clock)
-                squash(scenes[2], clock, impact=True)
+                damage(scenes[2], kind, clock)
             elif kind == 'chomper':
                 bite(scenes[1], clock)
-                index = 7 if clock >= 172 else (5, 9, 6, 10)[clock // 10 % 4]
-                draw(scenes[2], sheet, index)
+                damage(scenes[2], kind, clock)
                 sources.add('normal_zombies')
             if len(scenes) == 4:
-                damage(scenes[3], kind, clock, removal=True)
-            frames.append(art.compose(scenes))
+                damage(scenes[3], kind, clock)
+            frames.append(art.compose(scenes, columns=3 if len(scenes) == 3 else 2))
         filename = f'plant_{kind}_study.gif'
         result[filename] = frames
         details[filename] = {

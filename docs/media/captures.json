@@ -1337,8 +1337,7 @@
       "panels": [
         "idle",
         "sun production and collection",
-        "hit flash",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_peashooter_study.gif": {
@@ -1352,8 +1351,7 @@
       "panels": [
         "idle",
         "shooting",
-        "hit flash",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_wallnut_study.gif": {
@@ -1367,7 +1365,7 @@
         "healthy",
         "damaged",
         "worn",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_potato_mine_study.gif": {
@@ -1381,7 +1379,7 @@
         "arming",
         "armed",
         "detonation",
-        "damage and removal before arming"
+        "damage before arming"
       ]
     },
     "studies/plant_snow_pea_study.gif": {
@@ -1394,8 +1392,7 @@
       "panels": [
         "idle",
         "shooting",
-        "hit flash",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_cherry_bomb_study.gif": {
@@ -1420,8 +1417,7 @@
       "panels": [
         "idle",
         "leap and landing",
-        "impact",
-        "damage and removal before leaping"
+        "damage"
       ]
     },
     "studies/plant_tallnut_study.gif": {
@@ -1435,7 +1431,7 @@
         "healthy",
         "damaged",
         "worn",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_repeater_study.gif": {
@@ -1449,8 +1445,7 @@
       "panels": [
         "idle",
         "paired shots",
-        "hit flash",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_chomper_study.gif": {
@@ -1464,8 +1459,7 @@
       "panels": [
         "idle",
         "bite and swallow",
-        "chewing and recovery",
-        "damage and removal"
+        "damage"
       ]
     },
     "studies/plant_wilted_study.gif": {

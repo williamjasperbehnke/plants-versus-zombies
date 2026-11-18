@@ -11,5 +11,4 @@ Images are grouped under `media/`:
 - [Studies](media/studies/): animation comparisons assembled from sprite sheets.
 - [Capture manifest](media/captures.json): ROM hashes, sources and timing.
 
-Study captions and panel descriptions are in the player guide; the GIFs contain
-only the artwork.
+Study captions and panel descriptions are in the player guide.
