@@ -1,7 +1,7 @@
 {
   "roms": {
-    "plants_vs_zombies.gba": "3d5030671f5e13089485e2749093c453bdf586f75412041a535ca1c4c604c0be",
-    "plants_vs_zombies_debug.gba": "111d3761070dba45c872c0e708c767cae202c6f3f16936ed1ca226b28af00cd8"
+    "plants_vs_zombies.gba": "f792c6a4586915a5597469af5129e2d28f809aaee74f02a790ae83d4c327ff1f",
+    "plants_vs_zombies_debug.gba": "b520aa5cde0218563b84b6b4f6d51609f1b415de8c2a5a6a3b13d414574f574a"
   },
   "screenshots": {
     "save_slots_empty.png": {

@@ -1,33 +1,83 @@
 # Development guide
 
+[Project overview and controls](../README.md) · [Illustrated player guide](README.md)
+
+This guide covers building, editing, and checking the game. For campaign details,
+plant choices, enemies, and screenshots, use the player guide.
+
+## Building and running
+
+Install devkitPro's GBA tools (`devkitARM`, `grit`, `mmutil`, `gbafix`), Python 3,
+and [Butano](https://github.com/GValiente/butano). Butano is external to this
+repository; its default location is `~/gba_development/butano`.
+
+```sh
+export DEVKITARM=/opt/devkitpro/devkitARM
+export PATH="$DEVKITARM/bin:/opt/devkitpro/tools/bin:$PATH"
+make -j8 BUTANO_ROOT=/absolute/path/to/butano
+make -j8 DEBUG_SAVE=1 BUTANO_ROOT=/absolute/path/to/butano
+```
+
+The outputs are `plants_vs_zombies.gba` and `plants_vs_zombies_debug.gba`. Open
+either in mGBA or use a GBA flash cartridge. Run the builds sequentially: audio
+conversion shares temporary files. They have separate object directories and
+save regions. A new debug profile starts with all ten levels open; early levels
+still use their original plant rosters. Use its level selector for testing.
+
+Generated artwork is included. To edit and regenerate assets, install Pillow:
+
+```sh
+python3 -m pip install Pillow
+python3 tools/generate_assets.py
+make -j8
+make -j8 DEBUG_SAVE=1
+```
+
+Host checks also require clang-format 19 and a C++17 compiler with AddressSanitizer
+and UndefinedBehaviorSanitizer support. See [code style](#code-style) for formatter
+setup. Emulator checks need libmgba headers and libraries; the default search paths
+are `/usr/local/include` and `/usr/local/lib`.
+
+
 ## Runtime boundaries
 
 | Source | Responsibility |
 | --- | --- |
-| `include/game.h`, `src/game.cpp` | Deterministic simulation, levels, spawn rosters, combat and bounded entity/effect pools |
-| `src/main.cpp`, `include/application.h`, `src/application.cpp` | Startup, keypad adapter, frame ordering and service composition |
-| `include/input_frame.h`, `include/input_controller.h`, `src/input_controller.cpp` | Portable input snapshots, repeat timing, screen interaction and view-state updates |
-| `include/view_state.h` | UI state shared by the controller and presentation, without Butano dependencies |
-| `include/audio_commands.h`, `include/audio_player.h`, `src/audio_player.cpp` | Ordered UI cues, music/mixer changes, combat throttling and defeat/reward sounds |
-| `include/presentation.h`, `src/presentation.cpp` | Screen transitions, backgrounds, menus, HUD and cached text |
-| `include/world_renderer.h`, `src/world_renderer.cpp` | World actor/effect pools, preview actors, layering and hit/frost palettes |
-| `include/sprite_catalog.h`, `src/sprite_catalog.cpp` | Central actor/packet/background routing and shared sprite placement |
-| `include/menu_layout.h` | Shared navigation/rendering grid geometry |
-| `include/almanac.h`, `include/text_wrap.h` | Catalogue copy, automatic wrapping and scroll bounds |
-| `include/actor_animation.h` | Shared plant/zombie display poses |
-| `include/tutorial.h` | First-play tutorial guidance |
-| `include/progress.h`, `include/save_layout.h`, `include/save_slots.h`, `include/save_store.h` | Portable encoding, three-slot journals, active profile and SRAM I/O |
-| `include/audio_settings.h` | Mixer limits and master/channel gains |
-| `include/reward_animation.h` | Reward timing and integer bounce/zoom geometry |
-| `include/defeat_audio.h` | Generated defeat timing shared by simulation, runtime and emulator checks |
-| `include/seed_layout.h`, `include/wave_track.h` | Generated geometry shared by artwork and rendering |
+| `include/game/game.h`, `src/game/game.cpp` | Simulation owner, level lifecycle, navigation, economy and frame ordering |
+| `src/game/game_waves.cpp` | Wave groups, spawn queues, rosters and horde entry |
+| `src/game/game_plants.cpp` | Placement, plant actions, targeting and plant attacks |
+| `src/game/game_combat.cpp` | Collisions, zombie movement/bites, damage and cosmetic effects |
+| `include/game/game_internal.h` | Private fixed-pool allocation and distance helpers shared by simulation files |
+| `src/main.cpp`, `include/app/application.h`, `src/app/application.cpp` | Startup, keypad adapter, frame ordering and service composition |
+| `include/app/input_controller.h`, `src/app/input_controller.cpp` | Portable input snapshots, repeat timing, screen interaction and view-state updates |
+| `include/ui/view_state.h` | UI state shared by the controller and presentation, without Butano dependencies |
+| `include/audio/audio_types.h`, `include/audio/audio_player.h`, `src/audio/audio_player.cpp` | Ordered UI cues, music/mixer changes, combat throttling and defeat/reward sounds |
+| `include/ui/presentation.h`, `src/ui/presentation.cpp` | Screen coordination, HUD, scouting and rewards |
+| `include/ui/almanac_view.h`, `src/ui/almanac_view.cpp` | Almanac grid, portrait, statistics, scrolling and text resources |
+| `include/ui/menu_views.h`, `src/ui/menu_views.cpp` | Pause labels/sliders and seed-choice packets, panel, animation and redraw state |
+| `include/ui/save_menu_view.h`, `src/ui/save_menu_view.cpp` | Save list, delete confirmation, background and redraw state |
+| `include/ui/world_renderer.h`, `src/ui/world_renderer.cpp` | World actor/effect pools, preview actors, layering and hit/frost palettes |
+| `include/ui/sprite_catalog.h`, `src/ui/sprite_catalog.cpp` | Central actor/packet/background routing and shared sprite placement |
+| `include/ui/menu_layout.h` | Shared navigation/rendering grid geometry |
+| `include/ui/almanac.h`, `include/ui/text_wrap.h` | Catalogue copy, automatic wrapping and scroll bounds |
+| `include/game/animation.h`, `src/game/animation.cpp` | Frame clips, actor pose selection, attack/recoil/vault timing and reward bounce/zoom |
+| `include/game/tutorial.h` | First-play tutorial guidance |
+| `include/save/progress.h`, `include/save/save_layout.h`, `include/save/save_slots.h`, `include/save/save_store.h` | Portable encoding, three-slot journals, active profile and SRAM I/O |
+| `include/generated/defeat_audio.h` | Generated defeat timing shared by simulation, runtime and emulator checks |
+| `include/generated/seed_layout.h`, `include/generated/wave_track.h` | Generated geometry shared by artwork and rendering |
 
 `Application` composes concrete services. `InputController` owns `ViewState` and
 repeat counters; it receives one `InputFrame` per frame and never reads hardware,
 plays audio, or creates sprites. `AudioCommands` is a bounded eight-command queue
 that preserves cue order, including mixer changes between sounds. `AudioPlayer`
 consumes those commands and owns combat sound cooldowns. `Presentation` owns a
-`WorldRenderer`; menus do not manipulate its individual actor pools. Actor-sheet
+`WorldRenderer`; menus do not manipulate its individual actor pools. Its
+`AlmanacView`, `SaveMenuView`, `PauseMenuView` and `SeedSelectionView` own their screen resources and text generators,
+including clearing and redraw caches. `ViewState` groups portable selection state.
+Almanac and save-menu caches compare that state directly; seed selection caches
+its choice, error state and selected-packet mask, while pause checks the selection
+and mixer settings.
+`Game` remains the one simulation owner across its focused implementation files. Actor-sheet
 selection and placement are shared through `SpriteCatalog` and `draw_actor()`.
 Resource owners cannot be copied. These boundaries introduce no virtual dispatch
 or heap-backed entity containers.
@@ -47,6 +97,10 @@ flowchart LR
     A --> P[Presentation]
     V --> P
     P --> W[WorldRenderer]
+    P --> AV[AlmanacView]
+    P --> SV[SaveMenuView]
+    P --> PM[PauseMenuView]
+    P --> SS[SeedSelectionView]
     W --> R[SpriteCatalog]
     P --> R
 ```
@@ -54,7 +108,8 @@ flowchart LR
 The frame order is deliberate: snapshot keys and handle input, consume UI audio
 commands and ensure music, tick the simulation, play simulation audio and save
 progress, advance transient view timers, render, then call `bn::core::update()`.
-Keeping that order preserves pause, feedback, defeat and reward timing. World
+Keeping that order preserves pause, feedback, defeat and reward timing. The
+implementation split does not change that order or the save format. World
 resources are released at the same screen transitions as before; splitting their
 ownership keeps actor/effect capacities bounded. Save encoding remains explicit.
 
@@ -102,8 +157,8 @@ minimal horizontal movement and no upward throw. The six-slot cosmetic pool repl
 nearest expiry when full; it never blocks spawning, changes health, or delays
 group progression. Pause freezes effect timers. Effects can finish during defeat.
 
-`SpriteCatalog::actor()` maps stable pose IDs into the relevant character atlas,
-including wounded variants. `draw_zombie_effects()` uses separate corpse/debris
+`SpriteCatalog::actor()` resolves an `ActorSheet` and a local frame index to the
+relevant character atlas, including wounded variants. `draw_zombie_effects()` uses separate corpse/debris
 sprites, with shared palettes and lane depth. Falling equipment follows an integer
 arc; source atlas rotation is baked with nearest-neighbor sampling. Arm reaches
 are folded before corpse rotation so they cannot hold the head and torso above
@@ -363,9 +418,44 @@ the default selection.
 
 ## Verification and publishing
 
-The [root README](../README.md#verification-and-documentation) covers dependencies
-and the complete `sh tools/refresh_docs.sh` workflow. Builds and capture runs must
-be sequential because they share temporary/output files.
+Run the style check and sanitized host suite from the project root:
+
+```sh
+sh tools/test.sh
+```
+
+To rebuild both ROMs, run all checks, capture gameplay and publish the gallery:
+
+```sh
+sh tools/refresh_docs.sh
+```
+
+The script runs normal, debug, defeat and gallery scenarios in that order, then
+publishes the PNGs and GIFs. Builds and capture runs are sequential because they
+share temporary and output files. For a custom installation:
+
+```sh
+BUTANO_ROOT=/absolute/path/to/butano \
+MGBA_INCLUDE_DIR=/absolute/path/to/include \
+MGBA_LIBRARY_DIR=/absolute/path/to/lib sh tools/refresh_docs.sh
+```
+
+`JOBS`, `CC`, and `CXX` may also be overridden. To repeat just the capture and
+publication stages after building:
+
+```sh
+cc -Wall -Wextra -Werror tools/rom_smoke.c \
+    -I/usr/local/include -L/usr/local/lib -lmgba -o build/rom_smoke
+build/rom_smoke plants_vs_zombies.gba
+build/rom_smoke plants_vs_zombies_debug.gba debug
+build/rom_smoke plants_vs_zombies.gba loss
+build/rom_smoke plants_vs_zombies_debug.gba gallery
+python3 tools/generate_previews.py
+```
+
+The publisher requires fresh captures for the matching normal and debug ROMs.
+It validates every input before replacing images or removing retired captures.
+The player-facing gallery lives in [docs/README.md](README.md).
 
 | Check | Coverage |
 | --- | --- |
@@ -424,7 +514,7 @@ The Sunflower lesson requires the house-side column (row 2, column 0). Artwork u
 greens and one-pixel contours. Four wilted poses cycle through a slow sag,
 recovery and blink with staggered timing; roots and shadows stay fixed. Scouting
 uses the initial pose so the lawn transition remains aligned. Shoveling frees their cells; replacement plants are ordinary actors.
-Level one uses zero horde growth (seven enemies total); other levels keep their
+Level one uses zero horde growth (ten enemies total); other levels keep their
 existing growth and final-wave multiplier.
 
 Almanac entries store one paragraph. `WrappedText<24, 32>` wraps at word boundaries
@@ -437,8 +527,78 @@ grid preview compensate for their asymmetric transparent padding (4 native
 pixels, doubled for the portrait); other character positions stay unchanged;
 Up/Down scrolls with key repeat and clamps at either end. Pages change only from
 the grid using L/R. Descriptions are original summaries, not copied game text.
-Animation lookup helpers live in `actor_animation.h`, separate from Almanac copy.
+Animation lookup helpers live in `animation.h`, separate from Almanac copy.
 
 All reward variants share `reward_panel`; trophies sit eight pixels higher than
 seed rewards. The unused wave-clear audio and duplicate reward backgrounds have
 been removed. Source generation remains in `tools/generate_assets.py`.
+
+`AnimationClip<N>` holds a fixed frame sequence and its tick duration. `frame_at()`
+loops with an optional pose offset; `frame_once()` holds the final frame for attacks
+and vaults. Clips allocate no memory and use no virtual dispatch. The animation
+module selects world frames, recoil, movement and corpse/debris poses as `ActorPose` values.
+Each pose contains an `ActorFrame` (an `ActorSheet` enum plus a local frame index),
+position, depth and scale percentage. There are no global frame ID ranges to decode.
+`SpriteCatalog` routes sheets to Butano assets, selects wounded variants, and checks
+local frame bounds. For example, `{ActorSheet::repeater, 2}` names a local pose
+directly instead of encoding it as global frame 272. Chomper pull movement and scale live with other animation math;
+status palettes remain in the renderer. Reward bounce durations and landing sounds,
+chomper action boundaries, firing recoil and vault duration share named timings.
+`WorldRenderer` applies those poses to sprite pools and handles layering and palettes.
+Catalogue/title previews share the same idle-frame data while retaining their clocks.
+Reward bounce and zoom math also lives in this module. Page sizes and wrapping live in `menu_layout.h`, with key-repeat
+ordering left in the controller. `Progress::cleared_levels()` supplies the save
+menu's derived count. No new simulation facade, entity hierarchy or virtual
+dispatch is involved.
+
+Host checks compile every `src/game/*.cpp` translation unit, including the portable
+animation module, and the controller independently of Butano. Emulator checks
+cover gameplay, save slots, menus, rewards and the feature gallery. After this
+reorganization, all 593 captured emulator frames matched the previous build exactly.
+
+
+## Code style
+
+Use clang-format **19.x** so local checks produce consistent results. Install it with
+`brew install llvm@19` on macOS or `clang-format-19` from your system package manager.
+If needed, set `CLANG_FORMAT` to the full executable path.
+
+```sh
+python3 tools/lint.py        # check without editing (also: make lint)
+python3 tools/lint.py --fix  # apply formatting (also: make format)
+sh tools/test.sh             # style check, then sanitized host tests
+```
+
+The linter checks all C/C++ files under `include/`, `src/`, `tests/` and `tools/`,
+including generated headers. `.clang-format` requires four-space indentation,
+opening braces on the declaration/control line, multiline function bodies,
+spaces after control keywords, and consistent wrapping at 110 columns. Prefer
+explicit `if`/`else` branches or `switch` statements over nested ternary expressions
+for animation states and asset selection. Even empty
+constructors have their closing brace on a separate line. `.editorconfig` supplies
+matching whitespace defaults; Makefile recipes retain tabs. Header templates in
+`tools/generate_assets.py` follow the same style so regeneration passes the check.
+
+Headers use folder-qualified includes, such as `game/game.h` and `ui/presentation.h`.
+Butano compiles the explicit one-level source subdirectories listed by the Makefile;
+keep source basenames unique because Butano names object files by basename.
+Multiline array initializers put the opening brace after `=`, each entry on its
+own indented line, and the closing brace on a separate line. mGBA feature flags
+must be included before other mGBA headers because they affect its structure layout;
+the formatter has an explicit include priority for this.
+
+Small related input types are in `app/input_controller.h`; mixer settings and queued
+cues are in `audio/audio_types.h`. The small internal `game/game_internal.h` remains because
+several simulation translation units share its fixed-pool helper.
+
+
+## Music and audio credits
+
+The game uses synthesized music and most effects. The defeat sequence combines
+a CC0 record scratch by filmsndfx with the original Plants vs. Zombies scream.
+The scream is not CC0; its rights remain with PopCap / EA. Sources, license details
+and processing notes are recorded in [audio credits](../tools/audio_sources/credits.json).
+
+The asset generator applies a shared gain of 1.5×, with another 1.5× on mower and
+explosion effects. The pause sliders attenuate those baselines. Emulator audio
+checks verify playback and muting; perceived loudness still needs a hardware check.

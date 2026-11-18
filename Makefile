@@ -4,7 +4,7 @@ BUILD := build
 BUTANO_ROOT ?= $(HOME)/gba_development/butano
 LIBBUTANO := $(BUTANO_ROOT)/butano
 PYTHON := python3
-SOURCES := src
+SOURCES := src $(wildcard src/*/)
 INCLUDES := include
 GRAPHICS := $(wildcard graphics/*/) $(BUTANO_ROOT)/common/graphics
 DATA :=
@@ -40,3 +40,10 @@ ifeq ($(LIBBUTANOABS),)
 $(error Butano not found. Set BUTANO_ROOT to the Butano repository directory)
 endif
 include $(LIBBUTANOABS)/butano.mak
+
+.PHONY: lint format
+lint:
+	$(PYTHON) tools/lint.py
+
+format:
+	$(PYTHON) tools/lint.py --fix

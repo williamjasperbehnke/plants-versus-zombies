@@ -1,12 +1,14 @@
-#include "../include/save_layout.h"
+#include "../include/save/save_layout.h"
 // Optional headless ROM integration check. Requires libmgba development headers.
 // Build: cc tools/rom_smoke.c -I/usr/local/include -L/usr/local/lib -lmgba -o build/rom_smoke
-#include "../include/defeat_audio.h"
 #include <mgba/flags.h>
+
+#include "../include/generated/defeat_audio.h"
+
+#include <assert.h>
+#include <mgba/core/blip_buf.h>
 #include <mgba/core/core.h>
 #include <mgba/core/log.h>
-#include <mgba/core/blip_buf.h>
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,59 +18,53 @@ static bool capture_audio;
 static uint64_t audio_energy;
 static void screenshot(const char* path);
 
-static void log_message(struct mLogger* logger, int category, enum mLogLevel level,
-                        const char* format, va_list args)
-{
+static void
+log_message(struct mLogger* logger, int category, enum mLogLevel level, const char* format, va_list args) {
     (void)logger;
     (void)category;
-    if(level & (mLOG_FATAL | mLOG_ERROR))
-    {
+    if (level & (mLOG_FATAL | mLOG_ERROR)) {
         vfprintf(stderr, format, args);
         fputc('\n', stderr);
     }
 }
 
 // Hash visible RGB; the unused high byte can vary between background and sprite layers.
-static uint32_t region_hash(int x, int y, int width, int height)
-{
+static uint32_t region_hash(int x, int y, int width, int height) {
     uint32_t hash = 2166136261u;
-    for(int row = y; row < y + height; ++row)
-    {
-        for(int column = x; column < x + width; ++column)
-        { hash = (hash ^ (pixels[row * 240 + column] & 0x00ffffffu)) * 16777619u; }
+    for (int row = y; row < y + height; ++row) {
+        for (int column = x; column < x + width; ++column) {
+            hash = (hash ^ (pixels[row * 240 + column] & 0x00ffffffu)) * 16777619u;
+        }
     }
     return hash;
 }
 
-static uint32_t image_hash(void) { return region_hash(0, 0, 240, 160); }
+static uint32_t image_hash(void) {
+    return region_hash(0, 0, 240, 160);
+}
 
-static void frames(struct mCore* core, unsigned keys, int count)
-{
+static void frames(struct mCore* core, unsigned keys, int count) {
     core->setKeys(core, keys);
-    for(int i = 0; i < count; ++i)
-    {
+    for (int i = 0; i < count; ++i) {
         core->runFrame(core);
-        for(int channel = 0; channel < 2; ++channel)
-        {
+        for (int channel = 0; channel < 2; ++channel) {
             short samples[4096];
             int read = blip_read_samples(core->getAudioChannel(core, channel), samples, 4096, 0);
-            if(capture_audio)
-            {
-                for(int sample = 0; sample < read; ++sample)
-                { audio_energy += samples[sample] < 0 ? -samples[sample] : samples[sample]; }
+            if (capture_audio) {
+                for (int sample = 0; sample < read; ++sample) {
+                    audio_energy += samples[sample] < 0 ? -samples[sample] : samples[sample];
+                }
             }
         }
     }
 }
 
-static void press(struct mCore* core, unsigned keys)
-{
+static void press(struct mCore* core, unsigned keys) {
     frames(core, keys, 3);
     frames(core, 0, 3);
 }
 
-static uint64_t measure_audio(struct mCore* core, int count)
-{
+static uint64_t measure_audio(struct mCore* core, int count) {
     audio_energy = 0;
     capture_audio = true;
     frames(core, 0, count);
@@ -76,13 +72,14 @@ static uint64_t measure_audio(struct mCore* core, int count)
     return audio_energy;
 }
 
-static void screenshot(const char* path)
-{
+static void screenshot(const char* path) {
     FILE* file = fopen(path, "wb");
-    if(! file) { perror(path); exit(1); }
+    if (!file) {
+        perror(path);
+        exit(1);
+    }
     fprintf(file, "P6\n240 160\n255\n");
-    for(int i = 0; i < 240 * 160; ++i)
-    {
+    for (int i = 0; i < 240 * 160; ++i) {
         // mGBA's default 32-bit color_t stores red in the low byte.
         fputc(pixels[i] & 255, file);
         fputc((pixels[i] >> 8) & 255, file);
@@ -91,52 +88,50 @@ static void screenshot(const char* path)
     fclose(file);
 }
 
-
-static void open_levels(struct mCore* core)
-{
+static void open_levels(struct mCore* core) {
     press(core, 1 << 0); // Title -> profiles.
     press(core, 1 << 0); // Continue/create slot one -> levels.
 }
 
-static bool on_lawn(void)
-{
+static bool on_lawn(void) {
     uint32_t label = pixels[26 * 240 + 22];
     return (label & 255) > 220 && (label >> 8 & 255) > 180 && (label >> 16 & 255) < 130;
 }
 
-static int save_slot(struct mCore* core, int offset)
-{
+static int save_slot(struct mCore* core, int offset) {
     uint32_t sequences[2] = {0, 0};
     bool valid[2] = {false, false};
-    for(int slot = 0; slot < 2; ++slot)
-    {
+    for (int slot = 0; slot < 2; ++slot) {
         uint8_t data[PVZ_SAVE_SIZE];
         uint32_t hash = 2166136261u;
-        for(int i = 0; i < PVZ_SAVE_SIZE; ++i)
-        { data[i] = core->busRead8(core, 0x0e000000 + offset + slot * PVZ_SAVE_SIZE + i); }
-        for(int i = 0; i < PVZ_SAVE_CHECKSUM; ++i) { hash = (hash ^ data[i]) * 16777619u; }
-        uint32_t stored = (uint32_t)data[48] | (uint32_t)data[49] << 8 |
-                          (uint32_t)data[50] << 16 | (uint32_t)data[51] << 24;
+        for (int i = 0; i < PVZ_SAVE_SIZE; ++i) {
+            data[i] = core->busRead8(core, 0x0e000000 + offset + slot * PVZ_SAVE_SIZE + i);
+        }
+        for (int i = 0; i < PVZ_SAVE_CHECKSUM; ++i) {
+            hash = (hash ^ data[i]) * 16777619u;
+        }
+        uint32_t stored = (uint32_t)data[48] | (uint32_t)data[49] << 8 | (uint32_t)data[50] << 16 |
+                          (uint32_t)data[51] << 24;
         valid[slot] = data[0] == 'P' && data[1] == 'V' && data[2] == 'Z' && data[3] == '3' && hash == stored;
-        sequences[slot] = (uint32_t)data[12] | (uint32_t)data[13] << 8 |
-                          (uint32_t)data[14] << 16 | (uint32_t)data[15] << 24;
+        sequences[slot] = (uint32_t)data[12] | (uint32_t)data[13] << 8 | (uint32_t)data[14] << 16 |
+                          (uint32_t)data[15] << 24;
     }
     assert(valid[0] || valid[1]);
-    return valid[1] && (! valid[0] || sequences[1] >= sequences[0]) ? 1 : 0;
+    return valid[1] && (!valid[0] || sequences[1] >= sequences[0]) ? 1 : 0;
 }
 
-static int saved_byte(struct mCore* core, int offset, int field)
-{ return core->busRead8(core, 0x0e000000 + offset + save_slot(core, offset) * PVZ_SAVE_SIZE + field); }
+static int saved_byte(struct mCore* core, int offset, int field) {
+    return core->busRead8(core, 0x0e000000 + offset + save_slot(core, offset) * PVZ_SAVE_SIZE + field);
+}
 
-static uint32_t saved_kills(struct mCore* core, int offset, int type)
-{
+static uint32_t saved_kills(struct mCore* core, int offset, int type) {
     int field = PVZ_SAVE_KILL_OFFSET(type);
     return (uint32_t)saved_byte(core, offset, field) | (uint32_t)saved_byte(core, offset, field + 1) << 8 |
-           (uint32_t)saved_byte(core, offset, field + 2) << 16 | (uint32_t)saved_byte(core, offset, field + 3) << 24;
+           (uint32_t)saved_byte(core, offset, field + 2) << 16 |
+           (uint32_t)saved_byte(core, offset, field + 3) << 24;
 }
 
-static void reset_cartridge(struct mCore* core)
-{
+static void reset_cartridge(struct mCore* core) {
     void* data = NULL;
     size_t size = core->savedataClone(core, &data);
     assert(data && size >= 608);
@@ -146,41 +141,53 @@ static void reset_cartridge(struct mCore* core)
     frames(core, 0, 120);
 }
 
-static bool first_level_active(struct mCore* core)
-{
+static bool first_level_active(struct mCore* core) {
     (void)core;
     // The gold selector disappears at either terminal transition, including replays.
-    return on_lawn() && ((pixels[24 * 240 + 55] & 255) > 200 ||
-                         (pixels[24 * 240 + 83] & 255) > 200);
+    return on_lawn() && ((pixels[24 * 240 + 55] & 255) > 200 || (pixels[24 * 240 + 83] & 255) > 200);
 }
-struct DefenseCursor { int row, column, seed; };
-static void collect_wait(struct mCore* core, int count)
-{
-    static bool horde_captured;
-    for(int i = 0; i < count && first_level_active(core); ++i)
-    {
-        frames(core, 1 << 1, 1);
-        if(! horde_captured && core->frameCounter(core) >= 1500)
-        { screenshot("build/horde.ppm"); horde_captured = true; }
 
+struct DefenseCursor {
+    int row, column, seed;
+};
+
+static void collect_wait(struct mCore* core, int count) {
+    static bool horde_captured;
+    for (int i = 0; i < count && first_level_active(core); ++i) {
+        frames(core, 1 << 1, 1);
+        if (!horde_captured && core->frameCounter(core) >= 1500) {
+            screenshot("build/horde.ppm");
+            horde_captured = true;
+        }
     }
 }
-static void plant_at(struct mCore* core, struct DefenseCursor* c, int row, int column, int seed)
-{
-    if(! first_level_active(core)) { return; }
-    while(c->row != row) { press(core, 1 << (c->row > row ? 6 : 7)); c->row += c->row > row ? -1 : 1; }
-    while(c->column != column) { press(core, 1 << (c->column > column ? 5 : 4)); c->column += c->column > column ? -1 : 1; }
-    while(c->seed != seed) { press(core, 1 << 8); c->seed = (c->seed + 1) % 2; }
-    if(first_level_active(core)) { press(core, 1 << 0); }
+
+static void plant_at(struct mCore* core, struct DefenseCursor* c, int row, int column, int seed) {
+    if (!first_level_active(core)) {
+        return;
+    }
+    while (c->row != row) {
+        press(core, 1 << (c->row > row ? 6 : 7));
+        c->row += c->row > row ? -1 : 1;
+    }
+    while (c->column != column) {
+        press(core, 1 << (c->column > column ? 5 : 4));
+        c->column += c->column > column ? -1 : 1;
+    }
+    while (c->seed != seed) {
+        press(core, 1 << 8);
+        c->seed = (c->seed + 1) % 2;
+    }
+    if (first_level_active(core)) {
+        press(core, 1 << 0);
+    }
 }
-static bool peashooter_visible(int row, int column)
-{
+
+static bool peashooter_visible(int row, int column) {
     int lime = 0;
     int cx = 45 + column * 22, cy = 67 + row * 19;
-    for(int y = cy - 7; y < cy + 1; ++y)
-    {
-        for(int x = cx - 5; x < cx + 5; ++x)
-        {
+    for (int y = cy - 7; y < cy + 1; ++y) {
+        for (int x = cx - 5; x < cx + 5; ++x) {
             uint32_t pixel = pixels[y * 240 + x];
             int red = pixel & 255, green = pixel >> 8 & 255, blue = pixel >> 16 & 255;
             lime += green > 169 && green > red + 10 && blue < 120;
@@ -188,25 +195,24 @@ static bool peashooter_visible(int row, int column)
     }
     return lime > 12;
 }
-static void clear_first_level(struct mCore* core)
-{
+
+static void clear_first_level(struct mCore* core) {
     struct DefenseCursor c = {2, 0, 0};
     bool action_captured = false;
     // Complete the first-play lesson; replays allow these same ordinary actions.
     press(core, 1 << 0);
     collect_wait(core, 210);
-    for(int pass = 0; pass < 180 && first_level_active(core); ++pass)
-    {
+    for (int pass = 0; pass < 180 && first_level_active(core); ++pass) {
         bool covered = true;
-        for(int column = 0; column <= 2 && first_level_active(core); ++column)
-        {
-            if(! peashooter_visible(2, column))
-            { covered = false; plant_at(core, &c, 2, column, 0); collect_wait(core, 30); }
+        for (int column = 0; column <= 2 && first_level_active(core); ++column) {
+            if (!peashooter_visible(2, column)) {
+                covered = false;
+                plant_at(core, &c, 2, column, 0);
+                collect_wait(core, 30);
+            }
         }
-        if(covered && ! action_captured)
-        {
-            for(int frame = 0; frame < 12; ++frame)
-            {
+        if (covered && !action_captured) {
+            for (int frame = 0; frame < 12; ++frame) {
                 char path[80];
                 frames(core, 1 << 1, 6);
                 assert(first_level_active(core));
@@ -215,56 +221,57 @@ static void clear_first_level(struct mCore* core)
             }
             action_captured = true;
         }
-        if(pass % 10 == 0 && first_level_active(core)) { screenshot("build/developed_lawn.ppm"); }
+        if (pass % 10 == 0 && first_level_active(core)) {
+            screenshot("build/developed_lawn.ppm");
+        }
         collect_wait(core, 120);
     }
     assert(action_captured);
     collect_wait(core, 24000);
     assert(saved_byte(core, PVZ_SAVE_NORMAL_OFFSET, 8) & 1);
 }
-static void finish_lesson_for_loss(struct mCore* core)
-{
+
+static void finish_lesson_for_loss(struct mCore* core) {
     press(core, 1 << 0);
     frames(core, 0, 210);
     press(core, 1 << 1);
     press(core, (1 << 2) | (1 << 0));
 }
+
 static int seed_bank_scenario = 0;
 static bool debug_seed_bank = false;
 
-static void choose_seed(struct mCore* core, int* cursor, int target)
-{
-    while(*cursor != target) { press(core, 1 << 4); *cursor = (*cursor + 1) % 10; }
+static void choose_seed(struct mCore* core, int* cursor, int target) {
+    while (*cursor != target) {
+        press(core, 1 << 4);
+        *cursor = (*cursor + 1) % 10;
+    }
     press(core, 1 << 0);
 }
 
-
-static void start_round(struct mCore* core, const char* preview_path)
-{
+static void start_round(struct mCore* core, const char* preview_path) {
     press(core, 1 << 0);
-    for(int y = 0; y < 54; ++y)
-    {
-        for(int x = 0; x < 60; ++x) { assert((pixels[y * 240 + x] & 0x00ffffff) == 0); }
+    for (int y = 0; y < 54; ++y) {
+        for (int x = 0; x < 60; ++x) {
+            assert((pixels[y * 240 + x] & 0x00ffffff) == 0);
+        }
     }
     screenshot("build/preview_pan_start.ppm");
-    if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
-    { screenshot("build/scouting_pan_start.ppm"); }
+    if (preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) {
+        screenshot("build/scouting_pan_start.ppm");
+    }
     press(core, 1 << 0); // The initial pan cannot be skipped by an early press.
-    for(int frame = 0; frame < 5; ++frame)
-    {
+    for (int frame = 0; frame < 5; ++frame) {
         frames(core, 0, 10);
-        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
-        {
+        if (preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) {
             char path[80];
             snprintf(path, sizeof(path), "build/scouting_pan_%d.ppm", frame);
             screenshot(path);
         }
     }
     int level_ink = 0;
-    for(int y = 6; y < 14; ++y)
-    {
-        for(int x = 82; x < 158; ++x)
-        {
+    for (int y = 6; y < 14; ++y) {
+        for (int x = 82; x < 158; ++x) {
             uint32_t color = pixels[y * 240 + x];
             level_ink += (color & 255) > 220 && (color >> 8 & 255) > 220 && (color >> 16 & 255) > 150;
         }
@@ -272,37 +279,39 @@ static void start_round(struct mCore* core, const char* preview_path)
     assert(level_ink > 8); // The level is rendered before the preview becomes ready.
     screenshot("build/preview_before_ready.ppm");
     frames(core, 0, 40);
-    assert(! on_lawn());
-    if(preview_path) { screenshot(preview_path); }
+    assert(!on_lawn());
+    if (preview_path) {
+        screenshot(preview_path);
+    }
     uint32_t header = region_hash(0, 0, 240, 55);
     press(core, 1 << 2); // Select no longer opens the almanac.
     frames(core, 0, 15);
     assert(region_hash(0, 0, 240, 55) == header);
     press(core, 1 << 0);
     int level = saved_byte(core, debug_seed_bank ? PVZ_SAVE_DEBUG_OFFSET : PVZ_SAVE_NORMAL_OFFSET, 6);
-    if(level >= 6)
-    {
-        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
-        {
-            for(int frame = 0; frame < 12; ++frame)
-            {
-                char path[80]; snprintf(path, sizeof(path), "build/seed_bank_flight_%02d.ppm", frame);
-                screenshot(path); frames(core, 0, 3);
+    if (level >= 6) {
+        if (preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) {
+            for (int frame = 0; frame < 12; ++frame) {
+                char path[80];
+                snprintf(path, sizeof(path), "build/seed_bank_flight_%02d.ppm", frame);
+                screenshot(path);
+                frames(core, 0, 3);
             }
+        } else {
+            frames(core, 0, 32);
         }
-        else { frames(core, 0, 32); }
-        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) { screenshot("build/seed_selection_all.ppm"); }
-        if(preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0)
-        {
+        if (preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) {
+            screenshot("build/seed_selection_all.ppm");
+        }
+        if (preview_path && strcmp(preview_path, "build/preview_level_10.ppm") == 0) {
             uint32_t heading = region_hash(8, 42, 150, 14);
-            int cursor = 0; choose_seed(core, &cursor, 0);
+            int cursor = 0;
+            choose_seed(core, &cursor, 0);
             press(core, 1 << 3); // A five-card bank must stay on the picker with a visible error.
-            assert(! on_lawn());
+            assert(!on_lawn());
             int red = 0;
-            for(int y = 44; y < 55; ++y)
-            {
-                for(int x = 48; x < 116; ++x)
-                {
+            for (int y = 44; y < 55; ++y) {
+                for (int x = 48; x < 116; ++x) {
                     uint32_t pixel = pixels[y * 240 + x];
                     red += (pixel & 255) > 220 && (pixel >> 8 & 255) < 120 && (pixel >> 16 & 255) < 100;
                 }
@@ -313,16 +322,26 @@ static void start_round(struct mCore* core, const char* preview_path)
             frames(core, 0, 32); // Let the returning card clear the heading before comparing text.
             assert(region_hash(8, 42, 150, 14) == heading);
         }
-        if(debug_seed_bank)
-        {
+        if (debug_seed_bank) {
             int cursor = 0;
             // Reorder through ordinary selection input so existing scenarios use named, stable slots.
-            for(int i = 0; i < 6; ++i) { choose_seed(core, &cursor, i); }
+            for (int i = 0; i < 6; ++i) {
+                choose_seed(core, &cursor, i);
+            }
             const int regular[] = {1, 0, 2, 3, 4, 5};
             const int custom[] = {1, 2, 3, 4, 6, 8};
             const int chomper[] = {1, 0, 4, 6, 7, 9};
-            for(int i = 0; i < 6; ++i) { choose_seed(core, &cursor, seed_bank_scenario == 2 ? chomper[i] : (seed_bank_scenario == 1 ? custom[i] : regular[i])); }
-            if(seed_bank_scenario == 1) { frames(core, 0, 32); screenshot("build/seed_selection_custom.ppm"); }
+            for (int i = 0; i < 6; ++i) {
+                choose_seed(
+                    core,
+                    &cursor,
+                    seed_bank_scenario == 2 ? chomper[i] : (seed_bank_scenario == 1 ? custom[i] : regular[i])
+                );
+            }
+            if (seed_bank_scenario == 1) {
+                frames(core, 0, 32);
+                screenshot("build/seed_selection_custom.ppm");
+            }
         }
         screenshot("build/seed_selection.ppm");
         press(core, 1 << 3); // Confirm the selected seed bank before returning to the lawn.
@@ -336,16 +355,16 @@ static void start_round(struct mCore* core, const char* preview_path)
     frames(core, 0, 17);
     assert(on_lawn());
     screenshot("build/scouting_start.ppm");
-    assert(region_hash(garden_left, 57, 240 - garden_left, 103) == garden && region_hash(0, 57, 32, 103) == mowers); // Lawn, palette and mowers match across the transition.
+    assert(
+        region_hash(garden_left, 57, 240 - garden_left, 103) == garden &&
+        region_hash(0, 57, 32, 103) == mowers
+    ); // Lawn, palette and mowers match across the transition.
 }
 
-static void check_portrait_pixels(void)
-{
+static void check_portrait_pixels(void) {
     // Every original pixel maps to exactly 2x2 display pixels, including all zombie variants.
-    for(int y = 48; y < 106; y += 2)
-    {
-        for(int x = 26; x < 90; x += 2)
-        {
+    for (int y = 48; y < 106; y += 2) {
+        for (int x = 26; x < 90; x += 2) {
             uint32_t color = pixels[y * 240 + x];
             assert(pixels[y * 240 + x + 1] == color);
             assert(pixels[(y + 1) * 240 + x] == color);
@@ -354,11 +373,13 @@ static void check_portrait_pixels(void)
     }
 }
 
-static void tombstone_test(struct mCore* core)
-{
+static void tombstone_test(struct mCore* core) {
     screenshot("build/tombstones_lawn.ppm");
-    press(core, 1 << 6); press(core, 1 << 6); // Top lane.
-    for(int i = 0; i < 5; ++i) { press(core, 1 << 4); }
+    press(core, 1 << 6);
+    press(core, 1 << 6); // Top lane.
+    for (int i = 0; i < 5; ++i) {
+        press(core, 1 << 4);
+    }
     press(core, 1 << 8); // Peashooter immediately left of the first grave.
     press(core, 1 << 0);
     uint32_t intact = region_hash(170, 58, 15, 16);
@@ -366,18 +387,17 @@ static void tombstone_test(struct mCore* core)
     screenshot("build/tombstone_cracked.ppm");
     assert(region_hash(170, 58, 15, 16) != intact);
     frames(core, 1 << 1, 150);
-    for(int frame = 0; frame < 50; ++frame)
-    {
-        char path[80]; frames(core, 1 << 1, 3);
-        snprintf(path, sizeof(path), "build/tombstone_crumble_%02d.ppm", frame); screenshot(path);
+    for (int frame = 0; frame < 50; ++frame) {
+        char path[80];
+        frames(core, 1 << 1, 3);
+        snprintf(path, sizeof(path), "build/tombstone_crumble_%02d.ppm", frame);
+        screenshot(path);
     }
     screenshot("build/tombstone_destroyed.ppm");
     // Every remaining pixel in the old stone's top edge is grass, rather than gray stone.
     int gray = 0;
-    for(int y = 58; y < 64; ++y)
-    {
-        for(int x = 172; x < 184; ++x)
-        {
+    for (int y = 58; y < 64; ++y) {
+        for (int x = 172; x < 184; ++x) {
             uint32_t pixel = pixels[y * 240 + x];
             int r = pixel & 255, g = pixel >> 8 & 255, b = pixel >> 16 & 255;
             gray += b > 110 && r > 100 && g < r + 50;
@@ -389,17 +409,13 @@ static void tombstone_test(struct mCore* core)
     start_round(core, NULL);
 }
 
-static void grave_emergence_test(struct mCore* core)
-{
+static void grave_emergence_test(struct mCore* core) {
     bool dirt = false;
-    for(int tick = 0; tick < 4500 && ! dirt; ++tick)
-    {
+    for (int tick = 0; tick < 4500 && !dirt; ++tick) {
         frames(core, 1 << 1, 1);
         int brown = 0;
-        for(int y = 72; y < 79; ++y)
-        {
-            for(int x = 164; x < 190; ++x)
-            {
+        for (int y = 72; y < 79; ++y) {
+            for (int x = 164; x < 190; ++x) {
                 uint32_t pixel = pixels[y * 240 + x];
                 int r = pixel & 255, g = pixel >> 8 & 255, b = pixel >> 16 & 255;
                 brown += r > 100 && r < 140 && g > 60 && g < 90 && b < 65;
@@ -409,10 +425,11 @@ static void grave_emergence_test(struct mCore* core)
     }
     assert(dirt && on_lawn());
     uint32_t previous = 0;
-    for(int stage = 0; stage < 6; ++stage)
-    {
+    for (int stage = 0; stage < 6; ++stage) {
         char path[80];
-        if(stage) { frames(core, 1 << 1, 8); }
+        if (stage) {
+            frames(core, 1 << 1, 8);
+        }
         snprintf(path, sizeof(path), "build/grave_emergence_%d.ppm", stage);
         screenshot(path);
         uint32_t image = region_hash(161, 47, 32, 32);
@@ -424,19 +441,21 @@ static void grave_emergence_test(struct mCore* core)
     start_round(core, NULL);
 }
 
-static void explosion_layer_test(struct mCore* core)
-{
+static void explosion_layer_test(struct mCore* core) {
     press(core, 1 << 0); // Sunflower at the initial cursor.
-    press(core, 1 << 7); press(core, 1 << 7);
-    press(core, 1 << 4); press(core, 1 << 8);
+    press(core, 1 << 7);
+    press(core, 1 << 7);
+    press(core, 1 << 4);
+    press(core, 1 << 8);
     press(core, 1 << 0); // Peashooter in the bottom lane.
     frames(core, 1 << 1, 1700);
     press(core, 1 << 6); // Cherry Bomb directly above it.
-    for(int i = 0; i < 4; ++i) { press(core, 1 << 8); }
+    for (int i = 0; i < 4; ++i) {
+        press(core, 1 << 8);
+    }
     press(core, 1 << 0);
     bool covered = false;
-    for(int tick = 0; tick < 70 && ! covered; ++tick)
-    {
+    for (int tick = 0; tick < 70 && !covered; ++tick) {
         frames(core, 0, 1);
         // This pixel belongs to the lower Peashooter's head until the blast covers it.
         uint32_t pixel = pixels[137 * 240 + 67];
@@ -449,31 +468,28 @@ static void explosion_layer_test(struct mCore* core)
     start_round(core, NULL);
 }
 
-static void plant_damage_test(struct mCore* core)
-{
-    press(core, 1 << 8); press(core, 1 << 8); // Wall-nut.
+static void plant_damage_test(struct mCore* core) {
+    press(core, 1 << 8);
+    press(core, 1 << 8); // Wall-nut.
     press(core, 1 << 6); // First zombie's lane.
     frames(core, 1 << 4, 55);
     frames(core, 0, 3);
     press(core, 1 << 0);
-    press(core, 1 << 5); press(core, 1 << 5); // Move the cursor clear of the shadow sample.
+    press(core, 1 << 5);
+    press(core, 1 << 5); // Move the cursor clear of the shadow sample.
     uint32_t shadow = pixels[94 * 240 + 212];
     screenshot("build/plant_before_hit.ppm");
     bool flashed = false;
-    for(int tick = 0; tick < 1200 && ! flashed; ++tick)
-    {
+    for (int tick = 0; tick < 1200 && !flashed; ++tick) {
         frames(core, 0, 1);
         int red_pixels = 0;
-        for(int y = 75; y < 93; ++y)
-        {
-            for(int x = 212; x < 231; ++x)
-            {
+        for (int y = 75; y < 93; ++y) {
+            for (int x = 212; x < 231; ++x) {
                 uint32_t color = pixels[y * 240 + x];
                 red_pixels += (color & 255) > 170 && (color >> 8 & 255) < 100 && (color >> 16 & 255) < 100;
             }
         }
-        if(red_pixels > 40)
-        {
+        if (red_pixels > 40) {
             screenshot("build/plant_red_flash.ppm");
             assert(pixels[94 * 240 + 212] == shadow);
             flashed = true;
@@ -485,8 +501,7 @@ static void plant_damage_test(struct mCore* core)
     start_round(core, NULL);
 }
 
-static void browse_almanac(struct mCore* core)
-{
+static void browse_almanac(struct mCore* core) {
     uint32_t title = region_hash(0, 0, 240, 40);
     press(core, 1 << 2);
     assert(region_hash(0, 0, 240, 40) == title);
@@ -500,18 +515,18 @@ static void browse_almanac(struct mCore* core)
     press(core, 1 << 6);
     assert(region_hash(27, 43, 54, 3) == first_cell);
     uint32_t first_page = region_hash(70, 31, 100, 8);
-    for(int i = 0; i < 6; ++i) { press(core, 1 << 4); }
+    for (int i = 0; i < 6; ++i) {
+        press(core, 1 << 4);
+    }
     assert(region_hash(70, 31, 100, 8) == first_page);
     assert(region_hash(27, 43, 54, 3) == first_cell); // Right wraps inside page one.
     press(core, 1 << 5);
     assert(region_hash(70, 31, 100, 8) == first_page); // Left cannot open the last page.
     press(core, 1 << 4);
-    for(int tab = 0; tab < 2; ++tab)
-    {
+    for (int tab = 0; tab < 2; ++tab) {
         uint32_t previous_name = 0;
         int entries = tab ? 8 : 10;
-        for(int i = 0; i < entries; ++i)
-        {
+        for (int i = 0; i < entries; ++i) {
             uint32_t grid_heading = region_hash(70, 31, 100, 8);
             int selected = i;
             int x = 27 + selected % 6 % 3 * 66;
@@ -525,33 +540,36 @@ static void browse_almanac(struct mCore* core)
             char path[80];
             snprintf(path, sizeof(path), "build/almanac_%s_%d.ppm", tab ? "zombie" : "plant", selected);
             screenshot(path);
-            if(! tab && selected == 0)
-            {
+            if (!tab && selected == 0) {
                 uint32_t copy = region_hash(110, 55, 108, 40);
                 press(core, 1 << 7);
                 assert(region_hash(110, 55, 108, 40) != copy);
                 assert(region_hash(65, 30, 110, 8) == name);
                 screenshot("build/almanac_scrolled.ppm");
             }
-            if(tab && selected == 5) { screenshot("build/almanac_screen_door.ppm"); }
-            if(tab && selected == 4) { screenshot("build/almanac_bucket.ppm"); }
+            if (tab && selected == 5) {
+                screenshot("build/almanac_screen_door.ppm");
+            }
+            if (tab && selected == 4) {
+                screenshot("build/almanac_bucket.ppm");
+            }
             press(core, 1 << 8); // An open entry is modal; shoulder buttons cannot change it.
             assert(region_hash(65, 30, 110, 8) == name);
             press(core, 1 << 1);
             assert(region_hash(70, 31, 100, 8) == grid_heading);
             assert(region_hash(x, y, 54, 3) == cell);
-            if(i == entries - 1)
-            {
+            if (i == entries - 1) {
                 press(core, 1 << 4);
                 assert(region_hash(70, 31, 100, 8) == grid_heading);
                 press(core, 1 << 5);
                 assert(region_hash(70, 31, 100, 8) == grid_heading);
                 assert(region_hash(x, y, 54, 3) == cell);
             }
-            if(i < entries - 1) { press(core, 1 << (i == 5 ? 8 : 4)); }
+            if (i < entries - 1) {
+                press(core, 1 << (i == 5 ? 8 : 4));
+            }
         }
-        if(tab == 0)
-        {
+        if (tab == 0) {
             press(core, 1 << 8);
             screenshot("build/almanac_zombies.ppm");
             uint32_t idle = region_hash(38, 46, 32, 32);
@@ -565,46 +583,56 @@ static void browse_almanac(struct mCore* core)
     press(core, 1 << 6);
 }
 
-static void profile_slots_test(struct mCore* core, int offset)
-{
+static void profile_slots_test(struct mCore* core, int offset) {
     uint32_t original_kills = saved_kills(core, offset, 0);
     int unlocked = saved_byte(core, offset, 5);
     int second = offset + PVZ_SAVE_SLOT_STRIDE;
     int third = offset + 2 * PVZ_SAVE_SLOT_STRIDE;
     press(core, 1 << 0);
     screenshot("build/save_slots_progress.ppm");
-    press(core, 1 << 7); press(core, 1 << 0); // Create slot two.
+    press(core, 1 << 7);
+    press(core, 1 << 0); // Create slot two.
     assert(saved_byte(core, second, 5) == 1 && saved_kills(core, second, 0) == 0);
-    press(core, 1 << 1); press(core, 1 << 0);
-    press(core, 1 << 7); press(core, 1 << 0); // Create slot three.
+    press(core, 1 << 1);
+    press(core, 1 << 0);
+    press(core, 1 << 7);
+    press(core, 1 << 0); // Create slot three.
     assert(saved_byte(core, third, 5) == 1 && saved_kills(core, third, 0) == 0);
-    press(core, 1 << 1); press(core, 1 << 0);
+    press(core, 1 << 1);
+    press(core, 1 << 0);
     screenshot("build/save_slots_full.ppm");
-    press(core, 1 << 6); press(core, 1 << 4); press(core, 1 << 0);
+    press(core, 1 << 6);
+    press(core, 1 << 4);
+    press(core, 1 << 0);
     screenshot("build/save_delete_confirmation.ppm");
     press(core, 1 << 0); // Default cancel cannot delete a profile.
     assert(saved_byte(core, second, 7) == 0);
-    press(core, 1 << 4); press(core, 1 << 0);
-    press(core, 1 << 4); press(core, 1 << 0); // Explicitly select and confirm delete.
+    press(core, 1 << 4);
+    press(core, 1 << 0);
+    press(core, 1 << 4);
+    press(core, 1 << 0); // Explicitly select and confirm delete.
     assert(saved_byte(core, second, 7) == 1);
     screenshot("build/save_slots_deleted.ppm");
     reset_cartridge(core);
     press(core, 1 << 0);
     screenshot("build/save_slots_reloaded.ppm");
     assert(saved_byte(core, second, 7) == 1 && saved_byte(core, third, 7) == 0);
-    press(core, 1 << 7); press(core, 1 << 0); // Recreate the deleted slot.
+    press(core, 1 << 7);
+    press(core, 1 << 0); // Recreate the deleted slot.
     assert(saved_byte(core, second, 7) == 0 && saved_kills(core, second, 0) == 0);
-    press(core, 1 << 1); press(core, 1 << 0);
-    press(core, 1 << 6); press(core, 1 << 0); // Continue the original profile.
+    press(core, 1 << 1);
+    press(core, 1 << 0);
+    press(core, 1 << 6);
+    press(core, 1 << 0); // Continue the original profile.
     assert(saved_byte(core, offset, 5) == unlocked && saved_kills(core, offset, 0) == original_kills);
     assert(saved_byte(core, third, 5) == 1);
-    puts("PASS three SRAM profiles, continue, cancel/confirm delete, tombstone reload, recreate and slot isolation");
+    puts("PASS three SRAM profiles, continue, cancel/confirm delete, tombstone reload, recreate and slot "
+         "isolation");
 }
 
 #include "rom_gallery.h"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     bool loss = argc > 2 && strcmp(argv[2], "loss") == 0;
     bool gallery = argc > 2 && strcmp(argv[2], "gallery") == 0;
     bool debug = gallery || (argc > 2 && strcmp(argv[2], "debug") == 0);
@@ -622,10 +650,8 @@ int main(int argc, char** argv)
     assert(core->busRead8(core, 0x0e000000 + offset) != 'P'); // Empty slots stay empty until selected.
     assert(measure_audio(core, 60) > 1000);
     screenshot(debug ? "build/debug_title.ppm" : "build/title.ppm");
-    if(! debug && ! loss)
-    {
-        for(int frame = 0; frame < 12; ++frame)
-        {
+    if (!debug && !loss) {
+        for (int frame = 0; frame < 12; ++frame) {
             char path[80];
             snprintf(path, sizeof(path), "build/title_animation_%02d.ppm", frame);
             screenshot(path);
@@ -634,28 +660,30 @@ int main(int argc, char** argv)
     }
     browse_almanac(core);
     press(core, 1 << 0);
-    if(! debug && ! loss) { screenshot("build/save_slots_empty.ppm"); }
+    if (!debug && !loss) {
+        screenshot("build/save_slots_empty.ppm");
+    }
     press(core, 1 << 0);
     assert(saved_byte(core, offset, 5) == (debug ? 10 : 1));
-    assert(! on_lawn());
+    assert(!on_lawn());
     screenshot(debug ? "build/levels_debug.ppm" : "build/levels_locked.ppm");
     uint32_t first_badge = region_hash(38, 70, 13, 11);
     uint32_t second_badge = region_hash(76, 70, 13, 11);
     assert(debug ? first_badge == second_badge : first_badge != second_badge);
-    if(loss)
-    {
+    if (loss) {
         start_round(core, NULL);
         finish_lesson_for_loss(core);
-        for(int i = 0; i < 30000 && first_level_active(core); ++i) { frames(core, 0, 1); }
-        assert(! first_level_active(core));
+        for (int i = 0; i < 30000 && first_level_active(core); ++i) {
+            frames(core, 0, 1);
+        }
+        assert(!first_level_active(core));
         assert(measure_audio(core, 12) > 1000); // Record scratch.
         uint32_t before = image_hash();
         press(core, 1 << 0); // Cannot skip the breach animation.
-        assert(! first_level_active(core));
-        frames(core, 0, 8); // Let the recorded scratch finish before checking the voice.
+        assert(!first_level_active(core));
+        frames(core, 0, 8);                     // Let the recorded scratch finish before checking the voice.
         assert(measure_audio(core, 12) > 1000); // Scream follows the scratch.
-        for(int frame = 0; frame < 10; ++frame)
-        {
+        for (int frame = 0; frame < 10; ++frame) {
             char path[80];
             frames(core, 0, 6);
             snprintf(path, sizeof(path), "build/loss_sequence_%02d.ppm", frame);
@@ -670,15 +698,17 @@ int main(int argc, char** argv)
         assert(measure_audio(core, 30) > 1000); // Retry restores the music.
         assert(first_level_active(core));
         finish_lesson_for_loss(core);
-        for(int i = 0; i < 30000 && first_level_active(core); ++i) { frames(core, 0, 1); }
+        for (int i = 0; i < 30000 && first_level_active(core); ++i) {
+            frames(core, 0, 1);
+        }
         frames(core, 0, PVZ_DEFEAT_READY_FRAME);
         press(core, 1 << 1);
-        assert(! on_lawn());
-    }
-    else if(debug)
-    {
+        assert(!on_lawn());
+    } else if (debug) {
         press(core, 1 << 7);
-        for(int i = 0; i < 4; ++i) { press(core, 1 << 4); }
+        for (int i = 0; i < 4; ++i) {
+            press(core, 1 << 4);
+        }
         screenshot("build/level_10_selected.ppm");
         start_round(core, "build/preview_level_10.ppm");
         assert(on_lawn() && saved_byte(core, offset, 6) == 9);
@@ -709,51 +739,56 @@ int main(int argc, char** argv)
         press(core, 1 << 0);
         int ice = 0, hurt_seen = 0;
         // Observe the visible hit flash, then the blue freeze tint on the same lane.
-        for(int tick = 0; tick < 1200 && (ice <= 20 || hurt_seen <= 8); ++tick)
-        {
+        for (int tick = 0; tick < 1200 && (ice <= 20 || hurt_seen <= 8); ++tick) {
             frames(core, 1 << 1, 1);
             ice = 0;
             int hurt = 0;
-            for(int y = 72; y < 96; ++y)
-            {
-                for(int x = 120; x < 232; ++x)
-                {
+            for (int y = 72; y < 96; ++y) {
+                for (int x = 120; x < 232; ++x) {
                     uint32_t pixel = pixels[y * 240 + x];
                     int red = pixel & 255, green = pixel >> 8 & 255, blue = pixel >> 16 & 255;
                     ice += blue > red + 30 && blue > green;
                     hurt += red > 170 && green < 100 && blue < 100;
                 }
             }
-            if(hurt > 8 && hurt_seen <= 8) { screenshot("build/zombie_damage_flash.ppm"); }
-            if(hurt > hurt_seen) { hurt_seen = hurt; }
+            if (hurt > 8 && hurt_seen <= 8) {
+                screenshot("build/zombie_damage_flash.ppm");
+            }
+            if (hurt > hurt_seen) {
+                hurt_seen = hurt;
+            }
         }
         assert(hurt_seen > 8);
         assert(on_lawn());
         screenshot("build/snow_pea_gameplay.ppm");
         assert(ice > 20); // The slowed zombie is visibly blue, beyond the Snow Pea itself.
         reset_cartridge(core);
-    open_levels(core);
+        open_levels(core);
         start_round(core, NULL);
         frames(core, 0, 3450);
         assert(on_lawn());
         screenshot("build/armored_horde.ppm");
-    }
-    else
-    {
+    } else {
         press(core, 1 << 4);
         uint32_t locked = image_hash();
         press(core, 1 << 0);
-        assert(image_hash() == locked && ! on_lawn());
+        assert(image_hash() == locked && !on_lawn());
         press(core, 1 << 5);
         start_round(core, "build/preview_level_1.ppm");
         assert(on_lawn());
         screenshot("build/playing.ppm");
         screenshot("build/tutorial_peashooter.ppm");
         uint32_t selected_edge = pixels[24 * 240 + 55];
-        assert((selected_edge & 255) > 220 && (selected_edge >> 8 & 255) > 180 && (selected_edge >> 16 & 255) < 130);
+        assert(
+            (selected_edge & 255) > 220 && (selected_edge >> 8 & 255) > 180 &&
+            (selected_edge >> 16 & 255) < 130
+        );
         press(core, 1 << 8);
         selected_edge = pixels[24 * 240 + 55];
-        assert((selected_edge & 255) > 220 && (selected_edge >> 8 & 255) > 180 && (selected_edge >> 16 & 255) < 130);
+        assert(
+            (selected_edge & 255) > 220 && (selected_edge >> 8 & 255) > 180 &&
+            (selected_edge >> 16 & 255) < 130
+        );
         press(core, 1 << 9);
         press(core, 1 << 3);
         screenshot("build/paused.ppm");
@@ -770,44 +805,40 @@ int main(int argc, char** argv)
         press(core, 1 << 0);
         screenshot("build/cooldown_cell.ppm");
         int sand = 0;
-        for(int y = 91; y < 107; ++y)
-        {
-            for(int x = 81; x < 97; ++x)
-            {
+        for (int y = 91; y < 107; ++y) {
+            for (int x = 81; x < 97; ++x) {
                 uint32_t pixel = pixels[y * 240 + x];
                 sand += (pixel & 255) > 220 && (pixel >> 8 & 255) > 180 && (pixel >> 16 & 255) < 130;
             }
         }
         assert(sand >= 8); // Hourglass feedback appears on the target cell, clear of the seed bank.
         reset_cartridge(core);
-    open_levels(core);
+        open_levels(core);
         start_round(core, NULL);
         assert(on_lawn());
         clear_first_level(core);
         assert(saved_byte(core, offset, 5) == 2 && (saved_byte(core, offset, 8) & 1));
-        assert(saved_kills(core, offset, 0) == 4 && saved_kills(core, offset, 3) == 3);
+        assert(saved_kills(core, offset, 0) == 7 && saved_kills(core, offset, 3) == 3);
         screenshot("build/level_1_clear.ppm");
         uint32_t reward_start = image_hash();
         uint32_t reward_lawn = region_hash(0, 58, 30, 28);
         press(core, 1 << 0); // Early input cannot skip the reveal.
         assert(saved_byte(core, offset, 6) == 0);
-        for(int i = 0; i < 56; ++i)
-        {
+        for (int i = 0; i < 56; ++i) {
             char path[80];
             frames(core, 0, 6);
             snprintf(path, sizeof(path), "build/reward_%02d.ppm", i);
             screenshot(path);
-            if(i == 18)
-            {
+            if (i == 18) {
                 screenshot("build/plant_reward_mid.ppm");
                 assert(image_hash() != reward_start);
             }
         }
         screenshot("build/plant_reward.ppm");
         assert(region_hash(0, 58, 30, 28) == reward_lawn); // The lawn edge remains visible behind the reward.
-        assert(on_lawn()); // The sun bank, wave track and packets remain visible through the reward.
+        assert(on_lawn());   // The sun bank, wave track and packets remain visible through the reward.
         press(core, 1 << 8); // A shoulder button dismisses the unlock to level selection.
-        assert(! on_lawn());
+        assert(!on_lawn());
         assert(region_hash(76, 70, 13, 11) != second_badge);
         screenshot("build/levels_progress.ppm");
         start_round(core, NULL);
@@ -817,8 +848,7 @@ int main(int argc, char** argv)
         uint32_t weed_pose = region_hash(117, 107, 32, 32);
         uint32_t gold_cell = region_hash(99, 112, 1, 1);
         bool weed_animated = false, cell_flashed = false;
-        for(int frame = 0; frame < 18; ++frame)
-        {
+        for (int frame = 0; frame < 18; ++frame) {
             char path[80];
             snprintf(path, sizeof(path), "build/wilted_idle_%02d.ppm", frame);
             screenshot(path);
@@ -828,16 +858,24 @@ int main(int argc, char** argv)
         }
         assert(weed_animated && cell_flashed);
         // Follow the scattered shovel targets: center, upper-left, lower-right.
-        press(core, 1 << 4); press(core, 1 << 4);
+        press(core, 1 << 4);
+        press(core, 1 << 4);
         press(core, (1 << 2) | (1 << 0));
-        press(core, 1 << 6); press(core, 1 << 5); press(core, 1 << 5);
+        press(core, 1 << 6);
+        press(core, 1 << 5);
+        press(core, 1 << 5);
         press(core, (1 << 2) | (1 << 0));
-        press(core, 1 << 7); press(core, 1 << 7);
-        for(int column = 0; column < 4; ++column) { press(core, 1 << 4); }
+        press(core, 1 << 7);
+        press(core, 1 << 7);
+        for (int column = 0; column < 4; ++column) {
+            press(core, 1 << 4);
+        }
         press(core, (1 << 2) | (1 << 0));
         screenshot("build/tutorial_sunflower.ppm");
         press(core, 1 << 6);
-        for(int column = 0; column < 4; ++column) { press(core, 1 << 5); }
+        for (int column = 0; column < 4; ++column) {
+            press(core, 1 << 5);
+        }
         press(core, 1 << 8); // Sunflower is the second packet on level two.
         press(core, 1 << 0);
         screenshot("build/tutorial_flower_sun.ppm");
@@ -847,13 +885,16 @@ int main(int argc, char** argv)
         screenshot("build/tutorial_complete.ppm");
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 2 && saved_byte(core, offset, 6) == 1);
-        assert(saved_kills(core, offset, 0) == 4 && saved_kills(core, offset, 3) == 3);
+        assert(saved_kills(core, offset, 0) == 7 && saved_kills(core, offset, 3) == 3);
         open_levels(core);
         screenshot("build/levels_reloaded.ppm");
         assert(region_hash(76, 70, 13, 11) != second_badge);
         int newest = save_slot(core, offset);
-        core->busWrite8(core, 0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM,
-                       core->busRead8(core, 0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM) ^ 1);
+        core->busWrite8(
+            core,
+            0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM,
+            core->busRead8(core, 0x0e000000 + offset + newest * PVZ_SAVE_SIZE + PVZ_SAVE_CHECKSUM) ^ 1
+        );
         reset_cartridge(core);
         assert(saved_byte(core, offset, 5) == 2); // Backup retains completion and unlock.
         open_levels(core);
@@ -861,32 +902,38 @@ int main(int argc, char** argv)
         start_round(core, NULL);
         assert(first_level_active(core));
         clear_first_level(core);
-        assert(! first_level_active(core));
+        assert(!first_level_active(core));
         frames(core, 0, 120);
         screenshot("build/trophy_bounce.ppm");
         frames(core, 0, 210);
         screenshot("build/trophy_reward.ppm");
-        assert(saved_kills(core, offset, 0) == 8 && saved_kills(core, offset, 3) == 6);
+        assert(saved_kills(core, offset, 0) == 14 && saved_kills(core, offset, 3) == 6);
         assert(image_hash() != reward_start);
         press(core, 1 << 1); // B also dismisses a repeat-clear trophy to levels, rather than title.
-        assert(! on_lawn());
+        assert(!on_lawn());
         assert(region_hash(76, 70, 13, 11) != second_badge);
     }
-    if(! debug && ! loss)
-    {
+    if (!debug && !loss) {
         press(core, 1 << 1);
         press(core, 1 << 7);
         press(core, 1 << 0);
         press(core, 1 << 8);
         press(core, 1 << 0);
         screenshot("build/almanac_lifetime_kills.ppm");
-        assert(saved_kills(core, offset, 0) == 8 && saved_kills(core, offset, 3) == 6);
+        assert(saved_kills(core, offset, 0) == 14 && saved_kills(core, offset, 3) == 6);
         reset_cartridge(core);
-        assert(saved_kills(core, offset, 0) == 8 && saved_kills(core, offset, 3) == 6);
+        assert(saved_kills(core, offset, 0) == 14 && saved_kills(core, offset, 3) == 6);
     }
-    if(! debug && ! loss) { profile_slots_test(core, offset); }
-    if(gallery) { capture_gallery(core); }
-    printf("PASS %s selection, locks, SRAM progress, reload, and save isolation\n", loss ? "loss animation and retry" : (debug ? "debug" : "normal"));
+    if (!debug && !loss) {
+        profile_slots_test(core, offset);
+    }
+    if (gallery) {
+        capture_gallery(core);
+    }
+    printf(
+        "PASS %s selection, locks, SRAM progress, reload, and save isolation\n",
+        loss ? "loss animation and retry" : (debug ? "debug" : "normal")
+    );
     mCoreConfigDeinit(&core->config);
     core->deinit(core);
     return 0;

@@ -716,7 +716,7 @@ def screen_door_zombie(image, pose, chewing, damaged, canvas):
     draw.line((21, 18, 20, elbow_y, grip_x + 3, grip_y), fill=9)
     image.paste(body, (16, 0))
     # The small palm sits outside the left stile, behind the door's edge.
-    # Only curled fingertips are drawn over the metal after projection.
+    # Only curled fingertips are drawn over the metal frame.
     zombie_hand(ImageDraw.Draw(image), far_x + 14, far_y - 1, width=4)
 
     door = canvas(32, 32)

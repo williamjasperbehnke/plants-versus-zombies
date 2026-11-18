@@ -1,0 +1,36 @@
+BasedOnStyle: LLVM
+Standard: c++17
+IndentWidth: 4
+ContinuationIndentWidth: 4
+ColumnLimit: 110
+BreakBeforeBraces: Attach
+BreakTemplateDeclarations: Yes
+InsertBraces: true
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortLambdasOnASingleLine: None
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+NamespaceIndentation: None
+AccessModifierOffset: -4
+IndentCaseLabels: true
+SpaceBeforeParens: ControlStatements
+SpaceAfterLogicalNot: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+SeparateDefinitionBlocks: Always
+FixNamespaceComments: true
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: false
+IncludeCategories:
+  # mGBA feature flags affect the ABI of the headers that follow them.
+  - Regex: '^<mgba/flags\.h>$'
+    Priority: -1
+  - Regex: '^"'
+    Priority: 1
+  - Regex: '^<'
+    Priority: 2

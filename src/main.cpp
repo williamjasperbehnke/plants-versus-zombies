@@ -1,8 +1,7 @@
-#include "application.h"
+#include "app/application.h"
 #include "bn_core.h"
 
-int main()
-{
+int main() {
     bn::core::init();
     garden::Application application;
     application.run();
