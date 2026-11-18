@@ -501,6 +501,8 @@ static void plant_damage_test(struct mCore* core) {
     start_round(core, NULL);
 }
 
+static uint32_t normal_zombie_heading;
+
 static void browse_almanac(struct mCore* core) {
     uint32_t title = region_hash(0, 0, 240, 40);
     press(core, 1 << 2);
@@ -535,6 +537,9 @@ static void browse_almanac(struct mCore* core) {
             press(core, 1 << 0);
             check_portrait_pixels();
             uint32_t name = region_hash(65, 30, 110, 8);
+            if (tab && selected == 0) {
+                normal_zombie_heading = name;
+            }
             assert(name != previous_name);
             previous_name = name;
             char path[80];
@@ -917,8 +922,10 @@ int main(int argc, char** argv) {
         press(core, 1 << 1);
         press(core, 1 << 7);
         press(core, 1 << 0);
-        press(core, 1 << 8);
+        press(core, 1 << 8); // Second plant page.
+        press(core, 1 << 8); // First zombie page.
         press(core, 1 << 0);
+        assert(normal_zombie_heading && region_hash(65, 30, 110, 8) == normal_zombie_heading);
         screenshot("build/almanac_lifetime_kills.ppm");
         assert(saved_kills(core, offset, 0) == 14 && saved_kills(core, offset, 3) == 6);
         reset_cartridge(core);
