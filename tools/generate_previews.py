@@ -199,7 +199,7 @@ def main():
     publish('lawn_edge.png', enlarged(images['gameplay'].crop((0, 57, 45, 154)), 5))
     for count, name in ((3, 'gameplay'), (5, 'armored_horde')):
         publish(f'wave_track_{count}.png', enlarged(images[name].crop((50, 0, 240, 23)), 4))
-    publish('final_flag.png', enlarged(images['lawn_start'].crop((53, 0, 78, 20)), 8))
+    publish('final_flag.png', enlarged(images['armored_horde'].crop((53, 0, 78, 20)), 8))
     for name, frames in animations.items():
         frames[0].save(media_path(f'{name}.gif'), save_all=True, append_images=frames[1:],
                        duration=ANIMATIONS[name][1], loop=0)
