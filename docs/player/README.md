@@ -167,36 +167,29 @@ next cell, so a nut in front doesn't put that target out of reach.
 
 ## Plant animations
 
-These studies use the current sprite sheets. Three-panel studies read left to
-right; four-panel studies read left to right, top to bottom. The descriptions
-below each GIF give their order. Action stages are brought together for comparison,
-so a full recharge or chewing wait isn't shown. They are sprite studies, not
-recordings of gameplay.
+These studies use the current sprite sheets. Action stages are brought together
+for comparison, so a full recharge or chewing wait isn't shown. They are sprite
+studies, not recordings of gameplay.
 
 | Sunflower | Peashooter |
 | --- | --- |
 | ![Sunflower idle, sun production and damage](../media/studies/plant_sunflower_study.gif) | ![Peashooter idle, firing and damage](../media/studies/plant_peashooter_study.gif) |
-| Idle · sun production and collection · damage | Idle · shooting · damage |
 
 | Wall-nut | Tall-nut |
 | --- | --- |
 | ![Wall-nut healthy, damaged, worn and taking hits](../media/studies/plant_wallnut_study.gif) | ![Tall-nut healthy, damaged, worn and taking hits](../media/studies/plant_tallnut_study.gif) |
-| Healthy · damaged · worn · damage | Healthy · damaged · worn · damage |
 
 | Potato Mine | Cherry Bomb |
 | --- | --- |
 | ![Potato Mine arming, blinking, detonating and taking damage](../media/studies/plant_potato_mine_study.gif) | ![Cherry Bomb idle, fuse and explosion](../media/studies/plant_cherry_bomb_study.gif) |
-| Arming · armed · detonation · damage before arming | Two panels: idle · fuse and explosion |
 
 | Snow Pea | Repeater |
 | --- | --- |
 | ![Snow Pea idle, frozen shots and damage](../media/studies/plant_snow_pea_study.gif) | ![Repeater idle, paired shots and damage](../media/studies/plant_repeater_study.gif) |
-| Idle · shooting · damage | Idle · paired shots · damage |
 
 | Squash | Chomper |
 | --- | --- |
 | ![Squash idle, leap and damage](../media/studies/plant_squash_study.gif) | ![Chomper idle, bite and swallow, and damage](../media/studies/plant_chomper_study.gif) |
-| Idle · leap and landing · damage | Idle · bite and swallow · damage |
 
 The wilted plants used in the shovel lesson have their own idle cycle:
 
