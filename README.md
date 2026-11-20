@@ -1,12 +1,12 @@
 # Plants vs. Zombies for Game Boy Advance
 
+[![Watch the gameplay trailer on YouTube](docs/media/gameplay-trailer-thumbnail.png)](https://www.youtube.com/watch?v=d-7gc3Mq_0k)
+
 A Plants vs. Zombies remake for the GBA, built with [Butano](https://github.com/GValiente/butano).
 There are ten Backyard levels, ten plants, eight zombie types, and three save slots.
 
 **[Download the ROM](plants_vs_zombies.gba)** and open it in a GBA emulator or load
 it onto a flash cartridge. Choose **Play** to start or continue a save.
-
-**[Watch the gameplay trailer on YouTube](https://www.youtube.com/watch?v=d-7gc3Mq_0k)**
 
 ![Five lanes planted with Sunflowers, Peashooters, and Wall-nuts](docs/media/screenshots/developed_backyard_late.png)
 
