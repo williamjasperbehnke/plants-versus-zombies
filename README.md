@@ -6,6 +6,8 @@ There are ten Backyard levels, ten plants, eight zombie types, and three save sl
 **[Download the ROM](plants_vs_zombies.gba)** and open it in a GBA emulator or load
 it onto a flash cartridge. Choose **Play** to start or continue a save.
 
+**[Watch the gameplay trailer on YouTube](https://www.youtube.com/watch?v=d-7gc3Mq_0k)**
+
 ![Five lanes planted with Sunflowers, Peashooters, and Wall-nuts](docs/media/screenshots/developed_backyard_late.png)
 
 [Player guide and more screenshots](docs/player/README.md) · [Build instructions](docs/development/README.md)
